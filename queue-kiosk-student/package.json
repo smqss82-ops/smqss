@@ -1,0 +1,42 @@
+{
+  "name": "queue-kiosk-student",
+  "version": "2.1.0",
+  "description": "SMQSS — Student Token Kiosk",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64",
+    "pack": "electron-builder --win --x64 --dir"
+  },
+  "build": {
+    "appId": "com.makerere.queue-kiosk-student",
+    "productName": "SMQSS Student Kiosk",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "build/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png",
+      "sign": false,
+      "artifactName": "QueueKiosk-Student-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SMQSS Student Kiosk"
+    },
+    "extraResources": []
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
+  }
+}

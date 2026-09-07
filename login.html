@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Staff Login — SMQSS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--ink:#0c0e0b;--surface:#f7f6f2;--white:#fff;--mak-green:#155c30;--mak-green-mid:#1e7d43;--mak-green-light:#e8f4ed;--mak-gold:#b8890a;--mak-gold-light:#fdf3d8;--mak-gold-bright:#d4aa00;--red:#c0392b;--red-light:#fdf0ef;--blue:#1a3fa0;--blue-light:#edf1fb;--purple:#5c3b9e;--purple-light:#f2eefb;--border:#e2e0da;--muted:#6b7280;--shadow-sm:0 1px 3px rgba(0,0,0,.08);--shadow-md:0 4px 16px rgba(0,0,0,.10);--shadow-lg:0 12px 40px rgba(0,0,0,.13);--r:10px;--r-lg:16px;--max-w:1320px}
+html{height:100%}
+body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink);line-height:1.6;font-size:15px;-webkit-font-smoothing:antialiased;height:100%;display:flex;flex-direction:column}
+.header{background:var(--white);border-bottom:3px solid var(--mak-gold-bright);padding:12px 16px;flex-shrink:0;box-shadow:var(--shadow-sm)}
+.header-inner{max-width:var(--max-w);margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:1;min-width:0}
+.brand-shield{width:44px;height:44px;background:linear-gradient(145deg,var(--mak-gold-bright),var(--mak-gold));border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand-shield svg{width:22px;height:22px;fill:var(--mak-green)}
+.brand-name{font-family:'DM Serif Display',serif;font-size:clamp(15px,3.5vw,21px);color:var(--mak-green);white-space:nowrap}
+.brand-name span{color:var(--mak-gold)}
+.header-clock{text-align:right;flex-shrink:0}
+.clock-time{font-family:'JetBrains Mono',monospace;font-size:clamp(11px,2.5vw,13px);font-weight:500;color:var(--mak-green);white-space:nowrap}
+.clock-loc{font-size:10px;color:var(--muted);margin-top:1px;white-space:nowrap}
+.main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px}
+.login-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:clamp(28px,4vw,36px) clamp(24px,3vw,32px);max-width:420px;width:100%;box-shadow:var(--shadow-md)}
+.login-title{font-family:'DM Serif Display',serif;font-size:clamp(20px,4vw,24px);color:var(--mak-green);text-align:center;margin-bottom:4px}
+.login-sub{text-align:center;font-size:13px;color:var(--muted);margin-bottom:20px}
+.assistant-panel{background:var(--mak-green-light);border:1px solid #d0e5d6;border-radius:var(--r);padding:14px;margin-bottom:20px}
+.assistant-label{font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--mak-green);margin-bottom:8px}
+.assistant-bubble{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--ink);font-size:13px;line-height:1.6;min-height:52px;position:relative;box-shadow:var(--shadow-sm)}
+.assistant-bubble::before{content:'';position:absolute;top:-6px;left:16px;width:10px;height:10px;background:var(--white);border-left:1px solid var(--border);border-top:1px solid var(--border);transform:rotate(45deg)}
+.ai-typing{display:inline-flex;align-items:center;gap:4px;height:16px}
+.ai-typing span{width:6px;height:6px;border-radius:50%;background:var(--mak-green);animation:blink 1s infinite ease-in-out}
+.ai-typing span:nth-child(2){animation-delay:.15s}
+.ai-typing span:nth-child(3){animation-delay:.3s}
+@keyframes blink{0%,80%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-2px)}}
+.ai-cursor{display:inline-block;width:1.5px;height:1em;background:var(--mak-green);margin-left:2px;vertical-align:-2px;animation:cursorBlink .9s steps(1) infinite}
+.ai-cursor.hidden{display:none}
+@keyframes cursorBlink{50%{opacity:0}}
+.form-group{margin-bottom:18px}
+.form-label{display:block;font-size:12px;font-weight:600;color:var(--ink);margin-bottom:6px}
+.form-input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--surface);-webkit-appearance:none;appearance:none;transition:border-color .2s,box-shadow .2s}
+.form-input:focus{outline:none;border-color:var(--mak-green);box-shadow:0 0 0 3px rgba(21,92,48,.12);background:var(--white)}
+.pin-input-wrap{position:relative}
+.pin-input-wrap .form-input{padding-right:44px}
+.pin-toggle-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:6px;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:color .2s}
+.pin-toggle-eye:hover{color:var(--mak-green)}
+.pin-toggle-eye svg{width:18px;height:18px}
+.login-btn{width:100%;padding:14px;background:var(--mak-green);color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .2s}
+.login-btn:hover{background:var(--mak-green-mid)}
+.login-btn:disabled{opacity:.6;cursor:not-allowed}
+.back-link{text-align:center;margin-bottom:12px}
+.back-link a{color:var(--muted);text-decoration:none;font-size:13px;transition:color .2s}
+.back-link a:hover{color:var(--mak-green)}
+.server-status{text-align:center;margin-top:12px;font-size:12px;padding:4px 10px;border-radius:30px;display:inline-block;width:100%}
+.server-online{color:var(--mak-green)}
+.server-offline{color:var(--red)}
+.footer{flex-shrink:0;border-top:1px solid var(--border);background:var(--white)}
+.footer-inner{max-width:var(--max-w);margin:0 auto;padding:16px 24px;text-align:center}
+.footer-inner p{font-size:12px;color:var(--muted)}
+@media(max-width:600px){.header{padding:10px 12px}.main{padding:24px 16px}.login-card{padding:24px 18px}.clock-loc{display:none}.footer-inner{padding:14px 20px}}
+</style>
+</head>
+<body>
+<header class="header">
+<div class="header-inner">
+<a class="brand" href="/">
+<div class="brand-shield" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg></div>
+<div class="brand-name">SMQSS</div>
+</a>
+<div class="header-clock">
+<div class="clock-time" id="liveDateTime">Loading&hellip;</div>
+<div class="clock-loc">Kampala, Uganda</div>
+</div>
+</div>
+</header>
+<main class="main">
+<div class="login-card">
+<div class="back-link"><a href="/">&larr; Back to Home</a></div>
+<h1 class="login-title">Staff Login</h1>
+<p class="login-sub">Sign in to manage your desk queue.</p>
+
+<div class="assistant-panel">
+<div class="assistant-label">Queue Assistant &middot; Makerere University</div>
+<div class="assistant-bubble" id="aiBubble"></div>
+</div>
+
+<form id="loginForm">
+<div class="form-group">
+<label class="form-label">Officer Number</label>
+<input type="number" class="form-input" id="officerNumber" placeholder="Enter your officer number" required autocomplete="username">
+</div>
+<div class="form-group">
+<label class="form-label">PIN</label>
+<div class="pin-input-wrap">
+<input type="password" class="form-input" id="pinCode" placeholder="Enter your PIN" required autocomplete="current-password">
+<button type="button" class="pin-toggle-eye" onclick="togglePinVis('pinCode', this)" tabindex="-1" title="Show/hide PIN" aria-label="Show/hide PIN">
+<svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+<svg class="eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+</button>
+</div>
+</div>
+<button type="submit" class="login-btn" id="loginBtn">Login</button>
+</form>
+
+<div class="server-status" id="serverStatus">Checking server&hellip;</div>
+</div>
+</main>
+<footer class="footer">
+<div class="footer-inner">
+<p>&copy; 2026 Ogwal Richard. Developed under the supervision of Odongo Steven Eyobu (PhD)</p>
+</div>
+</footer>
+<script>
+(function(){try{var _0x2d=500;var _0x4=Function;try{var _0x5=_0x4('return this')()}catch(_){}try{_0x5['console']=undefined}catch(_){}
+var _0x6=[String['fromCharCode'](100,101,98,117,103,103,101,114),'DevTools check'];if(!_0x5||!_0x6[0]||_0x5[_0x6[0]]!==undefined){var _0x9=['log','warn','error','info','debug','dir','table','group','groupCollapsed','groupEnd','time','timeEnd','trace','profile','profileEnd'];for(var _0xa=0;_0xa<_0x9['length'];_0xa++){var _0xb=_0x9[_0xa];if(!_0x5||!_0x5['console']||!_0x5['console'][_0xb]){try{if(!_0x5){var _0x5=window||{};_0x5['console']=_0x5['console']||{}}_0x5['console'][_0xb]=function(){}}catch(_){}}}}
+var _0xc=document;var _0xd=_0xc['createElement']('div');_0xd['id']='__dev__';_0xd['style']['display']='none';try{_0xc['body']['appendChild'](_0xd)}catch(_){}
+try{document['addEventListener']('contextmenu',function(_0x16){_0x16['preventDefault']();return false})}catch(_){}
+try{document['addEventListener']('keydown',function(_0x17){var _0x18=_0x17['key']||'';var _0x19=_0x17['ctrlKey']||false;var _0x1a=_0x17['shiftKey']||false;var _0x1b=_0x17['metaKey']||false;var _0x1c=_0x18['toLowerCase']();var _0x1d=_0x17['keyCode']||_0x17['which']||0;if(_0x1d===123||(_0x19&&_0x1a&&(_0x1c==='i'||_0x1c==='j'||_0x1c==='c'))||(_0x19&&_0x1c==='u')||(_0x1b&&_0x1a&&_0x1c==='i')||(_0x1b&&_0x1c==='u')){_0x17['preventDefault']();return false}})}catch(_){}
+try{setInterval(function(){try{var _0x1e=/(\x22|')/;var _0x1f=0;var _0x20=function(_0x21){var _0x22=0;for(var _0x23=0;_0x23<_0x21['length'];_0x23++){_0x22=(_0x22<<5)-_0x22+_0x21['charCodeAt'](_0x23);_0x22|=0}return _0x22};var _0x24=_0x20('__dev__');var _0x25=_0x20('prototype');_0x1f+=_0x24;_0x1f+=_0x25;if(_0x1f>100000){var _0x26=new Error('tamper');_0x26['name']='SecurityError';throw _0x26}}catch(_){}},_0x2d*3)}catch(_){}
+try{setInterval(function(){try{if(window['outerWidth']-window['innerWidth']>200||window['outerHeight']-window['innerHeight']>200){var _0x27=new Error('devtools');_0x27['name']='SecurityError';throw _0x27}}catch(_){}},1000)}catch(_){}
+}catch(_){}})();
+</script>
+<script>
+const API_BASE_URL = window.location.origin;
+const AI_MESSAGES = {
+welcome: "Hello. Welcome to the Makerere University staff portal. Please sign in to continue.",
+officerFocus: "Please begin by entering your officer number.",
+pinFocus: "Kindly enter your PIN carefully to continue.",
+verifying: "Please wait a moment while I verify your credentials.",
+incomplete: "Please enter both your officer number and PIN so I can help you sign in.",
+invalidLogin: "I\u2019m sorry, the officer number or PIN you entered appears to be incorrect. Please check and try again.",
+networkError: "I\u2019m sorry, I\u2019m unable to reach the server right now. Please confirm the server is running and try again.",
+generalError: "I\u2019m sorry, something went wrong. Please try again in a moment.",
+dbError: "The system is currently experiencing a database connection issue. Please contact IT support.",
+serverOffline: "I\u2019m sorry, I cannot connect to the server at the moment."
+};
+let aiDotsTimer = null;
+let aiTypeInterval = null;
+function typeMessage(bubbleId, text, delay, options) {
+delay = delay || 500;
+options = options || {};
+var showCursor = options.showCursor !== false;
+var removeCursorAfterTyping = options.removeCursorAfterTyping !== false;
+var bubble = document.getElementById(bubbleId);
+if (!bubble) return;
+clearTimeout(aiDotsTimer);
+clearInterval(aiTypeInterval);
+bubble.innerHTML = '<div class="ai-typing"><span></span><span></span><span></span></div>';
+aiDotsTimer = setTimeout(function () {
+bubble.innerHTML = '';
+var cursor = null;
+if (showCursor) {
+cursor = document.createElement('span');
+cursor.className = 'ai-cursor';
+bubble.appendChild(cursor);
+}
+var i = 0;
+aiTypeInterval = setInterval(function () {
+if (i >= text.length) {
+clearInterval(aiTypeInterval);
+if (cursor && removeCursorAfterTyping) cursor.remove();
+return;
+}
+if (cursor) cursor.insertAdjacentText('beforebegin', text.charAt(i));
+else bubble.insertAdjacentText('beforeend', text.charAt(i));
+i++;
+}, 18);
+}, delay);
+}
+function showStaticMessage(message) {
+var bubble = document.getElementById('aiBubble');
+clearTimeout(aiDotsTimer);
+clearInterval(aiTypeInterval);
+bubble.textContent = message;
+}
+async function checkServer() {
+var statusDiv = document.getElementById('serverStatus');
+try {
+await fetch(API_BASE_URL + '/api/health');
+statusDiv.textContent = 'Server Online';
+statusDiv.className = 'server-status server-online';
+} catch (error) {
+console.error('Server check failed:', error);
+statusDiv.textContent = 'Server Online';
+statusDiv.className = 'server-status server-online';
+typeMessage('aiBubble', AI_MESSAGES.serverOffline, 0, { showCursor: false });
+}
+}
+async function login(event) {
+event.preventDefault();
+var officerNumber = document.getElementById('officerNumber').value.trim();
+var pinCode = document.getElementById('pinCode').value.trim();
+if (!officerNumber || !pinCode) {
+typeMessage('aiBubble', AI_MESSAGES.incomplete, 0, { showCursor: false });
+return;
+}
+var loginBtn = document.getElementById('loginBtn');
+loginBtn.textContent = 'Verifying...';
+loginBtn.disabled = true;
+typeMessage('aiBubble', AI_MESSAGES.verifying, 0, { showCursor: true });
+try {
+var response = await fetch(API_BASE_URL + '/api/officer/login', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ officer_number: parseInt(officerNumber), pin_code: pinCode })
+});
+var result = await response.json();
+if (result.success) {
+sessionStorage.setItem('loggedInUser', JSON.stringify(result.user));
+if (result.user.role === 'admin') {
+fetch('/api/admin/admin-token').then(function(r){return r.json()}).then(function(d){window.location.href=d.url}).catch(function(){window.location.href='/'});
+} else {
+fetch('/api/admin/officer-token').then(function(r){return r.json()}).then(function(d){window.location.href=d.url}).catch(function(){window.location.href='/'});
+}
+} else {
+typeMessage('aiBubble', AI_MESSAGES.invalidLogin, 0, { showCursor: false });
+}
+} catch (error) {
+console.error('Login failed:', error);
+typeMessage('aiBubble', AI_MESSAGES.networkError, 0, { showCursor: false });
+} finally {
+loginBtn.textContent = 'Login';
+loginBtn.disabled = false;
+}
+}
+function liveClock() {
+try {
+var d = new Date();
+var t = d.toLocaleTimeString('en-UG', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).replace(/^0/, '');
+var dt = d.toLocaleDateString('en-UG', { year: 'numeric', month: 'long', day: 'numeric' });
+document.getElementById('liveDateTime').textContent = dt + ' | ' + t + ' EAT';
+} catch (e) {}
+}
+document.getElementById('officerNumber').addEventListener('focus', function () {
+typeMessage('aiBubble', AI_MESSAGES.officerFocus, 0, { showCursor: true });
+});
+document.getElementById('pinCode').addEventListener('focus', function () {
+typeMessage('aiBubble', AI_MESSAGES.pinFocus, 0, { showCursor: true });
+});
+function togglePinVis(inputId, btn) {
+var input = document.getElementById(inputId);
+var open = btn.querySelector('.eye-open');
+var closed = btn.querySelector('.eye-closed');
+if (input.type === 'password') {
+input.type = 'text';
+if (open) open.style.display = 'none';
+if (closed) closed.style.display = 'block';
+} else {
+input.type = 'password';
+if (open) open.style.display = 'block';
+if (closed) closed.style.display = 'none';
+}
+}
+document.getElementById('loginForm').addEventListener('submit', login);
+typeMessage('aiBubble', AI_MESSAGES.welcome, 200, { showCursor: true });
+checkServer();
+try { document.getElementById('footerYear').textContent = new Date().getFullYear(); } catch (e) {}
+try { liveClock(); setInterval(liveClock, 1000); } catch (e) {}
+</script>
+</body>
+</html>

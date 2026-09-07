@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rate Your Service — SMQSS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --ink:#0c0e0b;--surface:#f7f6f2;--white:#ffffff;
+  --mak-green:#155c30;--mak-green-mid:#1e7d43;--mak-green-light:#e8f4ed;
+  --mak-gold:#b8890a;--mak-gold-light:#fdf3d8;--mak-gold-bright:#d4aa00;
+  --red:#c0392b;--red-light:#fdf0ef;
+  --border:#e2e0da;--muted:#6b7280;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.08);
+  --shadow-md:0 4px 16px rgba(0,0,0,.10);
+  --shadow-lg:0 12px 40px rgba(0,0,0,.13);
+  --r:10px;--r-lg:16px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink);line-height:1.6;font-size:15px;min-height:100vh;display:flex;flex-direction:column}
+.header{background:var(--white);border-bottom:3px solid var(--mak-gold-bright);padding:16px 32px;box-shadow:var(--shadow-sm)}
+.header-inner{max-width:720px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none}
+.brand-shield{width:40px;height:40px;background:linear-gradient(145deg,var(--mak-gold-bright),var(--mak-gold));border-radius:50%;display:flex;align-items:center;justify-content:center}
+.brand-shield svg{width:20px;height:20px;fill:var(--mak-green)}
+.brand-name{font-family:'DM Serif Display',serif;font-size:17px;color:var(--mak-green);line-height:1.2}
+.brand-name span{color:var(--mak-gold)}
+.main{flex:1;max-width:720px;margin:0 auto;padding:48px 32px 72px;width:100%}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:40px 36px;box-shadow:var(--shadow-sm)}
+.step-content{display:none}
+.step-content.active{display:block;animation:fadeUp 0.35s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.error-bar{display:none;background:#fef2f2;border:1px solid #fecaca;color:var(--red);padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:11.5px;font-weight:600;color:var(--ink);margin-bottom:6px}
+.field input,.field textarea{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--surface);transition:border-color .2s,box-shadow .2s}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--mak-green);box-shadow:0 0 0 3px rgba(21,92,48,.12);background:#fff}
+.field input.valid{border-color:var(--mak-green);box-shadow:0 0 0 3px rgba(21,92,48,.12)}
+.field input.invalid{border-color:#dc3545;box-shadow:0 0 0 3px rgba(220,53,69,.08)}
+.num-hint{font-size:11px;color:var(--muted);margin-top:4px;display:none}
+.num-hint.show{display:block}
+.num-hint.error{color:#dc3545}
+.field textarea{resize:vertical;min-height:70px;font-size:13.5px}
+.btn-row{text-align:center;margin-top:16px;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 24px;background:linear-gradient(135deg,var(--mak-green-mid),var(--mak-green));color:#fff;border:none;border-radius:40px;font-weight:700;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .2s,transform .15s;box-shadow:0 4px 14px rgba(21,92,48,.18)}
+.btn:hover{opacity:.9;transform:translateY(-1px)}
+.btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-back{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:10px 18px;background:white;color:var(--muted);border:1.5px solid var(--border);border-radius:40px;font-weight:600;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;text-decoration:none}
+.btn-back:hover{background:#f5f5f5;border-color:#ccc;color:var(--ink)}
+.token-info{background:var(--mak-green-light);border:1px solid #c3e6cb;border-radius:12px;padding:18px 20px;margin-bottom:24px}
+.token-info-row{display:flex;justify-content:space-between;font-size:13.5px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.06)}
+.token-info-row:last-child{border-bottom:none}
+.token-info-row .lbl{color:var(--muted)}
+.token-info-row .val{font-weight:600;color:var(--ink)}
+.chat-bubble{background:#e8f5e9;border:1px solid #c8e6c9;border-radius:14px 14px 14px 4px;padding:16px 20px;font-size:15px;line-height:1.7;color:var(--ink);margin-bottom:20px;position:relative}
+.chat-bubble strong{color:#2e7d32}
+.chat-bubble.typing::after{content:'|';animation:blink 0.8s step-end infinite;color:#2e7d32;font-weight:700;margin-left:2px}
+@keyframes blink{50%{opacity:0}}
+.ai-panel{
+  display:flex;align-items:center;gap:10px;
+  background:var(--mak-green-light);
+  border:1.5px solid rgba(21,92,48,0.18);
+  border-left:3px solid var(--mak-green);
+  border-radius:14px;padding:10px 14px;
+  margin-bottom:12px;
+  animation:floatBreath 4s ease-in-out infinite;
+}
+@keyframes floatBreath{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-2px)}
+}
+.ai-avatar{display:flex;align-items:center;gap:8px;margin-bottom:0;flex-shrink:0;}
+.ai-dot{
+  width:10px;height:10px;border-radius:50%;
+  background:var(--mak-green-mid);flex-shrink:0;
+  box-shadow:0 0 0 2px rgba(30,125,67,0.25);
+  animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 0 2px rgba(30,125,67,0.25)}
+  50%{box-shadow:0 0 0 5px rgba(30,125,67,0.08)}
+}
+.ai-name{font-size:11px;font-weight:700;color:var(--mak-green);white-space:nowrap;}
+.ai-name span{font-weight:400;color:var(--muted);margin-left:2px;}
+.ai-bubble{
+  flex:1;min-width:0;
+  background:transparent;border:none;
+  padding:0;font-size:13px;color:var(--mak-green);line-height:1.45;
+  min-height:0;
+}
+.rating-title{text-align:center;font-size:15px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.rating-sub{text-align:center;font-size:12.5px;color:var(--muted);margin-bottom:16px}
+.stars{display:flex;justify-content:center;gap:6px;margin:0 0 18px;flex-direction:row-reverse}
+.star-btn{background:none;border:none;cursor:pointer;font-size:36px;line-height:1;color:#ddd;transition:color .12s,transform .12s;padding:0 3px}
+.star-btn:hover,.star-btn.active{color:var(--mak-gold-bright);transform:scale(1.15)}
+.stars:not(.rated) .star-btn:hover,.stars:not(.rated) .star-btn:hover ~ .star-btn{color:var(--mak-gold-bright)}
+.star-label{text-align:center;font-size:13px;color:var(--muted);margin-bottom:20px;min-height:20px;font-weight:500}
+.confirm-icon{width:64px;height:64px;background:var(--mak-green);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+.confirm-icon svg{width:32px;height:32px;fill:var(--mak-gold-bright)}
+.confirm-title{font-family:'DM Serif Display',serif;font-size:24px;text-align:center;color:var(--mak-green);margin-bottom:6px}
+.confirm-desc{text-align:center;font-size:13.5px;color:var(--muted);margin-bottom:24px;line-height:1.7}
+.spinner{width:32px;height:32px;border:3px solid #eee;border-top-color:var(--mak-green);border-radius:50%;animation:spin .8s linear infinite;margin:20px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{text-align:center;font-size:13px;color:var(--muted);margin-top:8px}
+.rate-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:-10px;margin-bottom:6px;padding:0 8px}
+.already-rated{text-align:center;padding:24px 0}
+.already-rated .check-icon{width:56px;height:56px;background:#e8f5e9;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.already-rated .check-icon svg{width:28px;height:28px;fill:#2e7d32}
+@media(max-width:560px){
+  .main{padding:32px 16px 56px}
+  .card{padding:28px 20px}
+  .star-btn{font-size:30px}
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <a class="brand" href="/">
+      <div class="brand-shield"><svg viewBox="0 0 24 24"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3z"/></svg></div>
+      <div class="brand-name">SMQSS</div>
+    </a>
+    <a id="backLink" class="btn-back" href="/student-token.html" style="font-size:12px;font-weight:600;color:var(--muted);text-decoration:none;text-transform:uppercase;letter-spacing:.5px">&larr; Back</a>
+  </div>
+</header>
+
+<main class="main">
+  <div class="card">
+
+    <div class="step-content active" id="step0">
+      <svg viewBox="0 0 24 24" style="width:48px;height:48px;fill:var(--mak-gold-bright);display:block;margin:0 auto 12px"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+      <h2 style="font-family:'DM Serif Display',serif;font-size:22px;text-align:center;color:var(--mak-green);margin-bottom:4px">Rate Your Service</h2>
+      <p style="text-align:center;font-size:12.5px;color:var(--muted);margin-bottom:28px">Enter the token number from your receipt to share your experience</p>
+      <div class="error-bar" id="errorBar"></div>
+      <div class="field">
+        <label for="tokenInput">Your Token Number</label>
+        <input type="text" id="tokenInput" placeholder="e.g. AR15 or REC05" autocomplete="off" style="text-transform:uppercase;letter-spacing:1.5px;font-weight:600;font-family:'JetBrains Mono',monospace">
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="lookupBtn" onclick="lookupToken()">Look Up My Token →</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin:18px 0 14px">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <span style="font-size:11px;color:var(--muted);font-weight:500;letter-spacing:1px;text-transform:uppercase">or</span>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="openGeneralComplaint()" style="background:var(--white);color:var(--mak-green);border:2px solid var(--mak-green);box-shadow:none;font-weight:600">Submit a Request</button>
+      </div>
+    </div>
+
+    <div class="step-content" id="step1">
+      <div class="token-info" id="tokenInfo"></div>
+      <div id="ratingSection"></div>
+      <div class="btn-row">
+        <a class="btn-back" href="/student-token.html">← Back</a>
+        <button class="btn" id="submitBtn" onclick="submitRating()" disabled>Submit Your Ratings</button>
+      </div>
+    </div>
+
+    <div class="step-content" id="step2">
+      <div class="confirm-icon"><svg viewBox="0 0 24 24"><polyline points="2,12 8,18 22,4" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="confirm-title">Thank You!</div>
+      <p class="confirm-desc" id="confirmText">Your feedback has been recorded. It helps us improve our service delivery for everyone at Makerere University.</p>
+      <div class="btn-row" style="margin-top:20px;">
+        <a class="btn-back" href="/student-token.html">← Back to Kiosk</a>
+      </div>
+    </div>
+
+    <div class="step-content" id="step3">
+      <div id="gcErrorBar" class="error-bar"></div>
+      <div class="ai-panel">
+        <div class="ai-avatar">
+          <div class="ai-dot"></div>
+          <div>
+            <div class="ai-name">Queue Assistant <span>Makerere University</span></div>
+          </div>
+        </div>
+        <div class="ai-bubble" id="gcBubble">We value your feedback. Please share your concern and we'll look into it.</div>
+      </div>
+      <div class="field">
+        <label for="gcCategory">Category</label>
+        <select id="gcCategory" onchange="onCategoryChange()" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--surface)">
+          <option value="">— Select —</option>
+          <option value="Student">Student</option>
+          <option value="Staff">Staff</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="field" id="gcFieldName" style="display:none">
+        <label for="gcName">Full Name</label>
+        <input type="text" id="gcName" placeholder="Your full name">
+      </div>
+      <div class="field" id="gcFieldStudentNo" style="display:none">
+        <label for="gcStudentNo">Student Number</label>
+        <input type="text" id="gcStudentNo" placeholder="e.g. 2300716574" maxlength="10" inputmode="numeric" pattern="[0-9]*" oninput="validateStudentNumber(this)">
+        <div class="num-hint" id="gcNumHint"></div>
+      </div>
+      <div class="field" id="gcFieldEmpId" style="display:none">
+        <label for="gcEmpId">Employee ID</label>
+        <input type="text" id="gcEmpId" placeholder="e.g. MU/EMP/01234">
+      </div>
+      <div class="field" id="gcFieldDept" style="display:none">
+        <label for="gcDept">Department</label>
+        <input type="text" id="gcDept" placeholder="Your department">
+      </div>
+      <div class="field" id="gcFieldContact" style="display:none">
+        <label for="gcContact">Contact</label>
+        <input type="text" id="gcContact" placeholder="Email or phone number">
+      </div>
+      <div class="field">
+        <label for="gcEmail">Email Address *</label>
+        <input type="email" id="gcEmail" placeholder="e.g. you@example.com">
+      </div>
+      <div class="field">
+        <label for="gcText">Your Request</label>
+        <textarea id="gcText" rows="4" placeholder="Describe your request in detail..."></textarea>
+      </div>
+      <div class="btn-row" style="display:flex;gap:10px;justify-content:center">
+        <button class="btn-back" onclick="goToStep('step0', true)">← Back</button>
+        <button class="btn" onclick="submitGeneralComplaint()">Submit Request</button>
+      </div>
+    </div>
+
+    <div class="step-content" id="step4">
+      <div class="confirm-icon"><svg viewBox="0 0 24 24"><polyline points="2,12 8,18 22,4" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="confirm-title">Request Received</div>
+      <p class="confirm-desc">Your request has been submitted. Our team will review it and follow up. Thank you for helping us improve.</p>
+      <div class="btn-row">
+        <button class="btn-back" onclick="window.location.href='/student-token'">← Back to Home</button>
+      </div>
+    </div>
+
+    <div class="step-content" id="stepLoading">
+      <div class="spinner"></div>
+      <div class="loading-text">Please wait...</div>
+    </div>
+
+  </div>
+</main>
+
+<div style="text-align:center;padding:18px 16px;font-size:11.5px;color:var(--muted)">SMQSS &nbsp;&middot;&nbsp; &copy; 2026 Ogwal Richard. Developed under the supervision of Odongo Steven Eyobu (PhD)</div>
+
+<script>
+const isElectron = navigator.userAgent.toLowerCase().includes('electron');
+const urlParams = new URLSearchParams(window.location.search);
+const fromKiosk = urlParams.get('from');
+const KIOSK_URL = fromKiosk === 'kiosk-B' ? '/student-kiosk-B.html' : '/student-token.html';
+if (!isElectron) {
+  document.querySelectorAll('.btn-back').forEach(function(el) {
+    el.style.display = 'none';
+  });
+}
+
+const backLink = document.getElementById('backLink');
+if (backLink) {
+  backLink.href = KIOSK_URL;
+}
+document.querySelectorAll('.btn-back').forEach(function(el) {
+  if (el.id !== 'backLink') el.href = KIOSK_URL;
+});
+const API_BASE = window.location.origin;
+let currentToken = null;
+let selectedRating = 0;
+let isComplaintMode = false;
+
+
+document.getElementById('tokenInput').addEventListener('keydown', function(e){
+  if(e.key === 'Enter') lookupToken();
+});
+
+
+
+async function lookupToken(){
+  const token = document.getElementById('tokenInput').value.trim().toUpperCase();
+  if(!token){ showError('Please enter your token number'); return; }
+
+  showStep('stepLoading');
+  clearError();
+
+  try{
+    const res = await fetch(API_BASE+'/api/student/token-info?token_number='+encodeURIComponent(token));
+    const data = await res.json();
+    if(!data.success){
+      showStep('step0');
+      showError(data.message || 'Token not found');
+      return;
+    }
+
+    const t = data.token;
+    currentToken = token;
+
+    function statusMessage(name, office, officeCode, service, status) {
+      var msg = 'Hello ' + (name || 'there');
+      switch (status) {
+        case 'waiting':
+          msg += ', you are currently in the queue at ' + office + ' for ' + (service || 'service') + '. Thanks for your patience - feel free to share any feedback while you wait.';
+          break;
+        case 'called':
+          msg += ', you were called to ' + office + ' for ' + (service || 'service') + '. We hope you were assisted. Let us know how it went below.';
+          break;
+        case 'serving':
+          msg += ', you are being served at ' + office + ' for ' + (service || 'service') + '. After your session, please rate your experience below.';
+          break;
+        case 'completed':
+          msg += ', thank you for visiting ' + office + ' for ' + (service || 'service') + '. We hope everything went well. Please rate your visit below - your feedback helps us improve.';
+          break;
+        case 'skipped':
+          msg += ', we noticed you were at ' + office + ' for ' + (service || 'service') + ' but your visit was skipped. We\u2019re sorry about that. Please let us know what happened.';
+          break;
+        default:
+          msg += ', you visited ' + office + ' for ' + (service || 'service') + '. Please share your feedback below.';
+      }
+      return msg;
+    }
+
+    function typeWriter(el, text, speed, callback) {
+      el.innerHTML = '';
+      el.classList.add('typing');
+      var i = 0;
+      function step() {
+        if (i < text.length) {
+          el.innerHTML += text.charAt(i);
+          i++;
+          setTimeout(step, speed);
+        } else {
+          el.classList.remove('typing');
+          if (callback) callback();
+        }
+      }
+      step();
+    }
+
+    if(t.feedback_submitted){
+      showStep('step1');
+      document.getElementById('tokenInfo').innerHTML = '<div class="chat-bubble"></div>';
+      var bubble = document.querySelector('#tokenInfo .chat-bubble');
+      var fullText = 'Hello ' + (t.student_name || 'there') + ', you previously visited ' + t.office_name + ' for ' + (t.service_name || 'service') + '. You\'ve already shared feedback \u2014 thank you!';
+      typeWriter(bubble, fullText, 30, function(){
+        document.getElementById('ratingSection').innerHTML =
+        '<div class="already-rated">'+
+          '<div class="check-icon"><svg viewBox="0 0 24 24"><polyline points="2,12 8,18 22,4" stroke="#2e7d32" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'+
+          '<p style="font-size:15px;font-weight:700;color:var(--mak-green)">Already Rated</p>'+
+          '<p style="font-size:12.5px;color:var(--muted);margin-top:4px">You have already submitted feedback for this token. Thank you!</p>'+
+        '</div>';
+      });
+      document.getElementById('submitBtn').style.display='none';
+      if (isElectron) {
+        setTimeout(function(){ window.location.href = KIOSK_URL; }, 3000);
+      }
+      return;
+    }
+
+    showStep('step1');
+    document.getElementById('tokenInfo').innerHTML = '<div class="chat-bubble"></div>';
+    var bubble = document.querySelector('#tokenInfo .chat-bubble');
+    typeWriter(bubble, statusMessage(t.student_name, t.office_name, t.office_code, t.service_name, t.status), 30, function(){
+      var isCompleted = t.status === 'completed';
+      isComplaintMode = !isCompleted;
+
+    document.getElementById('ratingSection').innerHTML =
+      '<div class="rating-title'+(isCompleted?'':' complaint')+'">'+(isCompleted?'How was your experience?':'Report an Issue')+'</div>'+
+      '<div class="rating-sub">'+(isCompleted?'Tap a star to rate':'Were you not served? Rate and tell us what happened.')+'</div>'+
+      '<div class="rate-labels"><span>Poor</span><span>Excellent</span></div>'+
+      '<div class="stars" id="starContainer">'+
+        '<button class="star-btn" data-val="5" onclick="setRating(5)">&#9733;</button>'+
+        '<button class="star-btn" data-val="4" onclick="setRating(4)">&#9733;</button>'+
+        '<button class="star-btn" data-val="3" onclick="setRating(3)">&#9733;</button>'+
+        '<button class="star-btn" data-val="2" onclick="setRating(2)">&#9733;</button>'+
+        '<button class="star-btn" data-val="1" onclick="setRating(1)">&#9733;</button>'+
+      '</div>'+
+      '<div class="star-label" id="starLabel">Select a rating</div>'+
+      '<div class="field">'+
+        '<label for="feedbackText">'+(isCompleted?'Additional comments (optional)':'Describe your issue *')+'</label>'+
+        '<textarea id="feedbackText" placeholder="Tell us what went well or what went wrong — e.g. quick service, friendly staff, or long wait, skipped..."></textarea>'+
+      '</div>';
+    document.getElementById('submitBtn').textContent = 'Submit Your Ratings';
+    selectedRating = 0;
+    document.getElementById('submitBtn').disabled = true;
+    });
+
+  } catch(err){
+    showStep('step0');
+    showError('Network error. Please check your connection.');
+  }
+}
+
+function setRating(val){
+  selectedRating = val;
+  const btns = document.querySelectorAll('.star-btn');
+  btns.forEach(function(b){
+    b.classList.toggle('active', parseInt(b.dataset.val) <= val);
+  });
+  const labels = ['','Poor','Fair','Good','Very Good','Excellent'];
+  document.getElementById('starLabel').textContent = labels[val] || '';
+  document.getElementById('submitBtn').disabled = false;
+}
+
+async function submitRating(){
+  if(!selectedRating || !currentToken) return;
+
+  const feedbackText = document.getElementById('feedbackText') ? document.getElementById('feedbackText').value.trim() : '';
+
+  var isComplaint = isComplaintMode;
+  if(isComplaint && !feedbackText){
+    showError('Please describe your issue before submitting.');
+    return;
+  }
+
+  document.getElementById('submitBtn').disabled = true;
+  showStep('stepLoading');
+
+  try{
+    const res = await fetch(API_BASE+'/api/student/feedback', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        token_number: currentToken,
+        rating: selectedRating > 0 ? selectedRating : 0,
+        feedback_text: feedbackText || null
+      })
+    });
+    const data = await res.json();
+    if(data.success){
+      var isComplaint = isComplaintMode;
+      document.getElementById('confirmText').textContent = isComplaint
+        ? 'We have received your complaint. Our team will review it and follow up. Thank you for helping us improve.'
+        : 'Your feedback has been recorded. It helps us improve our service delivery for everyone at Makerere University.';
+      showStep('step2');
+      if (isElectron) {
+        setTimeout(function(){ window.location.href = KIOSK_URL; }, 3000);
+      }
+    } else {
+      showStep('step1');
+      showError(data.message || 'Failed to submit feedback');
+      document.getElementById('submitBtn').disabled = false;
+    }
+  } catch(err){
+    showStep('step1');
+    showError('Network error. Please try again.');
+    document.getElementById('submitBtn').disabled = false;
+  }
+}
+
+function showStep(id){
+  document.querySelectorAll('.step-content').forEach(function(el){ el.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+}
+
+function showError(msg){
+  const bar = document.getElementById('errorBar');
+  bar.textContent = msg;
+  bar.style.display = 'block';
+  clearTimeout(showError._t);
+  showError._t = setTimeout(function(){ bar.style.display = 'none'; }, 5000);
+}
+
+function clearError(){
+  document.getElementById('errorBar').style.display = 'none';
+}
+
+function escapeHtml(text){
+  if(!text) return '';
+  var d = document.createElement('div');
+  d.textContent = text;
+  return d.innerHTML;
+}
+
+function goToStep(id, reset){
+  document.querySelectorAll('.step-content').forEach(function(el){ el.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+  if(reset){
+    document.getElementById('gcErrorBar').style.display = 'none';
+    document.getElementById('gcCategory').value = '';
+    onCategoryChange();
+    document.getElementById('gcName').value = '';
+    document.getElementById('gcStudentNo').value = '';
+    document.getElementById('gcEmpId').value = '';
+    document.getElementById('gcDept').value = '';
+    document.getElementById('gcContact').value = '';
+    document.getElementById('gcEmail').value = '';
+    document.getElementById('gcText').value = '';
+  }
+}
+
+function openGeneralComplaint(){
+  document.getElementById('gcBubble').innerHTML = "We value your feedback. Please share your concern and we'll look into it.";
+  document.getElementById('gcErrorBar').style.display = 'none';
+  goToStep('step3', true);
+}
+
+function onCategoryChange(){
+  var cat = document.getElementById('gcCategory').value;
+  document.getElementById('gcFieldName').style.display = cat ? 'block' : 'none';
+  document.getElementById('gcFieldStudentNo').style.display = cat === 'Student' ? 'block' : 'none';
+  document.getElementById('gcFieldEmpId').style.display = cat === 'Staff' ? 'block' : 'none';
+  document.getElementById('gcFieldDept').style.display = cat === 'Staff' ? 'block' : 'none';
+  document.getElementById('gcFieldContact').style.display = cat === 'Other' ? 'block' : 'none';
+}
+
+function validateStudentNumber(el){
+  el.value = el.value.replace(/\D/g,'').slice(0,10);
+  var v = el.value, hint = document.getElementById('gcNumHint');
+  el.classList.remove('valid','invalid');
+  hint.classList.remove('show','error');
+  if(v.length===0) return;
+  if(v.length===10){ el.classList.add('valid'); hint.textContent='\u2713 Valid student number'; hint.className='num-hint show'; }
+  else{ el.classList.add('invalid'); hint.textContent='Exactly 10 digits required ('+v.length+'/10)'; hint.className='num-hint show error'; }
+}
+
+function showGcError(msg){
+  var bar = document.getElementById('gcErrorBar');
+  bar.textContent = msg;
+  bar.style.display = 'block';
+}
+
+async function submitGeneralComplaint(){
+  var category = document.getElementById('gcCategory').value;
+  var complaintText = document.getElementById('gcText').value.trim();
+  var email = document.getElementById('gcEmail').value.trim();
+
+  if(!category){ showGcError('Please select a category.'); return; }
+  if(!complaintText){ showGcError('Please describe your request.'); return; }
+  if(!email){ showGcError('Please enter your email address for follow-up.'); return; }
+
+  if(category === 'Student'){
+    var stdNum = document.getElementById('gcStudentNo').value.trim();
+    if(!stdNum){ showGcError('Please enter your student number.'); document.getElementById('gcStudentNo').focus(); return; }
+    if(stdNum.length !== 10){ showGcError('Student number must be exactly 10 digits.'); document.getElementById('gcStudentNo').focus(); return; }
+  }
+
+  var payload = {
+    category: category,
+    full_name: document.getElementById('gcName').value.trim() || null,
+    email: email,
+    complaint_text: complaintText
+  };
+
+  if(category === 'Student'){
+    payload.student_number = document.getElementById('gcStudentNo').value.trim() || null;
+  } else if(category === 'Staff'){
+    payload.employee_id = document.getElementById('gcEmpId').value.trim() || null;
+    payload.department = document.getElementById('gcDept').value.trim() || null;
+  } else if(category === 'Other'){
+    payload.contact = document.getElementById('gcContact').value.trim() || null;
+  }
+
+  document.getElementById('gcErrorBar').style.display = 'none';
+
+  try{
+    var res = await fetch(API_BASE + '/api/student/general-complaint', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    var data = await res.json();
+    if(data.success){
+      goToStep('step4', true);
+    } else {
+      showGcError(data.message || 'Failed to submit request.');
+    }
+  } catch(err){
+    showGcError('Network error. Please try again.');
+  }
+}
+</script>
+</body>
+</html>

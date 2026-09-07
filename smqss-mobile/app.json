@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "SMQSS",
+    "slug": "smqss-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#070d09"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.smqss.display",
+      "adaptiveIcon": {
+        "backgroundColor": "#070d09",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-av",
+      "expo-file-system"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "cec77a7a-6b55-453e-b3c7-6f357852b99e"
+      }
+    }
+  }
+}
