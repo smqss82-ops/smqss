@@ -10,7 +10,7 @@
 **Filing Jurisdiction:** Uganda Registration Services Bureau (URSB) / African Regional Intellectual Property Organization (ARIPO)  
 **Inventor:** Ogwal Richard (Student Number: 2300716574)  
 **Advisor:** Odongo Steven Eyobu (PhD)  
-**Institution:** Makerere University, College of Computing and Information Sciences  
+**Institution:** SMQSS, College of Computing and Information Sciences  
 **Version:** 2.1.0  
 **Date:** August 2026  
 **Prior Art Search:** Conducted August 2026  
@@ -300,7 +300,7 @@ A computer-implemented Smart Queue Management System (SMQSS) for managing servic
 
 ## 9. INVENTOR DECLARATION
 
-I, Ogwal Richard, hereby declare that I am the original inventor of the Smart Queue Management System (SMQSS) described in this document, developed under the supervision of Odongo Steven Eyobu (PhD) at Makerere University. All claims herein are based on original research and development conducted between January 2025 and August 2026.
+I, Ogwal Richard, hereby declare that I am the original inventor of the Smart Queue Management System (SMQSS) described in this document, developed under the supervision of Odongo Steven Eyobu (PhD) at SMQSS. All claims herein are based on original research and development conducted between January 2025 and August 2026.
 
 **Inventor:** Ogwal Richard  
 **Student Number:** 2300716574  

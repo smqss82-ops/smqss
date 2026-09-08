@@ -46,7 +46,7 @@ The system of claim 1, further comprising a multi-platform architecture supporti
 
 ## Inventor Declaration
 
-I, Ogwal Richard, hereby declare that I am the original inventor of the Smart Queue Management System (SMQSS) described in this document, developed under the supervision of Odongo Steven Eyobu (PhD) at Makerere University. All claims herein are based on original research and development conducted between January 2025 and August 2026.
+I, Ogwal Richard, hereby declare that I am the original inventor of the Smart Queue Management System (SMQSS) described in this document, developed under the supervision of Odongo Steven Eyobu (PhD) at SMQSS. All claims herein are based on original research and development conducted between January 2025 and August 2026.
 
 **Inventor:** Ogwal Richard  
 **Student Number:** 2300716574  

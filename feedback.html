@@ -164,7 +164,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink)
     <div class="step-content" id="step2">
       <div class="confirm-icon"><svg viewBox="0 0 24 24"><polyline points="2,12 8,18 22,4" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <div class="confirm-title">Thank You!</div>
-      <p class="confirm-desc" id="confirmText">Your feedback has been recorded. It helps us improve our service delivery for everyone at Makerere University.</p>
+      <p class="confirm-desc" id="confirmText">Your feedback has been recorded. It helps us improve our service delivery for everyone at SMQSS.</p>
       <div class="btn-row" style="margin-top:20px;">
         <a class="btn-back" href="/student-token.html">← Back to Kiosk</a>
       </div>
@@ -176,7 +176,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink)
         <div class="ai-avatar">
           <div class="ai-dot"></div>
           <div>
-            <div class="ai-name">Queue Assistant <span>Makerere University</span></div>
+            <div class="ai-name">Queue Assistant <span>SMQSS</span></div>
           </div>
         </div>
         <div class="ai-bubble" id="gcBubble">We value your feedback. Please share your concern and we'll look into it.</div>
@@ -428,7 +428,7 @@ async function submitRating(){
       var isComplaint = isComplaintMode;
       document.getElementById('confirmText').textContent = isComplaint
         ? 'We have received your complaint. Our team will review it and follow up. Thank you for helping us improve.'
-        : 'Your feedback has been recorded. It helps us improve our service delivery for everyone at Makerere University.';
+        : 'Your feedback has been recorded. It helps us improve our service delivery for everyone at SMQSS.';
       showStep('step2');
       if (isElectron) {
         setTimeout(function(){ window.location.href = KIOSK_URL; }, 3000);

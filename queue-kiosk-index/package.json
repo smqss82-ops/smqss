@@ -9,7 +9,7 @@
     "pack": "electron-builder --win --x64 --dir"
   },
   "build": {
-    "appId": "com.makerere.queue-kiosk-index",
+    "appId": "com.smqss.queue-kiosk-index",
     "productName": "SMQSS Staff Portal",
     "directories": {
       "output": "dist"

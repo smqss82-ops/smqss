@@ -27,7 +27,7 @@ export default function Header() {
         </View>
       </View>
       <View style={styles.center}>
-        <Text style={styles.hcTitle}>Makerere University</Text>
+        <Text style={styles.hcTitle}>SMQSS</Text>
         <Text style={styles.hcSub}>Student Service Board</Text>
       </View>
       <View style={styles.right}>

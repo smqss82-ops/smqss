@@ -112,7 +112,7 @@ def build_pdf(output_path="SMQSS_Quotation.pdf"):
     from_lines = [
         "Ogwal Richard",
         "SMQSS (Smart Queue Management System)",
-        "Makerere University, Kampala",
+        "SMQSS, Kampala",
         "Uganda",
         "ogwalrichard.kesug.com",
     ]
@@ -171,7 +171,7 @@ def build_pdf(output_path="SMQSS_Quotation.pdf"):
     pdf.cell(0, 5, "SMQSS is currently deployed and in active use at:")
     pdf.ln(5)
 
-    for item in ["Makerere University", "Ministry of Internal Affairs",
+    for item in ["SMQSS", "Ministry of Internal Affairs",
                   "Various startup businesses across Uganda"]:
         pdf.set_x(16)
         pdf.set_font("Helvetica", "B", 9)

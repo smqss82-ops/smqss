@@ -9,7 +9,7 @@
     "pack": "electron-builder --win --x64 --dir"
   },
   "build": {
-    "appId": "com.makerere.queue-kiosk-student",
+    "appId": "com.smqss.queue-kiosk-student",
     "productName": "SMQSS Student Kiosk",
     "directories": {
       "output": "dist"

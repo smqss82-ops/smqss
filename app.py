@@ -2071,7 +2071,7 @@ def polish_reply_with_groq(complaint_text, current_text, tone):
             "be helpful and courteous, and end with a warm closing."
         )
     prompt = (
-        "You are a customer-support agent for Makerere University Queue Management System (SMQSS).\n"
+        "You are a customer-support agent for SMQSS Queue Management System (SMQSS).\n"
         f"TONE: {tone_desc}.\n"
         "Rules: Do not use markdown or bullet symbols. Keep it concise (under 200 words). "
         "Do not invent facts, promises, or resolutions not implied by the complaint. "
@@ -2100,7 +2100,7 @@ def analyze_attendance_with_groq(attendance_data, week_start, week_end):
     formatted_data = "\n".join(lines)
 
     prompt = (
-        "You are an attendance analyst for Makerere University Queue Management System (SMQSS).\n"
+        "You are an attendance analyst for SMQSS Queue Management System (SMQSS).\n"
         "Analyze the following weekly attendance data and provide:\n"
         "1. Overall status summary (1-2 sentences)\n"
         "2. Per-officer observations (name, status, any concerns)\n"
@@ -2151,7 +2151,7 @@ def analyze_feedback_with_groq(feedback_data, officer_stats, complaint_data):
     gc_text = "\n".join(gc_lines) if gc_lines else "No general complaints"
 
     prompt = (
-        "You are a feedback analyst for Makerere University Queue Management System (SMQSS).\n"
+        "You are a feedback analyst for SMQSS Queue Management System (SMQSS).\n"
         "Analyze student feedback and correlate it with officer performance.\n"
         "Provide:\n"
         "1. Overall feedback summary (1-2 sentences)\n"
@@ -2185,7 +2185,7 @@ def send_reply_email(complaint, reply_message):
 
         body = f"""Dear {complaint.get('full_name') or 'Valued Customer'},
 
-Thank you for reaching out to us regarding your concern at Makerere University.
+Thank you for reaching out to us regarding your concern at SMQSS.
 
 --- Original Complaint ---
 {complaint.get('complaint_text', '')}
@@ -2196,7 +2196,7 @@ Thank you for reaching out to us regarding your concern at Makerere University.
 If you have any further concerns, please don't hesitate to reach out.
 
 Best regards,
-Makerere University Queue Management System (SMQSS)
+SMQSS Queue Management System (SMQSS)
 """
 
         html_body = f"""<div style="margin:0;padding:0;background-color:#f0f2f5;font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
@@ -2213,7 +2213,7 @@ Makerere University Queue Management System (SMQSS)
           <tr>
             <td style="padding:28px 32px;">
               <p style="margin:0 0 14px;font-size:15px;color:#0a0f18;line-height:1.6;">Dear <strong>{name}</strong>,</p>
-              <p style="margin:0 0 14px;font-size:14px;color:#2a3a4e;line-height:1.6;">Thank you for reaching out to us regarding your concern at <strong>Makerere University</strong>. Our team has reviewed your complaint and provided a response below.</p>
+              <p style="margin:0 0 14px;font-size:14px;color:#2a3a4e;line-height:1.6;">Thank you for reaching out to us regarding your concern at <strong>SMQSS</strong>. Our team has reviewed your complaint and provided a response below.</p>
 
               <div style="background:#f5f7fa;border:1px solid #e4e8ee;border-radius:8px;padding:14px 16px;margin:0 0 16px;">
                 <div style="font-size:10px;font-weight:700;color:#4a5a6e;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Original Complaint</div>
@@ -2228,7 +2228,7 @@ Makerere University Queue Management System (SMQSS)
               <p style="margin:0 0 18px;font-size:14px;color:#2a3a4e;line-height:1.6;">If you have any further concerns, please don't hesitate to reach out to us.</p>
 
               <p style="margin:0;font-size:14px;color:#0a0f18;line-height:1.6;">Best regards,</p>
-              <p style="margin:2px 0 0;font-size:14px;color:#0a0f18;line-height:1.6;"><strong>Makerere University</strong><br>Queue Management System (SMQSS)</p>
+              <p style="margin:2px 0 0;font-size:14px;color:#0a0f18;line-height:1.6;"><strong>SMQSS</strong><br>Queue Management System (SMQSS)</p>
             </td>
           </tr>
           <tr>
@@ -4893,7 +4893,7 @@ if __name__ == '__main__':
     t.start()
 
     print("=" * 55)
-    print("SMQSS — Smart Queue Management System API (Piloted at Makerere University)")
+    print("SMQSS — Smart Queue Management System API (Piloted at SMQSS)")
     print("=" * 55)
     print(f"Server starting on port {PORT}")
     print()

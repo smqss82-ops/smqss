@@ -9,7 +9,7 @@
     "pack": "electron-builder --win --x64 --dir"
   },
   "build": {
-    "appId": "com.makerere.queue-kiosk",
+    "appId": "com.smqss.queue-kiosk",
     "productName": "SMQSS Kiosk Display",
     "directories": {
       "output": "dist"

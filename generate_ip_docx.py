@@ -53,7 +53,7 @@ run.font.size = Pt(12)
 
 university = doc.add_paragraph()
 university.alignment = WD_ALIGN_PARAGRAPH.CENTER
-run = university.add_run('Makerere University')
+run = university.add_run('SMQSS')
 run.font.size = Pt(12)
 
 date_p = doc.add_paragraph()
@@ -207,7 +207,7 @@ doc.add_paragraph('A smart queue management system comprising an AI-powered Flas
 
 # Section 9: Declaration
 doc.add_heading('9. Inventor Declaration', level=1)
-doc.add_paragraph('I, Ogwal Richard, hereby declare that I am the original inventor of the Smart Queue Management System (SMQSS) described in this document, developed under the supervision of Odongo Steven Eyobu (PhD) at Makerere University. All claims herein are based on original research and development conducted between January 2025 and August 2026.')
+doc.add_paragraph('I, Ogwal Richard, hereby declare that I am the original inventor of the Smart Queue Management System (SMQSS) described in this document, developed under the supervision of Odongo Steven Eyobu (PhD) at SMQSS. All claims herein are based on original research and development conducted between January 2025 and August 2026.')
 
 doc.add_paragraph()
 doc.add_paragraph('Inventor: Ogwal Richard')
