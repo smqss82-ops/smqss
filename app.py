@@ -303,37 +303,22 @@ _ALL_TABLES = [
 
 _SEED_OFFICES_SQL = """
     INSERT IGNORE INTO offices (id, office_code, office_name, description, location, display_order)
-    VALUES (1, 'AR', 'Academic Registrar Office', 'Handles registry services', 'Main Building Floor 3', 1),
-           (2, 'REC', 'Records Office', 'Handles student records', 'Main Building Floor 1', 2),
-           (3, 'GC', 'Guidance and Counselling', 'Student counselling services', 'COCIS Block A', 3)"""
+    VALUES (1, 'AR', 'Academic Registrar Office', 'Handles registry services', 'Main Building Floor 3', 1)"""
 _SEED_SERVICES_SQL = """
     INSERT IGNORE INTO services (service_code, service_name, office_id, description, estimated_time_minutes, display_order)
     VALUES ('REG', 'Registry Services', 1, 'General registry inquiries', 5, 1),
            ('TST', 'Testimonial Letters', 1, 'Request testimonials', 10, 2),
-           ('GEN', 'General Inquiry', 1, 'Other academic matters', 5, 3),
-           ('ADM', 'Admission Letters', 2, 'Admission support', 5, 1),
-           ('TRN', 'Transcript Issuance', 2, 'Official transcripts', 20, 2),
-           ('YRO', 'Year One Registration', 2, 'First year registration', 10, 3),
-           ('COU', 'Counselling Session', 3, 'Student counselling', 30, 1)"""
+           ('GEN', 'General Inquiry', 1, 'Other academic matters', 5, 3)"""
 _SEED_OFFICERS_SQL = """
     INSERT IGNORE INTO officers (officer_number, officer_name, email, phone, pin_code, office_id, is_admin, status)
-    VALUES (101, 'Dr. Sarah Mukasa', 'sarah@university.ac.ug', '0700000101', '1234', 1, 0, 'available'),
-           (102, 'Mr. James Okello', 'james@university.ac.ug', '0700000102', '1234', 1, 0, 'available'),
-           (201, 'Ms. Grace Nambi', 'grace@university.ac.ug', '0700000201', '1234', 2, 0, 'available'),
-           (202, 'Mr. Peter Ssempijja', 'peter@university.ac.ug', '0700000202', '1234', 2, 0, 'available'),
-           (301, 'Ms. Alice Nakato', 'alice@university.ac.ug', '0700000301', '1234', 3, 0, 'available'),
-           (999, 'System Administrator', 'admin@university.ac.ug', '0700000999', 'admin1', 1, 1, 'available')"""
+    VALUES (999, 'System Administrator', 'admin@university.ac.ug', '0700000999', 'admin1', 1, 1, 'available')"""
 _SEED_COUNTERS_SQL = """
     INSERT IGNORE INTO queue_counters (office_id, last_number)
     SELECT t.office_id, MAX(CAST(SUBSTRING(t.token_number, LENGTH(o.office_code) + 1) AS UNSIGNED))
     FROM university_tokens t JOIN offices o ON t.office_id = o.id
     GROUP BY t.office_id
     UNION ALL
-    SELECT 1, 0 WHERE NOT EXISTS (SELECT 1 FROM university_tokens WHERE office_id = 1)
-    UNION ALL
-    SELECT 2, 0 WHERE NOT EXISTS (SELECT 1 FROM university_tokens WHERE office_id = 2)
-    UNION ALL
-    SELECT 3, 0 WHERE NOT EXISTS (SELECT 1 FROM university_tokens WHERE office_id = 3)"""
+    SELECT 1, 0 WHERE NOT EXISTS (SELECT 1 FROM university_tokens WHERE office_id = 1)"""
 
 _ALL_INDEXES = [
     ('idx_officers_office', 'officers', 'office_id'),
