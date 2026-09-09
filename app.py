@@ -2488,8 +2488,15 @@ def register_admin():
             cursor.execute("SELECT id FROM offices WHERE office_code = 'ADM'")
             admin_office = cursor.fetchone()
             if not admin_office:
-                return jsonify({'success': False, 'message': 'Admin office not found.'}), 500
-            admin_office_id = admin_office['id']
+                cursor.execute(
+                    "INSERT INTO offices (office_code, office_name, description, location, display_order) "
+                    "VALUES (%s, %s, %s, %s, %s)",
+                    ('ADM', 'System Administration', 'System administration office', 'Main Building', 99)
+                )
+                conn.commit()
+                admin_office_id = cursor.lastrowid
+            else:
+                admin_office_id = admin_office['id']
 
             cursor.execute("SELECT id FROM officers WHERE officer_number = %s", (int(officer_number),))
             if cursor.fetchone():
