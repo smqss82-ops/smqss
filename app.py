@@ -2523,6 +2523,23 @@ def register_admin():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
+@app.route('/api/admin/existing-officers', methods=['GET'])
+def existing_officers():
+    """List all existing officer numbers to avoid conflicts."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute("SELECT officer_number, officer_name, is_admin FROM officers ORDER BY officer_number")
+            officers = cursor.fetchall()
+            return jsonify({'success': True, 'officers': officers})
+        finally:
+            cursor.close()
+            conn.close()
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 
 # ============================================
 # OFFICER QUEUE
