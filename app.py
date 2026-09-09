@@ -606,6 +606,14 @@ def kiosk_setup():
 def download_page():
     return send_from_directory('.', 'download.html')
 
+@app.route('/bus-display')
+def bus_display():
+    return send_from_directory('.', 'bus-display.html')
+
+@app.route('/bus-conductor')
+def bus_conductor():
+    return send_from_directory('.', 'bus-conductor.html')
+
 @app.route('/admin')
 def admin_decoy():
     return redirect('/')
@@ -4991,6 +4999,75 @@ def text_to_speech():
     except Exception as e:
         logger.error(f"TTS error: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+# ============================================
+# BUS STOP ANNOUNCEMENT SYSTEM
+# ============================================
+_bus_current_stop = {'stop_name': None, 'timestamp': None, 'announced': False}
+_bus_stop_history = []
+
+@app.route('/api/bus/stop', methods=['POST'])
+def set_bus_stop():
+    """Conductor submits a stop name to announce."""
+    try:
+        data = request.get_json(force=True)
+        stop_name = data.get('stop_name', '').strip()
+        if not stop_name:
+            return jsonify({'success': False, 'message': 'Stop name is required.'}), 400
+        now = datetime.now().isoformat()
+        _bus_current_stop['stop_name'] = stop_name
+        _bus_current_stop['timestamp'] = now
+        _bus_current_stop['announced'] = False
+        _bus_stop_history.insert(0, {'stop_name': stop_name, 'timestamp': now})
+        if len(_bus_stop_history) > 20:
+            _bus_stop_history.pop()
+        return jsonify({'success': True, 'stop_name': stop_name, 'timestamp': now})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/bus/current-stop', methods=['GET'])
+def get_bus_current_stop():
+    """TV screen polls for the current stop."""
+    try:
+        return jsonify({
+            'success': True,
+            'stop_name': _bus_current_stop['stop_name'],
+            'timestamp': _bus_current_stop['timestamp'],
+            'announced': _bus_current_stop['announced']
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/bus/announce-confirm', methods=['POST'])
+def confirm_bus_announce():
+    """TV screen confirms voice has played."""
+    try:
+        _bus_current_stop['announced'] = True
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/bus/stop-history', methods=['GET'])
+def get_bus_stop_history():
+    """Conductor's phone shows recent stops."""
+    try:
+        return jsonify({'success': True, 'stops': _bus_stop_history})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/bus/reset', methods=['POST'])
+def reset_bus_stops():
+    """Reset all bus stop data."""
+    try:
+        _bus_current_stop['stop_name'] = None
+        _bus_current_stop['timestamp'] = None
+        _bus_current_stop['announced'] = False
+        _bus_stop_history.clear()
+        return jsonify({'success': True, 'message': 'Bus stops reset.'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 
 
 # ============================================

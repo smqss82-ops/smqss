@@ -1,0 +1,1 @@
+window.kiosk = { isElectron: true };

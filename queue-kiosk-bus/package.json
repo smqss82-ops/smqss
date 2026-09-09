@@ -1,0 +1,27 @@
+{
+  "name": "smqss-bus-kiosk",
+  "version": "1.0.0",
+  "description": "SMQSS Bus Stop Display Kiosk",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --config"
+  },
+  "build": {
+    "appId": "com.smqss.bus-kiosk",
+    "productName": "SMQSS Bus Display",
+    "win": {
+      "target": "nsis",
+      "icon": null
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false
+    }
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}

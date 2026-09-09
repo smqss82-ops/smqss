@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bus Conductor — SMQSS</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh;display:flex;flex-direction:column}
+
+.header{background:#fff;border-bottom:3px solid #d4aa00;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.header-brand{display:flex;align-items:center;gap:10px}
+.header-brand svg{width:28px;height:28px;fill:#155c30}
+.header-title{font-size:16px;font-weight:700;color:#155c30}
+.header-title span{color:#d4aa00}
+.header-status{font-size:11px;color:#6b7280}
+
+.main{flex:1;padding:16px;display:flex;flex-direction:column;gap:16px}
+
+.card{background:#fff;border:1px solid #e2e0da;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.card-title{font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+
+.stop-form{display:flex;flex-direction:column;gap:12px}
+.stop-input{width:100%;padding:14px 16px;border:2px solid #e2e0da;border-radius:10px;font-size:18px;font-weight:500;color:#1a1a1a;background:#f7f6f2;outline:none;transition:border-color 0.2s}
+.stop-input:focus{border-color:#155c30;background:#fff}
+.stop-input::placeholder{color:#9ca3af}
+
+.announce-btn{width:100%;padding:16px;background:#155c30;color:#fff;border:none;border-radius:10px;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:background 0.2s}
+.announce-btn:hover{background:#1e7d43}
+.announce-btn:active{transform:scale(0.98)}
+.announce-btn:disabled{opacity:0.5;cursor:not-allowed}
+.announce-btn svg{width:22px;height:22px;fill:currentColor}
+
+.reset-btn{width:100%;padding:12px;background:transparent;color:#c0392b;border:1.5px solid #c0392b;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.2s}
+.reset-btn:hover{background:#c0392b;color:#fff}
+
+.history-list{display:flex;flex-direction:column;gap:8px}
+.history-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:#f7f6f2;border-radius:8px;border:1px solid #e2e0da}
+.history-num{font-size:12px;font-weight:700;color:#d4aa00;background:#fdf3d8;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.history-name{font-size:15px;font-weight:500;color:#1a1a1a;flex:1}
+.history-time{font-size:11px;color:#6b7280;white-space:nowrap}
+.history-item.current{border-color:#155c30;background:#e8f4ed}
+
+.current-display{text-align:center;padding:20px}
+.current-label{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.current-name{font-size:28px;font-weight:700;color:#155c30}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:#155c30;color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:600;opacity:0;transition:all 0.3s;z-index:999;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.error{background:#c0392b}
+
+.empty{text-align:center;padding:30px;color:#6b7280;font-size:14px}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="header-brand">
+    <svg viewBox="0 0 24 24"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg>
+    <div class="header-title">SMQSS <span>Bus</span></div>
+  </div>
+  <div class="header-status" id="status">Connected</div>
+</header>
+
+<main class="main">
+  <div class="card">
+    <div class="card-title">Announce Stop</div>
+    <div class="stop-form">
+      <input type="text" class="stop-input" id="stopInput" placeholder="Enter stop name..." maxlength="100" autocomplete="off">
+      <button class="announce-btn" id="announceBtn" onclick="announceStop()">
+        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+        Announce
+      </button>
+    </div>
+  </div>
+
+  <div class="card" id="currentCard" style="display:none">
+    <div class="current-display">
+      <div class="current-label">Currently Announced</div>
+      <div class="current-name" id="currentName"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Stop History</div>
+    <div class="history-list" id="historyList">
+      <div class="empty">No stops announced yet</div>
+    </div>
+  </div>
+
+  <button class="reset-btn" onclick="resetStops()">Reset All Stops</button>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_BASE = window.location.origin;
+let history = [];
+
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(function() { t.className = 'toast'; }, 2500);
+}
+
+async function announceStop() {
+  const input = document.getElementById('stopInput');
+  const btn = document.getElementById('announceBtn');
+  const name = input.value.trim();
+  if (!name) { showToast('Enter a stop name', true); return; }
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  try {
+    const res = await fetch(API_BASE + '/api/bus/stop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stop_name: name })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Announced: ' + name);
+      input.value = '';
+      fetchHistory();
+    } else {
+      showToast(data.message || 'Failed', true);
+    }
+  } catch (e) {
+    showToast('Network error', true);
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg> Announce';
+}
+
+async function fetchHistory() {
+  try {
+    const res = await fetch(API_BASE + '/api/bus/stop-history');
+    const data = await res.json();
+    if (data.success) {
+      history = data.stops;
+      renderHistory();
+      if (history.length > 0) {
+        document.getElementById('currentCard').style.display = 'block';
+        document.getElementById('currentName').textContent = history[0].stop_name;
+      }
+    }
+  } catch (e) {}
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  if (history.length === 0) {
+    list.innerHTML = '<div class="empty">No stops announced yet</div>';
+    return;
+  }
+  list.innerHTML = history.map(function(s, i) {
+    var t = new Date(s.timestamp);
+    var time = t.toLocaleTimeString('en-UG', { hour: '2-digit', minute: '2-digit', hour12: true });
+    return '<div class="history-item' + (i === 0 ? ' current' : '') + '">' +
+      '<div class="history-num">' + (i + 1) + '</div>' +
+      '<div class="history-name">' + s.stop_name + '</div>' +
+      '<div class="history-time">' + time + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+async function resetStops() {
+  if (!confirm('Reset all stops?')) return;
+  try {
+    await fetch(API_BASE + '/api/bus/reset', { method: 'POST' });
+    showToast('All stops reset');
+    history = [];
+    renderHistory();
+    document.getElementById('currentCard').style.display = 'none';
+  } catch (e) {
+    showToast('Network error', true);
+  }
+}
+
+document.getElementById('stopInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') announceStop();
+});
+
+fetchHistory();
+setInterval(fetchHistory, 3000);
+</script>
+</body>
+</html>
