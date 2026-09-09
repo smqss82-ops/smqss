@@ -2,7 +2,7 @@ const { app, BrowserWindow, screen, powerSaveBlocker, ipcMain, session } = requi
 const path = require('path');
 
 const DISPLAY_URL = process.env.KIOSK_STUDENT_URL
-  || 'https://queue-production-2a11.up.railway.app/student-token.html'
+  || 'https://web-production-6fcc0.up.railway.app/student-token.html'
   // || 'http://localhost:5000/student-token.html';
 const RETRY_INTERVAL = 3000;
 const CRASH_RECOVERY_DELAY = 2000;

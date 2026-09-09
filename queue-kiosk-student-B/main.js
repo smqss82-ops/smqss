@@ -5,7 +5,7 @@ const os = require('os');
 const { execFile } = require('child_process');
 
 const DISPLAY_URL = process.env.KIOSK_STUDENT_B_URL
-  || 'https://queue-production-2a11.up.railway.app/student-kiosk-B.html';
+  || 'https://web-production-6fcc0.up.railway.app/student-kiosk-B.html';
 const RETRY_INTERVAL = 3000;
 const CRASH_RECOVERY_DELAY = 2000;
 const MAX_RETRIES = 30;

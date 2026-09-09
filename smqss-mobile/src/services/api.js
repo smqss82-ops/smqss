@@ -1,4 +1,4 @@
-const BASE_URL = 'https://queue-production-2a11.up.railway.app';
+const BASE_URL = 'https://web-production-6fcc0.up.railway.app';
 
 async function fetchJSON(url, timeout = 10000) {
   const controller = new AbortController();
