@@ -1497,7 +1497,7 @@ def get_offices():
                 COALESCE(NULLIF(TRIM(availability_status), ''), 'available') AS availability_status,
                 unavailability_notice
             FROM offices
-            WHERE {where_sql}
+            WHERE {where_sql} AND office_code != 'ADM'
             ORDER BY display_order
         """, tuple(params))
         offices = cursor.fetchall()
@@ -1520,7 +1520,7 @@ def get_all_offices_with_services():
                 COALESCE(NULLIF(TRIM(availability_status), ''), 'available') AS availability_status,
                 unavailability_notice
             FROM offices
-            WHERE COALESCE(is_active, 1) = 1
+            WHERE COALESCE(is_active, 1) = 1 AND office_code != 'ADM'
               AND LOWER(COALESCE(NULLIF(TRIM(availability_status), ''), 'available')) = 'available'
             ORDER BY display_order
         """)
@@ -2627,7 +2627,7 @@ def get_public_queues():
                 COALESCE(NULLIF(TRIM(availability_status), ''), 'available') AS availability_status,
                 unavailability_notice
             FROM offices
-            WHERE COALESCE(is_active, 1) = 1
+            WHERE COALESCE(is_active, 1) = 1 AND office_code != 'ADM'
             ORDER BY display_order
         """)
         offices = cursor.fetchall()
@@ -2694,7 +2694,7 @@ def get_public_queues_next():
             SELECT id, office_code, office_name,
                    COALESCE(NULLIF(TRIM(availability_status), ''), 'available') AS availability_status
             FROM offices
-            WHERE COALESCE(is_active, 1) = 1
+            WHERE COALESCE(is_active, 1) = 1 AND office_code != 'ADM'
             ORDER BY display_order
         """)
         offices = cursor.fetchall()
