@@ -2465,10 +2465,58 @@ def claim_admin():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
+@app.route('/api/admin/register-admin', methods=['POST'])
+def register_admin():
+    """Register a brand new officer with admin privileges."""
+    try:
+        data = request.get_json(force=True)
+        officer_number = data.get('officer_number')
+        officer_name = data.get('officer_name', '').strip()
+        email = data.get('email', '').strip()
+        phone = data.get('phone', '').strip()
+        pin_code = data.get('pin_code', '').strip()
 
-# ============================================
-# OFFICER QUEUE
-# ============================================
+        if not officer_number or not officer_name or not pin_code:
+            return jsonify({'success': False, 'message': 'Officer number, name, and PIN are required.'}), 400
+
+        if len(pin_code) < 4:
+            return jsonify({'success': False, 'message': 'PIN must be at least 4 characters.'}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute("SELECT id FROM offices WHERE office_code = 'ADM'")
+            admin_office = cursor.fetchone()
+            if not admin_office:
+                return jsonify({'success': False, 'message': 'Admin office not found.'}), 500
+            admin_office_id = admin_office['id']
+
+            cursor.execute("SELECT id FROM officers WHERE officer_number = %s", (int(officer_number),))
+            if cursor.fetchone():
+                return jsonify({'success': False, 'message': 'Officer number already exists.'}), 409
+
+            cursor.execute(
+                "INSERT INTO officers (officer_number, officer_name, email, phone, pin_code, office_id, is_admin, status) "
+                "VALUES (%s, %s, %s, %s, %s, %s, 1, 'available')",
+                (int(officer_number), officer_name, email or None, phone or None, pin_code, admin_office_id)
+            )
+            conn.commit()
+
+            return jsonify({
+                'success': True,
+                'message': f'{officer_name} has been registered as an admin.',
+                'officer_name': officer_name,
+                'officer_number': int(officer_number)
+            })
+        finally:
+            cursor.close()
+            conn.close()
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+
 # ============================================
 # OFFICER QUEUE
 # ============================================
