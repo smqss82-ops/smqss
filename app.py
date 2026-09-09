@@ -302,23 +302,27 @@ _ALL_TABLES = [
 ]
 
 _SEED_OFFICES_SQL = """
-    INSERT IGNORE INTO offices (id, office_code, office_name, description, location, display_order)
-    VALUES (99, 'ADM', 'System Administration', 'System administration office', 'Main Building', 99)"""
+    INSERT INTO offices (id, office_code, office_name, description, location, display_order)
+    VALUES (99, 'ADM', 'System Administration', 'System administration office', 'Main Building', 99)
+    ON DUPLICATE KEY UPDATE id=id"""
 _SEED_SERVICES_SQL = """
-    INSERT IGNORE INTO services (service_code, service_name, office_id, description, estimated_time_minutes, display_order)
+    INSERT INTO services (service_code, service_name, office_id, description, estimated_time_minutes, display_order)
     VALUES ('REG', 'Registry Services', 99, 'General registry inquiries', 5, 1),
            ('TST', 'Testimonial Letters', 99, 'Request testimonials', 10, 2),
-           ('GEN', 'General Inquiry', 99, 'Other academic matters', 5, 3)"""
+           ('GEN', 'General Inquiry', 99, 'Other academic matters', 5, 3)
+    ON DUPLICATE KEY UPDATE service_code=service_code"""
 _SEED_OFFICERS_SQL = """
-    INSERT IGNORE INTO officers (officer_number, officer_name, email, phone, pin_code, office_id, is_admin, status)
-    VALUES (999, 'System Administrator', 'admin@smqss.com', '0700000999', '999', 99, 1, 'available')"""
+    INSERT INTO officers (officer_number, officer_name, email, phone, pin_code, office_id, is_admin, status)
+    VALUES (999, 'System Administrator', 'admin@smqss.com', '0700000999', '999', 99, 1, 'available')
+    ON DUPLICATE KEY UPDATE pin_code=VALUES(pin_code)"""
 _SEED_COUNTERS_SQL = """
-    INSERT IGNORE INTO queue_counters (office_id, last_number)
+    INSERT INTO queue_counters (office_id, last_number)
     SELECT t.office_id, MAX(CAST(SUBSTRING(t.token_number, LENGTH(o.office_code) + 1) AS UNSIGNED))
     FROM university_tokens t JOIN offices o ON t.office_id = o.id
     GROUP BY t.office_id
     UNION ALL
-    SELECT 99, 0 WHERE NOT EXISTS (SELECT 1 FROM university_tokens WHERE office_id = 99)"""
+    SELECT 99, 0 WHERE NOT EXISTS (SELECT 1 FROM university_tokens WHERE office_id = 99)
+    ON DUPLICATE KEY UPDATE last_number=last_number"""
 
 _ALL_INDEXES = [
     ('idx_officers_office', 'officers', 'office_id'),
