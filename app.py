@@ -2417,8 +2417,58 @@ def officer_login():
 
 
 
+# ============================================
+# CLAIM ADMIN ACCESS
+# ============================================
+@app.route('/api/admin/claim-admin', methods=['POST'])
+def claim_admin():
+    """Allow an existing officer to elevate themselves to admin by verifying credentials."""
+    try:
+        data = request.get_json(force=True)
+        officer_number = data.get('officer_number')
+        pin_code = data.get('pin_code', '').strip()
+
+        if not officer_number or not pin_code:
+            return jsonify({'success': False, 'message': 'Officer number and PIN are required.'}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                "SELECT id, officer_number, officer_name, pin_code, is_admin FROM officers WHERE officer_number = %s",
+                (int(officer_number),)
+            )
+            officer = cursor.fetchone()
+
+            if not officer:
+                return jsonify({'success': False, 'message': 'Officer number not found.'}), 404
+
+            if officer['pin_code'] != pin_code:
+                return jsonify({'success': False, 'message': 'Incorrect PIN.'}), 401
+
+            if officer.get('is_admin'):
+                return jsonify({'success': True, 'message': 'You are already an admin.', 'already_admin': True})
+
+            cursor.execute("UPDATE officers SET is_admin = 1 WHERE id = %s", (officer['id'],))
+            conn.commit()
+
+            return jsonify({
+                'success': True,
+                'message': f'{officer["officer_name"]} has been granted admin access.',
+                'officer_name': officer['officer_name']
+            })
+        finally:
+            cursor.close()
+            conn.close()
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 
+
+# ============================================
+# OFFICER QUEUE
+# ============================================
 # ============================================
 # OFFICER QUEUE
 # ============================================
