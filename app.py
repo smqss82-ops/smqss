@@ -286,6 +286,40 @@ _CREATE_OFFICER_SYSTEM_RATINGS_SQL = """
         CONSTRAINT fk_rating_officer FOREIGN KEY (officer_id) REFERENCES officers(id) ON DELETE CASCADE
     )"""
 
+_CREATE_BUS_COMPANIES_SQL = """
+    CREATE TABLE IF NOT EXISTS bus_companies (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        company_name VARCHAR(100) NOT NULL,
+        company_code VARCHAR(20) NOT NULL UNIQUE,
+        contact_phone VARCHAR(20),
+        is_active TINYINT(1) DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )"""
+_CREATE_BUS_ROUTES_SQL = """
+    CREATE TABLE IF NOT EXISTS bus_routes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        company_id INT NOT NULL,
+        route_code VARCHAR(20) NOT NULL,
+        route_name VARCHAR(100) NOT NULL,
+        origin VARCHAR(100),
+        destination VARCHAR(100),
+        is_active TINYINT(1) DEFAULT 1,
+        display_order INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_route_company FOREIGN KEY (company_id) REFERENCES bus_companies(id) ON DELETE CASCADE
+    )"""
+_CREATE_BUS_STOPS_SQL = """
+    CREATE TABLE IF NOT EXISTS bus_stops (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        route_id INT NOT NULL,
+        stop_name VARCHAR(100) NOT NULL,
+        stop_order INT NOT NULL,
+        is_break_point TINYINT(1) DEFAULT 0,
+        is_active TINYINT(1) DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_stop_route FOREIGN KEY (route_id) REFERENCES bus_routes(id) ON DELETE CASCADE
+    )"""
+
 _ALL_TABLES = [
     ('offices', _CREATE_OFFICES_SQL),
     ('officers', _CREATE_OFFICERS_SQL),
@@ -299,6 +333,9 @@ _ALL_TABLES = [
     ('general_complaints', _CREATE_GENERAL_COMPLAINTS_SQL),
     ('system_settings', _CREATE_SYSTEM_SETTINGS_SQL),
     ('officer_system_ratings', _CREATE_OFFICER_SYSTEM_RATINGS_SQL),
+    ('bus_companies', _CREATE_BUS_COMPANIES_SQL),
+    ('bus_routes', _CREATE_BUS_ROUTES_SQL),
+    ('bus_stops', _CREATE_BUS_STOPS_SQL),
 ]
 
 _SEED_OFFICES_SQL = """
@@ -5004,67 +5041,241 @@ def text_to_speech():
 # ============================================
 # BUS STOP ANNOUNCEMENT SYSTEM
 # ============================================
-_bus_current_stop = {'stop_name': None, 'timestamp': None, 'announced': False}
-_bus_stop_history = []
+_bus_state = {'company_name': '', 'route_name': '', 'origin': '', 'destination': '',
+              'stop_name': None, 'stop_id': None, 'stop_order': 0, 'is_break_point': False,
+              'timestamp': None, 'announced': False, 'prayer': None,
+              'all_stops': [], 'announced_stops': []}
 
-@app.route('/api/bus/stop', methods=['POST'])
-def set_bus_stop():
-    """Conductor submits a stop name to announce."""
+# ── CONDUCTOR: CREATE COMPANY ──
+@app.route('/api/bus/company', methods=['POST'])
+def create_bus_company():
     try:
         data = request.get_json(force=True)
-        stop_name = data.get('stop_name', '').strip()
-        if not stop_name:
-            return jsonify({'success': False, 'message': 'Stop name is required.'}), 400
-        now = datetime.now().isoformat()
-        _bus_current_stop['stop_name'] = stop_name
-        _bus_current_stop['timestamp'] = now
-        _bus_current_stop['announced'] = False
-        _bus_stop_history.insert(0, {'stop_name': stop_name, 'timestamp': now})
-        if len(_bus_stop_history) > 20:
-            _bus_stop_history.pop()
-        return jsonify({'success': True, 'stop_name': stop_name, 'timestamp': now})
+        name = data.get('company_name', '').strip()
+        code = data.get('company_code', '').strip().upper()
+        phone = data.get('contact_phone', '').strip()
+        if not name or not code:
+            return jsonify({'success': False, 'message': 'Company name and code required.'}), 400
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute("SELECT id FROM bus_companies WHERE company_code=%s", (code,))
+            if cursor.fetchone():
+                return jsonify({'success': False, 'message': 'Company code already exists.'}), 409
+            cursor.execute("INSERT INTO bus_companies (company_name, company_code, contact_phone) VALUES (%s,%s,%s)",
+                           (name, code, phone or None))
+            conn.commit()
+            cid = cursor.lastrowid
+            return jsonify({'success': True, 'company_id': cid, 'company_name': name, 'company_code': code})
+        finally:
+            cursor.close(); conn.close()
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route('/api/bus/current-stop', methods=['GET'])
-def get_bus_current_stop():
-    """TV screen polls for the current stop."""
+# ── CONDUCTOR: LIST COMPANIES ──
+@app.route('/api/bus/companies', methods=['GET'])
+def list_bus_companies():
     try:
-        return jsonify({
-            'success': True,
-            'stop_name': _bus_current_stop['stop_name'],
-            'timestamp': _bus_current_stop['timestamp'],
-            'announced': _bus_current_stop['announced']
-        })
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute("SELECT id, company_name, company_code, contact_phone FROM bus_companies WHERE is_active=1 ORDER BY company_name")
+            return jsonify({'success': True, 'companies': cursor.fetchall()})
+        finally:
+            cursor.close(); conn.close()
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
+# ── CONDUCTOR: CREATE ROUTE ──
+@app.route('/api/bus/route', methods=['POST'])
+def create_bus_route():
+    try:
+        data = request.get_json(force=True)
+        company_id = data.get('company_id')
+        name = data.get('route_name', '').strip()
+        origin = data.get('origin', '').strip()
+        destination = data.get('destination', '').strip()
+        if not company_id or not name:
+            return jsonify({'success': False, 'message': 'Company and route name required.'}), 400
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            code = name[:20].upper().replace(' ', '-')
+            cursor.execute("INSERT INTO bus_routes (company_id, route_code, route_name, origin, destination) VALUES (%s,%s,%s,%s,%s)",
+                           (company_id, code, name, origin or None, destination or None))
+            conn.commit()
+            return jsonify({'success': True, 'route_id': cursor.lastrowid, 'route_name': name})
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# ── CONDUCTOR: LIST ROUTES ──
+@app.route('/api/bus/routes/<int:company_id>', methods=['GET'])
+def list_bus_routes(company_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute("SELECT id, route_name, origin, destination FROM bus_routes WHERE company_id=%s AND is_active=1 ORDER BY display_order, route_name", (company_id,))
+            return jsonify({'success': True, 'routes': cursor.fetchall()})
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# ── CONDUCTOR: CREATE STOP ──
+@app.route('/api/bus/stop', methods=['POST'])
+def create_bus_stop():
+    try:
+        data = request.get_json(force=True)
+        route_id = data.get('route_id')
+        name = data.get('stop_name', '').strip()
+        order = data.get('stop_order', 0)
+        is_break = data.get('is_break_point', False)
+        if not route_id or not name:
+            return jsonify({'success': False, 'message': 'Route and stop name required.'}), 400
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            if not order:
+                cursor.execute("SELECT MAX(stop_order) AS mx FROM bus_stops WHERE route_id=%s", (route_id,))
+                row = cursor.fetchone()
+                order = (row['mx'] or 0) + 1
+            cursor.execute("INSERT INTO bus_stops (route_id, stop_name, stop_order, is_break_point) VALUES (%s,%s,%s,%s)",
+                           (route_id, name, order, 1 if is_break else 0))
+            conn.commit()
+            return jsonify({'success': True, 'stop_id': cursor.lastrowid, 'stop_name': name, 'stop_order': order})
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# ── CONDUCTOR: LIST STOPS ──
+@app.route('/api/bus/stops/<int:route_id>', methods=['GET'])
+def list_bus_stops(route_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute("SELECT id, stop_name, stop_order, is_break_point FROM bus_stops WHERE route_id=%s AND is_active=1 ORDER BY stop_order", (route_id,))
+            return jsonify({'success': True, 'stops': cursor.fetchall()})
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# ── CONDUCTOR: DELETE STOP ──
+@app.route('/api/bus/stop/<int:stop_id>', methods=['DELETE'])
+def delete_bus_stop(stop_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("DELETE FROM bus_stops WHERE id=%s", (stop_id,))
+            conn.commit()
+            return jsonify({'success': True})
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# ── CONDUCTOR: START TRIP ──
+@app.route('/api/bus/start-trip', methods=['POST'])
+def start_bus_trip():
+    try:
+        data = request.get_json(force=True)
+        company_name = data.get('company_name', '').strip()
+        route_name = data.get('route_name', '').strip()
+        origin = data.get('origin', '').strip()
+        destination = data.get('destination', '').strip()
+        stops = data.get('stops', [])
+        if not stops:
+            return jsonify({'success': False, 'message': 'No stops provided.'}), 400
+        _bus_state.update({
+            'company_name': company_name, 'route_name': route_name,
+            'origin': origin, 'destination': destination,
+            'stop_name': None, 'stop_id': None, 'stop_order': 0,
+            'is_break_point': False, 'timestamp': None, 'announced': False,
+            'prayer': None, 'all_stops': stops, 'announced_stops': []
+        })
+        return jsonify({'success': True, 'message': 'Trip started.'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# ── CONDUCTOR: ANNOUNCE STOP ──
+@app.route('/api/bus/announce', methods=['POST'])
+def announce_bus_stop():
+    try:
+        data = request.get_json(force=True)
+        stop_id = data.get('stop_id')
+        stop_name = data.get('stop_name', '').strip()
+        stop_order = data.get('stop_order', 0)
+        is_break = data.get('is_break_point', False)
+        if not stop_name:
+            return jsonify({'success': False, 'message': 'Stop name required.'}), 400
+        now = datetime.now().isoformat()
+        _bus_state['stop_name'] = stop_name
+        _bus_state['stop_id'] = stop_id
+        _bus_state['stop_order'] = stop_order
+        _bus_state['is_break_point'] = is_break
+        _bus_state['timestamp'] = now
+        _bus_state['announced'] = False
+        _bus_state['prayer'] = None
+        if stop_id:
+            _bus_state['announced_stops'].append(stop_id)
+        prayer = generate_journey_prayer(stop_name, _bus_state.get('destination', ''), is_break)
+        if prayer:
+            _bus_state['prayer'] = prayer
+        return jsonify({'success': True, 'stop_name': stop_name, 'prayer': prayer, 'timestamp': now})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# ── AI: JOURNEY MERCY PRAYER ──
+def generate_journey_prayer(stop_name, destination, is_break_point):
+    try:
+        if is_break_point:
+            prompt = (
+                "Write a short, warm journey mercy prayer (2-3 sentences) for bus passengers arriving at a rest break point. "
+                "Mention gratitude for safe travel so far and ask for continued protection. "
+                "Keep it inclusive and non-denominational. Return ONLY the prayer text, no labels."
+            )
+        else:
+            prompt = (
+                "Write a short, warm journey mercy prayer (2-3 sentences) for bus passengers approaching a stop. "
+                "Mention safe travel and ask for blessings for those getting off and those continuing. "
+                "Keep it inclusive and non-denominational. Return ONLY the prayer text, no labels."
+            )
+        text, err = call_groq_ai(prompt, max_tokens=150, temperature=0.7)
+        return text if text else None
+    except Exception:
+        return None
+
+# ── TV: POLL CURRENT STATE ──
+@app.route('/api/bus/current-state', methods=['GET'])
+def get_bus_current_state():
+    try:
+        return jsonify({'success': True, **_bus_state})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# ── TV: CONFIRM ANNOUNCED ──
 @app.route('/api/bus/announce-confirm', methods=['POST'])
 def confirm_bus_announce():
-    """TV screen confirms voice has played."""
     try:
-        _bus_current_stop['announced'] = True
+        _bus_state['announced'] = True
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route('/api/bus/stop-history', methods=['GET'])
-def get_bus_stop_history():
-    """Conductor's phone shows recent stops."""
-    try:
-        return jsonify({'success': True, 'stops': _bus_stop_history})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
+# ── CONDUCTOR: RESET TRIP ──
 @app.route('/api/bus/reset', methods=['POST'])
-def reset_bus_stops():
-    """Reset all bus stop data."""
+def reset_bus_trip():
     try:
-        _bus_current_stop['stop_name'] = None
-        _bus_current_stop['timestamp'] = None
-        _bus_current_stop['announced'] = False
-        _bus_stop_history.clear()
-        return jsonify({'success': True, 'message': 'Bus stops reset.'})
+        _bus_state.update({'stop_name': None, 'stop_id': None, 'stop_order': 0,
+                           'is_break_point': False, 'timestamp': None, 'announced': False,
+                           'prayer': None, 'announced_stops': []})
+        return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
