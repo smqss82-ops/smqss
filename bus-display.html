@@ -79,10 +79,12 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#070d0
 
 .announce-subtitle{max-width:800px;font-size:18px;color:rgba(255,255,255,0.55);line-height:1.5;margin-top:4px;animation:fadeUp .8s ease .2s both}
 
-.exit-arrows{display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:14px;animation:bounceDown 1.5s ease-in-out infinite}
-.exit-arrows svg{width:48px;height:48px;fill:#4ade80;filter:drop-shadow(0 0 8px rgba(74,222,128,0.5))}
-.exit-label{font-size:14px;font-weight:700;color:#4ade80;letter-spacing:3px;text-transform:uppercase}
-@keyframes bounceDown{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+.exit-arrows{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:18px;animation:bounceDown 1.2s ease-in-out infinite}
+.exit-arrows svg{width:56px;height:56px;fill:#4ade80;filter:drop-shadow(0 0 14px rgba(74,222,128,0.7)) drop-shadow(0 0 30px rgba(74,222,128,0.4));animation:exitPulse 1.5s ease-in-out infinite}
+.exit-label{font-size:18px;font-weight:900;color:#4ade80;letter-spacing:4px;text-transform:uppercase;text-shadow:0 0 20px rgba(74,222,128,0.6),0 0 40px rgba(74,222,128,0.3);animation:exitGlow 1.5s ease-in-out infinite alternate}
+@keyframes bounceDown{0%,100%{transform:translateY(0)}50%{transform:translateY(12px)}}
+@keyframes exitPulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 14px rgba(74,222,128,0.7)) drop-shadow(0 0 30px rgba(74,222,128,0.4))}50%{transform:scale(1.15);filter:drop-shadow(0 0 20px rgba(74,222,128,0.9)) drop-shadow(0 0 50px rgba(74,222,128,0.6))}}
+@keyframes exitGlow{0%{text-shadow:0 0 20px rgba(74,222,128,0.6),0 0 40px rgba(74,222,128,0.3)}100%{text-shadow:0 0 30px rgba(74,222,128,0.9),0 0 60px rgba(74,222,128,0.5),0 0 80px rgba(74,222,128,0.2)}}
 
 .prayer-box{margin-top:18px;max-width:700px;padding:16px 24px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);border-radius:12px;animation:fadeUp .8s ease .3s both}
 .prayer-text{font-size:15px;color:rgba(255,255,255,0.6);line-height:1.6;font-style:italic;text-align:center}
@@ -196,7 +198,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#070d0
       <div class="announce-subtitle" id="announceSubtitle"></div>
       <div class="exit-arrows">
         <svg viewBox="0 0 24 24"><path d="M11 3.5V1h-2v2.5H7.5v2H9V4.38l-4.12 4.12-1.41-1.41L7.59 2.55l.71-.71L11 3.5zm2 0V1h2v2.5h1.5v2H15V4.38l4.12 4.12 1.41-1.41L14.41 2.55l-.71-.71L11 3.5zM11 20.5V24h-2v-2.5H7.5v-2H9v1.12l-4.12-4.12-1.41 1.41L7.59 21.45l.71.71L11 20.5zm2 0V24h2v-2.5h1.5v-2H15v1.12l4.12-4.12 1.41 1.41L14.41 21.45l-.71.71L11 20.5z"/></svg>
-        <svg viewBox="0 0 24 24" style="width:36px;height:36px"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
+        <svg viewBox="0 0 24 24" style="width:42px;height:42px"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
         <div class="exit-label">Getting Off</div>
       </div>
       <div class="prayer-box" id="prayerBox" style="display:none">

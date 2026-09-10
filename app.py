@@ -5434,6 +5434,22 @@ def confirm_bus_announce():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
+# ── CONDUCTOR: MARK STOP DONE ──
+@app.route('/api/bus/stop-done', methods=['POST'])
+def mark_stop_done():
+    try:
+        data = request.get_json(force=True)
+        stop_id = data.get('stop_id')
+        if stop_id and stop_id not in _bus_state.get('announced_stops', []):
+            _bus_state['announced_stops'].append(stop_id)
+        _bus_state['stop_name'] = None
+        _bus_state['stop_id'] = None
+        _bus_state['announced'] = True
+        save_trip_state()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 # ── CONDUCTOR: RESET TRIP ──
 @app.route('/api/bus/reset', methods=['POST'])
 def reset_bus_trip():

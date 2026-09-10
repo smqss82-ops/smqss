@@ -388,14 +388,18 @@ async function startTrip() {
 
 function renderAnnounceCards() {
   const el = document.getElementById('announceList');
-  el.innerHTML = stops.sort((a,b)=>a.stop_order-b.stop_order).map((s,i) => {
+  const remaining = stops.filter(s => !announcedIds.has(s.id));
+  const announced = stops.filter(s => announcedIds.has(s.id));
+  const sorted = [...remaining, ...announced];
+  el.innerHTML = sorted.map((s,i) => {
     const done = announcedIds.has(s.id);
     const cls = done ? ' done' : (s.is_break_point ? ' is-break' : '');
+    const num = done ? '✓' : (i+1);
     return '<div class="announce-card'+cls+'" onclick="'+(done?'':'announceStop('+s.id+',\''+s.stop_name.replace(/'/g,"\\'")+'\','+s.stop_order+','+(s.is_break_point?1:0)+')')+'">'+
-      '<div class="announce-num">'+(i+1)+'</div>'+
+      '<div class="announce-num">'+num+'</div>'+
       '<div class="announce-info">'+
       '<div class="announce-name">'+s.stop_name+'</div>'+
-      '<div class="announce-status">'+(done?'✓ Announced':(s.is_break_point?'Break Point — Tap to Announce':'Tap to Announce'))+'</div>'+
+      '<div class="announce-status">'+(done?'✓ Done — Removed from screen':(s.is_break_point?'Break Point — Tap to Announce':'Tap to Announce'))+'</div>'+
       '</div>'+
       '<button class="announce-action">'+(done?'Done':'Announce')+'</button>'+
       '</div>';
