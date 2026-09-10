@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 160" width="400" height="160">
+  <defs>
+    <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFB300"/>
+      <stop offset="40%" stop-color="#FF8F00"/>
+      <stop offset="100%" stop-color="#E65100"/>
+    </linearGradient>
+    <linearGradient id="windowGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a2332"/>
+      <stop offset="100%" stop-color="#0d1520"/>
+    </linearGradient>
+    <linearGradient id="roofGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFE082"/>
+      <stop offset="100%" stop-color="#FFB300"/>
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
+    <radialGradient id="hubGrad" cx="50%" cy="50%">
+      <stop offset="0%" stop-color="#FFE082"/>
+      <stop offset="60%" stop-color="#B0BEC5"/>
+      <stop offset="100%" stop-color="#546E7A"/>
+    </radialGradient>
+    <radialGradient id="tireGrad" cx="50%" cy="50%">
+      <stop offset="0%" stop-color="#424242"/>
+      <stop offset="80%" stop-color="#212121"/>
+      <stop offset="100%" stop-color="#111"/>
+    </radialGradient>
+  </defs>
+  <!-- Shadow -->
+  <ellipse cx="200" cy="152" rx="170" ry="6" fill="rgba(0,0,0,0.3)"/>
+  <!-- Body -->
+  <rect x="30" y="30" width="340" height="100" rx="12" fill="url(#bodyGrad)" filter="url(#shadow)"/>
+  <!-- Roof -->
+  <rect x="35" y="25" width="330" height="18" rx="8" fill="url(#roofGrad)"/>
+  <!-- Stripe -->
+  <rect x="30" y="75" width="340" height="6" fill="#E65100" opacity="0.6"/>
+  <!-- Windows -->
+  <rect x="55" y="38" width="26" height="32" rx="4" fill="url(#windowGrad)" stroke="#37474F" stroke-width="1"/>
+  <rect x="88" y="38" width="26" height="32" rx="4" fill="url(#windowGrad)" stroke="#37474F" stroke-width="1"/>
+  <rect x="121" y="38" width="26" height="32" rx="4" fill="url(#windowGrad)" stroke="#37474F" stroke-width="1"/>
+  <rect x="154" y="38" width="26" height="32" rx="4" fill="url(#windowGrad)" stroke="#37474F" stroke-width="1"/>
+  <rect x="187" y="38" width="26" height="32" rx="4" fill="url(#windowGrad)" stroke="#37474F" stroke-width="1"/>
+  <rect x="220" y="38" width="26" height="32" rx="4" fill="url(#windowGrad)" stroke="#37474F" stroke-width="1"/>
+  <rect x="253" y="38" width="26" height="32" rx="4" fill="url(#windowGrad)" stroke="#37474F" stroke-width="1"/>
+  <rect x="286" y="38" width="26" height="32" rx="4" fill="url(#windowGrad)" stroke="#37474F" stroke-width="1"/>
+  <!-- Windshield -->
+  <path d="M318,34 Q345,34 350,50 L355,95 Q355,105 345,105 L320,105 L318,50 Z" fill="url(#windowGrad)" stroke="#37474F" stroke-width="1.5"/>
+  <!-- Headlights -->
+  <ellipse cx="352" cy="90" rx="5" ry="6" fill="#FFF9C4" opacity="0.9"/>
+  <ellipse cx="352" cy="90" rx="3" ry="4" fill="#FFFFFF"/>
+  <ellipse cx="352" cy="100" rx="4" ry="3" fill="#FFECB3" opacity="0.7"/>
+  <!-- Rear lights -->
+  <rect x="30" y="80" width="4" height="10" rx="2" fill="#F44336" opacity="0.8"/>
+  <rect x="30" y="95" width="4" height="8" rx="2" fill="#FF9800" opacity="0.7"/>
+  <!-- Door -->
+  <rect x="305" y="68" width="12" height="55" rx="2" fill="#BF360C" opacity="0.4" stroke="#E65100" stroke-width="0.5"/>
+  <circle cx="315" cy="95" r="1.5" fill="#FFE082"/>
+  <!-- Luggage compartments -->
+  <rect x="55" y="108" width="50" height="18" rx="3" fill="#E65100" opacity="0.5" stroke="#BF360C" stroke-width="0.5"/>
+  <rect x="112" y="108" width="50" height="18" rx="3" fill="#E65100" opacity="0.5" stroke="#BF360C" stroke-width="0.5"/>
+  <rect x="170" y="108" width="50" height="18" rx="3" fill="#E65100" opacity="0.5" stroke="#BF360C" stroke-width="0.5"/>
+  <rect x="228" y="108" width="50" height="18" rx="3" fill="#E65100" opacity="0.5" stroke="#BF360C" stroke-width="0.5"/>
+  <!-- Rear wheel -->
+  <circle cx="100" cy="135" r="18" fill="url(#tireGrad)" stroke="#111" stroke-width="1"/>
+  <circle cx="100" cy="135" r="12" fill="none" stroke="#333" stroke-width="1"/>
+  <circle cx="100" cy="135" r="8" fill="url(#hubGrad)" stroke="#78909C" stroke-width="1"/>
+  <circle cx="100" cy="135" r="3" fill="#FFE082"/>
+  <!-- Front wheel -->
+  <circle cx="310" cy="135" r="18" fill="url(#tireGrad)" stroke="#111" stroke-width="1"/>
+  <circle cx="310" cy="135" r="12" fill="none" stroke="#333" stroke-width="1"/>
+  <circle cx="310" cy="135" r="8" fill="url(#hubGrad)" stroke="#78909C" stroke-width="1"/>
+  <circle cx="310" cy="135" r="3" fill="#FFE082"/>
+  <!-- Side mirrors -->
+  <path d="M348,50 Q362,48 360,58 L352,60 Z" fill="#FF8F00" stroke="#E65100" stroke-width="0.5"/>
+  <ellipse cx="360" cy="54" rx="4" ry="5" fill="#263238" stroke="#37474F" stroke-width="0.5"/>
+  <!-- Antenna -->
+  <line x1="180" y1="25" x2="178" y2="8" stroke="#B0BEC5" stroke-width="1.5" stroke-linecap="round"/>
+  <circle cx="178" cy="7" r="2" fill="#FF8F00"/>
+</svg>

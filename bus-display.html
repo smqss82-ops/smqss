@@ -30,9 +30,8 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#070d0
 .journey-state.active{display:flex;animation:fadeUp .6s ease}
 .journey-company{font-size:clamp(28px,5vw,48px);font-weight:800;color:#fff;text-shadow:0 0 30px rgba(255,255,255,0.1)}
 .journey-route-label{font-size:20px;color:rgba(255,215,0,0.8);font-weight:600;margin-top:-8px}
-.journey-track{position:relative;width:100%;height:80px;display:flex;align-items:center;margin:10px 0}
+.journey-track{position:relative;width:100%;height:100px;display:flex;align-items:center;margin:10px 0}
 .journey-line{position:absolute;top:50%;left:0;right:0;height:3px;background:repeating-linear-gradient(90deg,rgba(255,215,0,0.3) 0,rgba(255,215,0,0.3) 8px,transparent 8px,transparent 16px);transform:translateY(-50%)}
-.journey-bus-icon{position:absolute;top:50%;transform:translateY(-50%);font-size:40px;filter:drop-shadow(0 0 12px rgba(255,215,0,0.4));z-index:2;transition:left 1s ease}
 .journey-dots{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 20px;z-index:1}
 .journey-dot{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.2);transition:all .3s}
 .journey-dot.visited{background:#ffd700;border-color:#ffd700;box-shadow:0 0 8px rgba(255,215,0,0.4)}
@@ -40,6 +39,20 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#070d0
 .journey-dot.upcoming{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.15)}
 .journey-message{font-size:18px;color:rgba(255,255,255,0.4);font-weight:400;margin-top:8px}
 .journey-ad{font-size:20px;color:rgba(255,215,0,0.7);font-weight:600;min-height:30px;transition:opacity .5s ease;margin-top:4px}
+
+.journey-bus-icon{position:absolute;top:50%;transform:translateY(-50%);z-index:3;transition:left 1.2s cubic-bezier(0.25,0.1,0.25,1);filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5))}
+.journey-bus-icon.moving{animation:busBounce 0.5s ease-in-out infinite}
+.journey-bus-icon.stopped{animation:none}
+.bus-img{width:130px;height:auto;display:block}
+@keyframes busBounce{0%,100%{transform:translateY(-50%)}50%{transform:translateY(calc(-50% - 3px))}}
+
+.motion-lines{position:absolute;right:100%;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:5px;padding-right:6px;opacity:0;transition:opacity .3s}
+.moving .motion-lines{opacity:1}
+.motion-line{height:2px;border-radius:2px;background:rgba(255,215,0,0.25);animation:motionFade 0.8s ease-in-out infinite}
+.motion-line:nth-child(1){width:25px;animation-delay:0s}
+.motion-line:nth-child(2){width:18px;animation-delay:0.15s}
+.motion-line:nth-child(3){width:12px;animation-delay:0.3s}
+@keyframes motionFade{0%,100%{opacity:0.1;transform:translateX(4px)}50%{opacity:0.5;transform:translateX(0)}}
 
 .announce-state{display:none;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:20px}
 .announce-state.active{display:flex;animation:fadeUp .6s ease}
@@ -132,7 +145,14 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#070d0
       <div class="journey-route-label" id="journeyRouteLabel"></div>
       <div class="journey-track">
         <div class="journey-line"></div>
-        <div class="journey-bus-icon" id="journeyBus">🚌</div>
+        <div class="journey-bus-icon" id="journeyBus">
+          <div class="motion-lines">
+            <div class="motion-line"></div>
+            <div class="motion-line"></div>
+            <div class="motion-line"></div>
+          </div>
+          <img src="/bus.svg" alt="bus" class="bus-img">
+        </div>
         <div class="journey-dots" id="journeyDots"></div>
       </div>
       <div class="journey-message" id="journeyMessage">Enjoy your journey</div>
@@ -319,7 +339,11 @@ function showJourneyState(stops, announcedIds) {
   const announcedCount = announcedIds.length;
   const total = stops.length;
   const busPos = total > 1 ? (announcedCount / (total - 1)) * 80 + 10 : 50;
-  document.getElementById('journeyBus').style.left = busPos + '%';
+  const bus = document.getElementById('journeyBus');
+  bus.classList.add('moving');
+  bus.classList.remove('stopped');
+  bus.style.left = busPos + '%';
+  setTimeout(() => { bus.classList.remove('moving'); bus.classList.add('stopped'); }, 1400);
 
   document.getElementById('journeyAd').textContent = '';
   document.getElementById('journeyAd').style.opacity = '0';

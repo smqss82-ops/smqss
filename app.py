@@ -651,6 +651,10 @@ def bus_display():
 def bus_conductor():
     return send_from_directory('.', 'bus-conductor.html')
 
+@app.route('/bus.svg')
+def bus_svg():
+    return send_from_directory('.', 'bus.svg')
+
 @app.route('/admin')
 def admin_decoy():
     return redirect('/')
