@@ -113,7 +113,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f5f5f
     <button class="screen-back" onclick="showScreen('screen1')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back</button>
     <div class="screen-title" id="screen2Title">Routes</div>
     <div id="routeList" style="display:flex;flex-direction:column;gap:8px"></div>
-    <div style="margin-top:12px">
+    <div id="addRouteForm" style="margin-top:12px;display:none">
       <div class="screen-title">Add New Route</div>
       <input type="text" id="newRouteName" placeholder="Route name" style="width:100%;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit;margin-bottom:8px">
       <div style="display:flex;gap:8px;margin-bottom:8px">
@@ -247,16 +247,18 @@ async function addRoute() {
 
 function renderRoutes() {
   const el = document.getElementById('routeList');
-  if (!routes.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:#9ca3af">No routes yet. Add one below.</div>'; return; }
+  const addForm = document.getElementById('addRouteForm');
+  if (!routes.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:#9ca3af">No routes yet. Add one below.</div>';
+    addForm.style.display = 'block';
+    return;
+  }
+  addForm.style.display = 'none';
   el.innerHTML = routes.map(r => {
     const meta = [r.origin, r.destination].filter(Boolean).join(' → ');
-    return '<div class="route-card" id="routeCard-'+r.id+'">'+
+    return '<div class="route-card" onclick="selectRoute('+r.id+')">'+
     '<div class="route-card-name">'+r.route_name+'</div>'+
     (meta?'<div class="route-card-meta">'+meta+'</div>':'')+
-    '<div class="route-card-actions">'+
-    '<button class="route-btn route-btn-edit" onclick="event.stopPropagation();startEditRoute('+r.id+')">Edit</button>'+
-    '<button class="route-btn route-btn-delete" onclick="event.stopPropagation();deleteRoute('+r.id+',\''+r.route_name.replace(/'/g,"\\'")+'\')">Delete</button>'+
-    '</div>'+
     '</div>';
   }).join('');
 }
