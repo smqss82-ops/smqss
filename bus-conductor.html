@@ -2,70 +2,113 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Bus Conductor — SMQSS</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh;display:flex;flex-direction:column}
-.header{background:#fff;border-bottom:3px solid #d4aa00;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+  background:#f5f5f0;color:#1a1a1a;
+  min-height:100vh;min-height:100dvh;
+  display:flex;flex-direction:column;
+  font-size:16px;
+}
+
+/* ── responsive container: keeps things centered & readable on tablets/desktop, full-bleed on phones ── */
+.header,.main{width:100%}
+.header-inner,.screen-inner{width:100%;max-width:720px;margin:0 auto}
+
+.header{
+  background:#fff;border-bottom:3px solid #d4aa00;
+  padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 1px 4px rgba(0,0,0,0.08);
+  position:sticky;top:0;z-index:10;
+}
+.header-inner{display:flex;align-items:center;justify-content:space-between}
 .header-brand{display:flex;align-items:center;gap:10px}
-.header-brand svg{width:28px;height:28px;fill:#155c30}
-.header-title{font-size:16px;font-weight:700;color:#155c30}.header-title span{color:#d4aa00}
-.header-status{font-size:11px;padding:4px 10px;border-radius:20px;background:#e8f4ed;color:#155c30;font-weight:600}
+.header-brand svg{width:28px;height:28px;fill:#155c30;flex-shrink:0}
+.header-title{font-size:clamp(14px,4vw,17px);font-weight:700;color:#155c30;white-space:nowrap}
+.header-title span{color:#d4aa00}
+.header-status{font-size:11px;padding:4px 10px;border-radius:20px;background:#e8f4ed;color:#155c30;font-weight:600;white-space:nowrap}
+
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
-.screen{display:none;flex:1;flex-direction:column;padding:16px;gap:12px;overflow-y:auto;animation:slideIn .25s ease}
-.screen.active{display:flex}
+.screen{display:none;flex:1;flex-direction:column;overflow-y:auto;animation:slideIn .25s ease;
+  padding-bottom:calc(16px + env(safe-area-inset-bottom));
+}
+.screen.active{display:flex;align-items:center}
+.screen-inner{display:flex;flex-direction:column;gap:12px;padding:16px;width:100%}
 @keyframes slideIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+
 .screen-back{display:flex;align-items:center;gap:8px;padding:4px 0;margin-bottom:4px;cursor:pointer;color:#6b7280;font-size:14px;font-weight:600;border:none;background:none;font-family:inherit}
 .screen-back:hover{color:#155c30}
 .screen-back svg{width:20px;height:20px;fill:currentColor}
 .screen-title{font-size:13px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
-.card-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .company-card{background:#fff;border:2px solid #e2e0da;border-radius:14px;padding:20px 14px;text-align:center;cursor:pointer;transition:all .2s}
+.company-card:hover{border-color:#155c30}
 .company-card:active{transform:scale(0.96);border-color:#155c30}
 .company-card-icon{width:48px;height:48px;background:linear-gradient(135deg,#155c30,#1e7d43);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;color:#fff;font-size:20px;font-weight:900}
-.company-card-name{font-size:16px;font-weight:700;color:#1a1a1a}
+.company-card-name{font-size:clamp(14px,4vw,16px);font-weight:700;color:#1a1a1a;word-break:break-word}
 .company-card-code{font-size:12px;color:#6b7280;margin-top:2px}
+
 .route-card{background:#fff;border:2px solid #e2e0da;border-radius:12px;padding:16px;cursor:pointer;transition:all .2s}
+.route-card:hover{border-color:#155c30}
 .route-card:active{transform:scale(0.98);border-color:#155c30}
-.route-card-name{font-size:18px;font-weight:700;color:#1a1a1a}
+.route-card-name{font-size:clamp(16px,4.5vw,18px);font-weight:700;color:#1a1a1a;word-break:break-word}
 .route-card-meta{font-size:13px;color:#6b7280;margin-top:4px}
-.route-card-actions{display:flex;gap:8px;margin-top:10px}
+.route-card-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .route-btn{padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:all .2s}
 .route-btn-edit{background:#fff;color:#155c30;border-color:#155c30}
 .route-btn-edit:active{background:#155c30;color:#fff}
 .route-btn-delete{background:#fff;color:#c0392b;border-color:#c0392b}
 .route-btn-delete:active{background:#c0392b;color:#fff}
 .route-edit-form{display:flex;flex-direction:column;gap:8px;margin-top:10px}
-.route-edit-form input{padding:10px;border:1.5px solid #e2e0da;border-radius:8px;font-size:14px;font-family:inherit}
+.route-edit-form input{padding:10px;border:1.5px solid #e2e0da;border-radius:8px;font-size:16px;font-family:inherit;width:100%}
 .route-edit-actions{display:flex;gap:8px}
 .route-edit-actions button{flex:1;padding:10px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}
+
 .btn{width:100%;padding:12px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
 .btn-primary{background:#155c30;color:#fff}.btn-primary:hover{background:#1e7d43}
+.btn-disabled{background:#d1d5db!important;color:#9ca3af!important;cursor:not-allowed}
+
 .stop-list{display:flex;flex-direction:column;gap:6px}
 .stop-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border-radius:10px;border:1.5px solid #e2e0da}
 .stop-item.break-point{border-color:#d4aa00;background:#fdf3d8}
 .stop-num{font-size:16px;font-weight:800;color:#fff;background:#6b7280;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .stop-item.break-point .stop-num{background:#d4aa00}
-.stop-name{font-size:17px;font-weight:600;flex:1}
-.stop-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;text-transform:uppercase;background:#d4aa00;color:#fff}
+.stop-name{font-size:clamp(15px,4vw,17px);font-weight:600;flex:1;word-break:break-word}
+.stop-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;text-transform:uppercase;background:#d4aa00;color:#fff;flex-shrink:0}
 .delete-btn{width:28px;height:28px;background:transparent;color:#c0392b;border:1px solid #c0392b;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.add-stop-row{display:flex;gap:8px;align-items:flex-end;margin-top:4px}
-.add-stop-row input{flex:1;font-size:16px;padding:12px}
-.add-stop-btn{padding:12px 18px;background:#155c30;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;white-space:nowrap}
+
+/* ── stop-adding controls: fully separate block from the Start Trip control ── */
+.stop-controls{
+  display:flex;flex-direction:column;gap:10px;
+  padding:12px;background:#fff;border:1.5px solid #e2e0da;border-radius:12px;margin-top:4px;
+}
+.add-stop-row{display:flex;gap:8px;flex-wrap:wrap}
+.add-stop-row input{flex:1 1 160px;min-width:0;font-size:16px;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-family:inherit}
+.add-stop-btn{padding:12px 18px;background:#155c30;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .add-stop-btn:hover{background:#1e7d43}
-.toggle-row{display:flex;align-items:center;gap:10px;padding:6px 0}
+.toggle-row{display:flex;align-items:center;gap:10px;padding:2px 0}
 .toggle-label{font-size:14px;font-weight:600;color:#374151;flex:1}
-.toggle{position:relative;width:44px;height:24px;cursor:pointer}
+.toggle{position:relative;width:44px;height:24px;cursor:pointer;flex-shrink:0}
 .toggle input{opacity:0;width:0;height:0}
 .toggle-slider{position:absolute;top:0;left:0;right:0;bottom:0;background:#d1d5db;border-radius:24px;transition:background .2s}
 .toggle-slider::before{content:'';position:absolute;left:2px;top:2px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .2s}
 .toggle input:checked+.toggle-slider{background:#155c30}
 .toggle input:checked+.toggle-slider::before{transform:translateX(20px)}
+
+/* Start Trip lives in its own section, independent of the stop-controls above */
+.start-trip-section{margin-top:6px;padding-top:14px;border-top:1px dashed #d1d5db}
+.start-trip-hint{font-size:12px;color:#9ca3af;text-align:center;margin-bottom:8px}
+
 .trip-banner{background:linear-gradient(135deg,#155c30,#1e7d43);color:#fff;border-radius:12px;padding:16px;text-align:center}
-.trip-company{font-size:20px;font-weight:700}
+.trip-company{font-size:clamp(17px,5vw,20px);font-weight:700}
 .trip-route{font-size:14px;opacity:.8;margin-top:2px}
-.announce-card{display:flex;align-items:center;gap:14px;padding:16px;background:#fff;border-radius:12px;border:2px solid #e2e0da;cursor:pointer;transition:all .2s}
+.announce-card{display:flex;align-items:center;gap:14px;padding:16px;background:#fff;border-radius:12px;border:2px solid #e2e0da;cursor:pointer;transition:all .2s;flex-wrap:wrap}
 .announce-card:active{transform:scale(0.98)}
 .announce-card.done{border-color:#155c30;background:#e8f4ed}
 .announce-card.is-break{border-color:#d4aa00;background:#fdf3d8}
@@ -74,91 +117,131 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f5f5f
 .announce-card.done .announce-num{background:#155c30}
 .announce-card.is-break .announce-num{background:#d4aa00}
 .announce-card.done.is-break .announce-num{background:#155c30}
-.announce-info{flex:1}
-.announce-name{font-size:20px;font-weight:700;color:#1a1a1a}
+.announce-info{flex:1;min-width:120px}
+.announce-name{font-size:clamp(17px,5vw,20px);font-weight:700;color:#1a1a1a;word-break:break-word}
 .announce-card.done .announce-name{color:#155c30}
 .announce-status{font-size:12px;color:#6b7280;margin-top:2px}
 .announce-card.done .announce-status{color:#155c30;font-weight:600}
-.announce-action{padding:12px 20px;background:#155c30;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;min-width:100px}
+.announce-action{padding:12px 20px;background:#155c30;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;min-width:100px;flex-shrink:0}
 .announce-card.done .announce-action{background:#e8f4ed;color:#155c30}
-.toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(20px);background:#155c30;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:99;pointer-events:none}
+.toast{position:fixed;bottom:calc(70px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);background:#155c30;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:99;pointer-events:none;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.error{background:#c0392b}
 .ad-card{position:relative;border-radius:12px;overflow:hidden;border:2px solid #e2e0da;background:#fff}
 .ad-card img{width:100%;height:140px;object-fit:cover;display:block}
 .ad-card-delete{position:absolute;top:6px;right:6px;width:28px;height:28px;background:rgba(192,57,43,0.9);color:#fff;border:none;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .ad-card-name{padding:8px 10px;font-size:11px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── breakpoints ── */
+@media (min-width:520px){
+  .card-grid{grid-template-columns:repeat(3,1fr)}
+  .ad-grid,#adGrid{grid-template-columns:repeat(3,1fr)!important}
+}
+@media (min-width:820px){
+  .card-grid{grid-template-columns:repeat(4,1fr)}
+  .header-inner,.screen-inner{max-width:840px}
+  body{font-size:17px}
+  .ad-grid,#adGrid{grid-template-columns:repeat(4,1fr)!important}
+}
+@media (max-width:340px){
+  .add-stop-row{flex-direction:column}
+  .add-stop-btn{width:100%}
+}
+@media (hover:hover){
+  .announce-card:not(.done):hover{border-color:#155c30}
+}
 </style>
 </head>
 <body>
 <header class="header">
-  <div class="header-brand">
-    <svg viewBox="0 0 24 24"><path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/></svg>
-    <div class="header-title">SMQSS <span>Bus</span></div>
+  <div class="header-inner">
+    <div class="header-brand">
+      <svg viewBox="0 0 24 24"><path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/></svg>
+      <div class="header-title">SMQSS <span>Bus</span></div>
+    </div>
+    <div class="header-status">Connected</div>
   </div>
-  <div class="header-status">Connected</div>
 </header>
 
 <main class="main">
 
   <!-- SCREEN 1: PICK COMPANY -->
   <div class="screen active" id="screen1">
-    <div class="screen-title">Your Companies</div>
-    <div class="card-grid" id="companyGrid"></div>
-    <button class="btn btn-primary" onclick="loadAds();showScreen('screen5')" style="margin-top:12px;background:#d4aa00">Manage TV Ads</button>
+    <div class="screen-inner">
+      <div class="screen-title">Your Companies</div>
+      <div class="card-grid" id="companyGrid"></div>
+      <button class="btn btn-primary" onclick="loadAds();showScreen('screen5')" style="margin-top:12px;background:#d4aa00">Manage TV Ads</button>
+    </div>
   </div>
 
   <!-- SCREEN 2: PICK ROUTE -->
   <div class="screen" id="screen2">
-    <button class="screen-back" onclick="showScreen('screen1')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back</button>
-    <div class="screen-title" id="screen2Title">Routes</div>
-    <div id="routeList" style="display:flex;flex-direction:column;gap:8px"></div>
-    <div id="addRouteForm" style="margin-top:12px;display:none">
-      <div class="screen-title">Add New Route</div>
-      <input type="text" id="newRouteName" placeholder="Route name" style="width:100%;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit;margin-bottom:8px">
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <input type="text" id="newRouteOrigin" placeholder="Origin (optional)" style="flex:1;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit">
-        <input type="text" id="newRouteDest" placeholder="Destination (optional)" style="flex:1;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit">
+    <div class="screen-inner">
+      <button class="screen-back" onclick="showScreen('screen1')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back</button>
+      <div class="screen-title" id="screen2Title">Routes</div>
+      <div id="routeList" style="display:flex;flex-direction:column;gap:8px"></div>
+      <div id="addRouteForm" style="margin-top:12px;display:none">
+        <div class="screen-title">Add New Route</div>
+        <input type="text" id="newRouteName" placeholder="Route name" style="width:100%;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit;margin-bottom:8px">
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+          <input type="text" id="newRouteOrigin" placeholder="Origin (optional)" style="flex:1 1 140px;min-width:0;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit">
+          <input type="text" id="newRouteDest" placeholder="Destination (optional)" style="flex:1 1 140px;min-width:0;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit">
+        </div>
+        <button class="btn btn-primary" onclick="addRoute()" style="width:100%">+ Add Route</button>
       </div>
-      <button class="btn btn-primary" onclick="addRoute()" style="width:100%">+ Add Route</button>
     </div>
   </div>
 
   <!-- SCREEN 3: ADD STOPS -->
   <div class="screen" id="screen3">
-    <button class="screen-back" onclick="showScreen('screen2')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back</button>
-    <div class="screen-title" id="screen3Title">Stop Points</div>
-    <div class="stop-list" id="stopList"></div>
-    <div class="add-stop-row">
-      <input type="text" id="newStopName" placeholder="Type stop name...">
-      <button class="add-stop-btn" onclick="addStop()">+ Add</button>
+    <div class="screen-inner">
+      <button class="screen-back" onclick="showScreen('screen2')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back</button>
+      <div class="screen-title" id="screen3Title">Stop Points</div>
+      <div class="stop-list" id="stopList"></div>
+
+      <!-- Independent block #1: adding/listing stop points. Works on its own, with no dependency on the trip-start control below. -->
+      <div class="stop-controls">
+        <div class="add-stop-row">
+          <input type="text" id="newStopName" placeholder="Type stop name..." onkeydown="if(event.key==='Enter')addStop()">
+          <button class="add-stop-btn" onclick="addStop()">+ Add</button>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-label">Rest Break Point</span>
+          <label class="toggle"><input type="checkbox" id="newStopBreak"><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+
+      <!-- Independent block #2: starting the trip. Enabled purely by whether stops already exist, not by anything happening in the block above. -->
+      <div class="start-trip-section">
+        <div class="start-trip-hint" id="startHint" style="display:none">Add at least one stop point to enable Start Trip</div>
+        <button class="btn btn-primary" id="startBtn" onclick="startTrip()" style="display:none">Start Trip</button>
+      </div>
     </div>
-    <div class="toggle-row">
-      <span class="toggle-label">Rest Break Point</span>
-      <label class="toggle"><input type="checkbox" id="newStopBreak"><span class="toggle-slider"></span></label>
-    </div>
-    <button class="btn btn-primary" id="startBtn" onclick="startTrip()" style="margin-top:8px;display:none">Start Trip</button>
   </div>
 
   <!-- SCREEN 4: ANNOUNCE -->
   <div class="screen" id="screen4">
-    <button class="screen-back" onclick="endTrip()"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>End Trip</button>
-    <div class="trip-banner">
-      <div class="trip-company" id="tripCompany"></div>
-      <div class="trip-route" id="tripRoute"></div>
+    <div class="screen-inner">
+      <button class="screen-back" onclick="endTrip()"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>End Trip</button>
+      <div class="trip-banner">
+        <div class="trip-company" id="tripCompany"></div>
+        <div class="trip-route" id="tripRoute"></div>
+      </div>
+      <div id="announceList" style="display:flex;flex-direction:column;gap:10px"></div>
     </div>
-    <div id="announceList" style="display:flex;flex-direction:column;gap:10px"></div>
   </div>
 
   <!-- SCREEN 5: MANAGE ADS -->
   <div class="screen" id="screen5">
-    <button class="screen-back" onclick="showScreen('screen1')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back</button>
-    <div class="screen-title">Manage TV Ads</div>
-    <div class="screen-title" style="font-size:12px;color:#9ca3af;text-transform:none;letter-spacing:0;margin-bottom:8px">These images show on the TV screen when no trip is active.</div>
-    <div id="adGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
-    <div style="margin-top:12px">
-      <input type="file" id="adFileInput" accept="image/*" style="display:none" onchange="uploadAd()">
-      <button class="btn btn-primary" onclick="document.getElementById('adFileInput').click()">+ Upload Ad Image</button>
+    <div class="screen-inner">
+      <button class="screen-back" onclick="showScreen('screen1')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back</button>
+      <div class="screen-title">Manage TV Ads</div>
+      <div class="screen-title" style="font-size:12px;color:#9ca3af;text-transform:none;letter-spacing:0;margin-bottom:8px">These images show on the TV screen when no trip is active.</div>
+      <div id="adGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
+      <div style="margin-top:12px">
+        <input type="file" id="adFileInput" accept="image/*" style="display:none" onchange="uploadAd()">
+        <button class="btn btn-primary" onclick="document.getElementById('adFileInput').click()">+ Upload Ad Image</button>
+      </div>
     </div>
   </div>
 
@@ -256,9 +339,15 @@ function renderRoutes() {
   addForm.style.display = 'none';
   el.innerHTML = routes.map(r => {
     const meta = [r.origin, r.destination].filter(Boolean).join(' → ');
-    return '<div class="route-card" onclick="selectRoute('+r.id+')">'+
+    return '<div class="route-card" id="routeCard-'+r.id+'">'+
+    '<div onclick="selectRoute('+r.id+')">'+
     '<div class="route-card-name">'+r.route_name+'</div>'+
     (meta?'<div class="route-card-meta">'+meta+'</div>':'')+
+    '</div>'+
+    '<div class="route-card-actions">'+
+    '<button class="route-btn route-btn-edit" onclick="event.stopPropagation();startEditRoute('+r.id+')">Edit</button>'+
+    '<button class="route-btn route-btn-delete" onclick="event.stopPropagation();deleteRoute('+r.id+',\''+r.route_name.replace(/'/g,"\\'")+'\')">Delete</button>'+
+    '</div>'+
     '</div>';
   }).join('');
 }
@@ -320,21 +409,24 @@ async function deleteRoute(id, name) {
 }
 
 // ── SCREEN 3: STOPS ──
+// The two controls on this screen are intentionally decoupled:
+//  - addStop() / renderStops() only ever touch the stop list.
+//  - refreshStartTripAvailability() independently decides whether "Start Trip" is
+//    shown/enabled, based solely on stops.length. Neither function calls the other,
+//    so listing/adding stops never has to "wait" on the trip-start control or vice versa.
 
 async function loadStops() {
   if (!selectedRouteId) return;
   try {
     const r = await fetch(API + '/api/bus/stops/' + selectedRouteId);
     const d = await r.json();
-    if (d.success) { stops = d.stops; renderStops(); }
+    if (d.success) { stops = d.stops; renderStops(); refreshStartTripAvailability(); }
   } catch(e) {}
 }
 
 function renderStops() {
   const el = document.getElementById('stopList');
-  const btn = document.getElementById('startBtn');
-  if (!stops.length) { el.innerHTML = '<div style="padding:16px;text-align:center;color:#9ca3af;font-size:14px">No stops yet. Add your first stop below.</div>'; btn.style.display='none'; return; }
-  btn.style.display = 'block';
+  if (!stops.length) { el.innerHTML = '<div style="padding:16px;text-align:center;color:#9ca3af;font-size:14px">No stops yet. Add your first stop below.</div>'; return; }
   el.innerHTML = stops.sort((a,b) => a.stop_order - b.stop_order).map((s,i) =>
     '<div class="stop-item'+(s.is_break_point?' break-point':'')+'">'+
     '<div class="stop-num">'+(i+1)+'</div>'+
@@ -344,21 +436,45 @@ function renderStops() {
   ).join('');
 }
 
+// Independently governs the Start Trip button — called after every stop add/delete,
+// but does not live inside those handlers and has no effect on them.
+function refreshStartTripAvailability() {
+  const btn = document.getElementById('startBtn');
+  const hint = document.getElementById('startHint');
+  const hasStops = stops.length > 0;
+  btn.style.display = 'block';
+  hint.style.display = hasStops ? 'none' : 'block';
+  btn.disabled = !hasStops;
+  btn.classList.toggle('btn-disabled', !hasStops);
+}
+
 async function addStop() {
   if (!selectedRouteId) return;
-  const name = document.getElementById('newStopName').value.trim();
+  const nameInput = document.getElementById('newStopName');
+  const name = nameInput.value.trim();
   const isBreak = document.getElementById('newStopBreak').checked;
   if (!name) { showToast('Enter a stop name', true); return; }
   try {
     const r = await fetch(API + '/api/bus/stop', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({route_id:selectedRouteId,stop_name:name,is_break_point:isBreak}) });
     const d = await r.json();
-    if (d.success) { stops.push({id:d.stop_id,stop_name:name,stop_order:d.stop_order,is_break_point:isBreak?1:0}); renderStops(); document.getElementById('newStopName').value=''; document.getElementById('newStopName').focus(); }
+    if (d.success) {
+      stops.push({id:d.stop_id,stop_name:name,stop_order:d.stop_order,is_break_point:isBreak?1:0});
+      renderStops();
+      refreshStartTripAvailability();
+      nameInput.value='';
+      nameInput.focus();
+    }
     else showToast(d.message, true);
   } catch(e) { showToast('Network error', true); }
 }
 
 async function deleteStop(id) {
-  try { await fetch(API + '/api/bus/stop/' + id, { method:'DELETE' }); stops = stops.filter(s => s.id !== id); renderStops(); } catch(e) {}
+  try {
+    await fetch(API + '/api/bus/stop/' + id, { method:'DELETE' });
+    stops = stops.filter(s => s.id !== id);
+    renderStops();
+    refreshStartTripAvailability();
+  } catch(e) {}
 }
 
 // ── SCREEN 4: ANNOUNCE ──
