@@ -26,6 +26,21 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#070d0
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 .waiting-text{font-size:22px;color:rgba(255,255,255,0.3);font-weight:300}
 
+.journey-state{display:none;flex-direction:column;align-items:center;gap:16px;text-align:center;padding:30px;width:100%;max-width:900px}
+.journey-state.active{display:flex;animation:fadeUp .6s ease}
+.journey-company{font-size:clamp(28px,5vw,48px);font-weight:800;color:#fff;text-shadow:0 0 30px rgba(255,255,255,0.1)}
+.journey-route-label{font-size:20px;color:rgba(255,215,0,0.8);font-weight:600;margin-top:-8px}
+.journey-track{position:relative;width:100%;height:80px;display:flex;align-items:center;margin:10px 0}
+.journey-line{position:absolute;top:50%;left:0;right:0;height:3px;background:repeating-linear-gradient(90deg,rgba(255,215,0,0.3) 0,rgba(255,215,0,0.3) 8px,transparent 8px,transparent 16px);transform:translateY(-50%)}
+.journey-bus-icon{position:absolute;top:50%;transform:translateY(-50%);font-size:40px;filter:drop-shadow(0 0 12px rgba(255,215,0,0.4));z-index:2;transition:left 1s ease}
+.journey-dots{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 20px;z-index:1}
+.journey-dot{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.2);transition:all .3s}
+.journey-dot.visited{background:#ffd700;border-color:#ffd700;box-shadow:0 0 8px rgba(255,215,0,0.4)}
+.journey-dot.current{background:#4ade80;border-color:#4ade80;box-shadow:0 0 12px rgba(74,222,128,0.5);width:18px;height:18px}
+.journey-dot.upcoming{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.15)}
+.journey-message{font-size:18px;color:rgba(255,255,255,0.4);font-weight:400;margin-top:8px}
+.journey-ad{font-size:20px;color:rgba(255,215,0,0.7);font-weight:600;min-height:30px;transition:opacity .5s ease;margin-top:4px}
+
 .announce-state{display:none;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:20px}
 .announce-state.active{display:flex;animation:fadeUp .6s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
@@ -112,6 +127,18 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#070d0
       <div class="waiting-text">Waiting for conductor to start trip...</div>
     </div>
 
+    <div class="journey-state" id="journeyState">
+      <div class="journey-company" id="journeyCompany"></div>
+      <div class="journey-route-label" id="journeyRouteLabel"></div>
+      <div class="journey-track">
+        <div class="journey-line"></div>
+        <div class="journey-bus-icon" id="journeyBus">🚌</div>
+        <div class="journey-dots" id="journeyDots"></div>
+      </div>
+      <div class="journey-message" id="journeyMessage">Enjoy your journey</div>
+      <div class="journey-ad" id="journeyAd"></div>
+    </div>
+
     <div class="announce-state" id="announceState">
       <div class="next-label">Next Stop</div>
       <div class="stop-name-display" id="stopNameDisplay"></div>
@@ -157,6 +184,21 @@ let lastStopId = null;
 let voiceQueue = [], isPlaying = false;
 let currentDestination = '';
 let currentTotalStops = 0;
+let tripStartTime = 0;
+let lastAnnounceTime = 0;
+let adIndex = 0;
+let adTimer = null;
+let currentCompanyName = '';
+const adMessages = [
+  'Thank you for choosing __COMPANY__',
+  'Safety first: Hold on to handrails',
+  'Next stop coming soon...',
+  '__COMPANY__ — Your trusted partner',
+  'Enjoy your journey with __COMPANY__',
+  'Please keep your belongings safe',
+  '__COMPANY__ — Travel with confidence',
+  'We appreciate your patronage'
+];
 
 function getOrdinal(n) {
   const s = ['th','st','nd','rd'];
@@ -202,6 +244,7 @@ async function pollState() {
     if (!d.success) return;
 
     if (d.company_name) {
+      currentCompanyName = d.company_name;
       document.getElementById('companyName').textContent = d.company_name;
       document.getElementById('tickerCompany').textContent = d.company_name;
       const route = (d.origin && d.destination) ? d.origin+' → '+d.destination : d.route_name;
@@ -218,6 +261,7 @@ async function pollState() {
 
     if (d.stop_name && d.stop_id !== lastStopId) {
       lastStopId = d.stop_id;
+      lastAnnounceTime = Date.now();
       showAnnouncement(d.stop_name, d.prayer);
 
       if (!d.announced) {
@@ -229,16 +273,91 @@ async function pollState() {
       }
     }
 
+    if (d.all_stops && d.all_stops.length && !d.stop_name) {
+      if (!tripStartTime) {
+        tripStartTime = Date.now();
+        lastAnnounceTime = Date.now();
+        showJourneyState(d.all_stops, d.announced_stops || []);
+      }
+    }
+
     if (!d.stop_name && !d.all_stops.length) {
+      tripStartTime = 0;
+      lastAnnounceTime = 0;
+      adIndex = 0;
       document.getElementById('waitingState').style.display = 'flex';
+      document.getElementById('journeyState').classList.remove('active');
       document.getElementById('announceState').classList.remove('active');
       document.getElementById('ripple').style.display = 'none';
+      if (adTimer) { clearInterval(adTimer); adTimer = null; }
     }
+
+    checkDelay();
   } catch(e) {}
+}
+
+function showJourneyState(stops, announcedIds) {
+  document.getElementById('waitingState').style.display = 'none';
+  document.getElementById('announceState').classList.remove('active');
+  document.getElementById('ripple').style.display = 'none';
+  const js = document.getElementById('journeyState');
+  js.classList.remove('active');
+  void js.offsetWidth;
+  js.classList.add('active');
+
+  document.getElementById('journeyCompany').textContent = currentCompanyName;
+  const route = document.getElementById('companyRoute').textContent;
+  document.getElementById('journeyRouteLabel').textContent = route;
+
+  const dotsEl = document.getElementById('journeyDots');
+  dotsEl.innerHTML = stops.map((s,i) => {
+    let cls = 'upcoming';
+    if (announcedIds.includes(s.id)) cls = 'visited';
+    return '<div class="journey-dot '+cls+'"></div>';
+  }).join('');
+
+  const announcedCount = announcedIds.length;
+  const total = stops.length;
+  const busPos = total > 1 ? (announcedCount / (total - 1)) * 80 + 10 : 50;
+  document.getElementById('journeyBus').style.left = busPos + '%';
+
+  document.getElementById('journeyAd').textContent = '';
+  document.getElementById('journeyAd').style.opacity = '0';
+  startAdRotation();
+}
+
+function startAdRotation() {
+  if (adTimer) clearInterval(adTimer);
+  adTimer = setInterval(() => {
+    if (Date.now() - lastAnnounceTime > 180000) {
+      const adEl = document.getElementById('journeyAd');
+      adEl.style.opacity = '0';
+      setTimeout(() => {
+        const msg = adMessages[adIndex % adMessages.length].replace(/__COMPANY__/g, currentCompanyName);
+        adEl.textContent = msg;
+        adEl.style.opacity = '1';
+        adIndex++;
+      }, 500);
+    }
+  }, 5000);
+}
+
+function checkDelay() {
+  if (!tripStartTime || !lastAnnounceTime) return;
+  const elapsed = Date.now() - lastAnnounceTime;
+  const msgEl = document.getElementById('journeyMessage');
+  if (elapsed > 180000) {
+    msgEl.textContent = 'Next stop coming soon...';
+    msgEl.style.color = 'rgba(255,215,0,0.6)';
+  } else {
+    msgEl.textContent = 'Enjoy your journey';
+    msgEl.style.color = 'rgba(255,255,255,0.4)';
+  }
 }
 
 function showAnnouncement(name, prayer) {
   document.getElementById('waitingState').style.display = 'none';
+  document.getElementById('journeyState').classList.remove('active');
   const as = document.getElementById('announceState');
   as.classList.remove('active');
   void as.offsetWidth;
