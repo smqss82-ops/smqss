@@ -52,7 +52,7 @@ def geoip(ip):
         pass
     return ip
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 CORS(app)
 
 # ============================================
@@ -307,6 +307,15 @@ _CREATE_BUS_TRIP_STATE_SQL = """
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )"""
 
+_CREATE_BUS_ADS_SQL = """
+    CREATE TABLE IF NOT EXISTS bus_ads (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        filename VARCHAR(255) NOT NULL,
+        original_name VARCHAR(255),
+        uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        is_active TINYINT(1) DEFAULT 1
+    )"""
+
 _CREATE_BUS_COMPANIES_SQL = """
     CREATE TABLE IF NOT EXISTS bus_companies (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -358,6 +367,7 @@ _ALL_TABLES = [
     ('bus_routes', _CREATE_BUS_ROUTES_SQL),
     ('bus_stops', _CREATE_BUS_STOPS_SQL),
     ('bus_trip_state', _CREATE_BUS_TRIP_STATE_SQL),
+    ('bus_ads', _CREATE_BUS_ADS_SQL),
 ]
 
 _SEED_OFFICES_SQL = """
@@ -5438,6 +5448,76 @@ def reset_bus_trip():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
+
+# ── BUS ADS: LIST ──
+@app.route('/api/bus/ads', methods=['GET'])
+def list_bus_ads():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute("SELECT id, filename, original_name, uploaded_at FROM bus_ads WHERE is_active=1 ORDER BY uploaded_at DESC")
+            return jsonify({'success': True, 'ads': cursor.fetchall()})
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# ── BUS ADS: UPLOAD ──
+@app.route('/api/bus/ads', methods=['POST'])
+def upload_bus_ad():
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'message': 'No file provided.'}), 400
+        f = request.files['file']
+        if not f.filename:
+            return jsonify({'success': False, 'message': 'No file selected.'}), 400
+        ext = os.path.splitext(f.filename)[1].lower()
+        if ext not in ('.jpg', '.jpeg', '.png', '.gif', '.webp'):
+            return jsonify({'success': False, 'message': 'Only JPG, PNG, GIF, WEBP allowed.'}), 400
+        import uuid
+        filename = str(uuid.uuid4())[:12] + ext
+        ads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'ads')
+        os.makedirs(ads_dir, exist_ok=True)
+        f.save(os.path.join(ads_dir, filename))
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("INSERT INTO bus_ads (filename, original_name) VALUES (%s, %s)", (filename, f.filename))
+            conn.commit()
+            return jsonify({'success': True, 'id': cursor.lastrowid, 'filename': filename})
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# ── BUS ADS: DELETE ──
+@app.route('/api/bus/ads/<int:ad_id>', methods=['DELETE'])
+def delete_bus_ad(ad_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute("SELECT filename FROM bus_ads WHERE id=%s", (ad_id,))
+            row = cursor.fetchone()
+            if row:
+                ads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'ads')
+                filepath = os.path.join(ads_dir, row['filename'])
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+            cursor.execute("DELETE FROM bus_ads WHERE id=%s", (ad_id,))
+            conn.commit()
+            return jsonify({'success': True})
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# ── BUS ADS: SERVE STATIC ──
+@app.route('/ads/<path:filename>')
+def serve_bus_ad(filename):
+    ads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'ads')
+    return send_from_directory(ads_dir, filename)
 
 
 # ============================================

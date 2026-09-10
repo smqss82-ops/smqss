@@ -84,6 +84,10 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f5f5f
 .toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(20px);background:#155c30;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:99;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.error{background:#c0392b}
+.ad-card{position:relative;border-radius:12px;overflow:hidden;border:2px solid #e2e0da;background:#fff}
+.ad-card img{width:100%;height:140px;object-fit:cover;display:block}
+.ad-card-delete{position:absolute;top:6px;right:6px;width:28px;height:28px;background:rgba(192,57,43,0.9);color:#fff;border:none;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.ad-card-name{padding:8px 10px;font-size:11px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
@@ -101,6 +105,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f5f5f
   <div class="screen active" id="screen1">
     <div class="screen-title">Your Companies</div>
     <div class="card-grid" id="companyGrid"></div>
+    <button class="btn btn-primary" onclick="loadAds();showScreen('screen5')" style="margin-top:12px;background:#d4aa00">Manage TV Ads</button>
   </div>
 
   <!-- SCREEN 2: PICK ROUTE -->
@@ -143,6 +148,18 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f5f5f
       <div class="trip-route" id="tripRoute"></div>
     </div>
     <div id="announceList" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+
+  <!-- SCREEN 5: MANAGE ADS -->
+  <div class="screen" id="screen5">
+    <button class="screen-back" onclick="showScreen('screen1')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back</button>
+    <div class="screen-title">Manage TV Ads</div>
+    <div class="screen-title" style="font-size:12px;color:#9ca3af;text-transform:none;letter-spacing:0;margin-bottom:8px">These images show on the TV screen when no trip is active.</div>
+    <div id="adGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
+    <div style="margin-top:12px">
+      <input type="file" id="adFileInput" accept="image/*" style="display:none" onchange="uploadAd()">
+      <button class="btn btn-primary" onclick="document.getElementById('adFileInput').click()">+ Upload Ad Image</button>
+    </div>
   </div>
 
 </main>
@@ -399,6 +416,53 @@ async function endTrip() {
     showScreen('screen1');
     showToast('Trip ended');
   } catch(e) {}
+}
+
+// ── SCREEN 5: MANAGE ADS ──
+
+async function loadAds() {
+  try {
+    const r = await fetch(API + '/api/bus/ads');
+    const d = await r.json();
+    if (d.success) renderAds(d.ads || []);
+  } catch(e) {}
+}
+
+function renderAds(ads) {
+  const el = document.getElementById('adGrid');
+  if (!ads.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:#9ca3af;grid-column:1/-1">No ads uploaded yet. Add your first ad below.</div>'; return; }
+  el.innerHTML = ads.map(a =>
+    '<div class="ad-card">'+
+    '<img src="/ads/'+a.filename+'" alt="ad">'+
+    '<button class="ad-card-delete" onclick="deleteAd('+a.id+')">&times;</button>'+
+    '<div class="ad-card-name">'+(a.original_name||'Ad')+'</div>'+
+    '</div>'
+  ).join('');
+}
+
+async function uploadAd() {
+  const input = document.getElementById('adFileInput');
+  const file = input.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch(API + '/api/bus/ads', { method:'POST', body:fd });
+    const d = await r.json();
+    if (d.success) { showToast('Ad uploaded'); loadAds(); }
+    else showToast(d.message, true);
+  } catch(e) { showToast('Upload failed', true); }
+  input.value = '';
+}
+
+async function deleteAd(id) {
+  if (!confirm('Delete this ad?')) return;
+  try {
+    const r = await fetch(API + '/api/bus/ads/' + id, { method:'DELETE' });
+    const d = await r.json();
+    if (d.success) { showToast('Ad deleted'); loadAds(); }
+    else showToast(d.message, true);
+  } catch(e) { showToast('Delete failed', true); }
 }
 
 async function init() {
