@@ -68,18 +68,18 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#070d0
 
 .side-stops{padding:16px 20px;display:flex;flex-direction:column;gap:6px;flex:1}
 
-.stop-list-item{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;margin-bottom:2px;transition:all .3s;border:1px solid rgba(255,215,0,0.15)}
-.stop-list-item.upcoming{background:rgba(255,215,0,0.06);border-color:rgba(255,215,0,0.2)}
-.stop-list-item.visited{background:rgba(255,215,0,0.12);border-color:rgba(255,215,0,0.35)}
-.stop-list-item.current{background:rgba(74,222,128,0.12);border:2px solid rgba(74,222,128,0.5);box-shadow:0 0 20px rgba(74,222,128,0.1)}
+.stop-list-item{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;margin-bottom:2px;transition:all .3s;border:1px solid rgba(255,255,255,0.1)}
+.stop-list-item.upcoming{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.12)}
+.stop-list-item.visited{background:rgba(255,215,0,0.06);border-color:rgba(255,215,0,0.12)}
+.stop-list-item.current{background:rgba(74,222,128,0.1);border:2px solid rgba(74,222,128,0.35);box-shadow:0 0 20px rgba(74,222,128,0.08)}
 
-.stop-num{font-size:16px;font-weight:800;color:rgba(255,215,0,0.7);width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.2);transition:all .3s}
-.stop-list-item.current .stop-num{background:#4ade80;color:#070d09;font-size:18px;box-shadow:0 0 12px rgba(74,222,128,0.4);border-color:#4ade80}
-.stop-list-item.visited .stop-num{background:rgba(255,215,0,0.25);color:#ffd700;border-color:rgba(255,215,0,0.4)}
+.stop-num{font-size:16px;font-weight:800;color:rgba(255,255,255,0.25);width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(255,255,255,0.05);transition:all .3s}
+.stop-list-item.current .stop-num{background:#4ade80;color:#070d09;font-size:18px;box-shadow:0 0 12px rgba(74,222,128,0.4)}
+.stop-list-item.visited .stop-num{background:rgba(255,215,0,0.2);color:#ffd700}
 
-.stop-list-label{font-size:20px;font-weight:600;color:rgba(255,215,0,0.7);line-height:1.2}
+.stop-list-label{font-size:20px;font-weight:600;color:rgba(255,255,255,0.35);line-height:1.2}
 .stop-list-item.current .stop-list-label{color:#fff;font-weight:700}
-.stop-list-item.visited .stop-list-label{color:#ffd700;font-weight:700}
+.stop-list-item.visited .stop-list-label{color:rgba(255,215,0,0.8)}
 
 .break-badge{font-size:12px;font-weight:700;background:rgba(212,170,0,0.2);color:#d4aa00;padding:3px 10px;border-radius:6px;margin-left:auto;text-transform:uppercase;letter-spacing:1px}
 .current-badge{font-size:12px;font-weight:700;background:rgba(74,222,128,0.2);color:#4ade80;padding:3px 10px;border-radius:6px;margin-left:auto;text-transform:uppercase;letter-spacing:1px}
