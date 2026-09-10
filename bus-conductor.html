@@ -30,20 +30,8 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f5f5f
 .route-card:active{transform:scale(0.98);border-color:#155c30}
 .route-card-name{font-size:18px;font-weight:700;color:#1a1a1a}
 .route-card-meta{font-size:13px;color:#6b7280;margin-top:4px}
-.add-card{background:#f7f6f2;border:2px dashed #d1d5db;border-radius:14px;padding:20px 14px;text-align:center;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:6px}
-.add-card:hover{border-color:#d4aa00;background:#fdf3d8}
-.add-card-plus{width:40px;height:40px;background:#d4aa00;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700}
-.add-card-label{font-size:13px;font-weight:700;color:#6b7280}
-.inline-form{display:none;background:#fff;border:2px solid #d4aa00;border-radius:12px;padding:16px;margin-top:8px;animation:slideIn .2s ease}
-.inline-form.show{display:block}
-.inline-form label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px}
-.inline-form input[type=text]{width:100%;padding:10px 12px;border:1.5px solid #e2e0da;border-radius:8px;font-size:15px;color:#1a1a1a;background:#f7f6f2;outline:none;font-family:inherit;margin-bottom:8px}
-.inline-form input[type=text]:focus{border-color:#155c30;background:#fff}
-.form-row{display:flex;gap:8px}.form-row>*{flex:1}
 .btn{width:100%;padding:12px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
 .btn-primary{background:#155c30;color:#fff}.btn-primary:hover{background:#1e7d43}
-.btn-gold{background:#d4aa00;color:#fff}.btn-gold:hover{background:#b8890a}
-.btn-outline{background:transparent;color:#155c30;border:2px solid #155c30}.btn-outline:hover{background:#155c30;color:#fff}
 .stop-list{display:flex;flex-direction:column;gap:6px}
 .stop-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border-radius:10px;border:1.5px solid #e2e0da}
 .stop-item.break-point{border-color:#d4aa00;background:#fdf3d8}
@@ -103,21 +91,6 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f5f5f
   <div class="screen active" id="screen1">
     <div class="screen-title">Your Companies</div>
     <div class="card-grid" id="companyGrid"></div>
-    <div class="add-card" onclick="showNewCompanyForm()">
-      <div class="add-card-plus">+</div>
-      <div class="add-card-label">New Company</div>
-    </div>
-    <div class="inline-form" id="newCompanyForm">
-      <div class="form-row">
-        <div><label>Company Name</label><input type="text" id="newCompanyName" placeholder="e.g. Modern Coast"></div>
-        <div style="flex:0 0 100px"><label>Code</label><input type="text" id="newCompanyCode" placeholder="MCD" maxlength="10" style="text-transform:uppercase"></div>
-      </div>
-      <div style="margin-bottom:10px"><label>Phone (optional)</label><input type="text" id="newCompanyPhone" placeholder="0700000000"></div>
-      <div class="form-row">
-        <button class="btn btn-gold" onclick="createCompany()">Save Company</button>
-        <button class="btn btn-outline" onclick="hideNewCompanyForm()">Cancel</button>
-      </div>
-    </div>
   </div>
 
   <!-- SCREEN 2: PICK ROUTE -->
@@ -125,21 +98,6 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f5f5f
     <button class="screen-back" onclick="showScreen('screen1')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back</button>
     <div class="screen-title" id="screen2Title">Routes</div>
     <div id="routeList" style="display:flex;flex-direction:column;gap:8px"></div>
-    <div class="add-card" onclick="showNewRouteForm()" style="margin-top:4px">
-      <div class="add-card-plus">+</div>
-      <div class="add-card-label">Add New Route</div>
-    </div>
-    <div class="inline-form" id="newRouteForm">
-      <div style="margin-bottom:8px"><label>Route Name</label><input type="text" id="newRouteName" placeholder="e.g. Kampala - Jinja"></div>
-      <div class="form-row">
-        <div><label>From</label><input type="text" id="newRouteOrigin" placeholder="Kampala"></div>
-        <div><label>To</label><input type="text" id="newRouteDest" placeholder="Jinja"></div>
-      </div>
-      <div class="form-row" style="margin-top:8px">
-        <button class="btn btn-gold" onclick="createRoute()">Save Route</button>
-        <button class="btn btn-outline" onclick="hideNewRouteForm()">Cancel</button>
-      </div>
-    </div>
   </div>
 
   <!-- SCREEN 3: ADD STOPS -->
@@ -219,27 +177,6 @@ function selectCompany(id) {
   showScreen('screen2');
 }
 
-function showNewCompanyForm() { document.getElementById('newCompanyForm').classList.add('show'); document.getElementById('newCompanyName').focus(); }
-function hideNewCompanyForm() { document.getElementById('newCompanyForm').classList.remove('show'); }
-
-async function createCompany() {
-  const name = document.getElementById('newCompanyName').value.trim();
-  const code = document.getElementById('newCompanyCode').value.trim();
-  const phone = document.getElementById('newCompanyPhone').value.trim();
-  if (!name || !code) { showToast('Name and code required', true); return; }
-  try {
-    const r = await fetch(API + '/api/bus/company', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({company_name:name,company_code:code,contact_phone:phone}) });
-    const d = await r.json();
-    if (d.success) {
-      showToast('Company saved!');
-      document.getElementById('newCompanyName').value=''; document.getElementById('newCompanyCode').value=''; document.getElementById('newCompanyPhone').value='';
-      hideNewCompanyForm();
-      await loadCompanies();
-      selectCompany(d.company_id);
-    } else showToast(d.message, true);
-  } catch(e) { showToast('Network error', true); }
-}
-
 // ── SCREEN 2: ROUTES ──
 
 async function loadRoutes() {
@@ -269,28 +206,6 @@ function selectRoute(id) {
   document.getElementById('screen3Title').textContent = (r ? r.route_name : '') + ' — Stop Points';
   loadStops();
   showScreen('screen3');
-}
-
-function showNewRouteForm() { document.getElementById('newRouteForm').classList.add('show'); document.getElementById('newRouteName').focus(); }
-function hideNewRouteForm() { document.getElementById('newRouteForm').classList.remove('show'); }
-
-async function createRoute() {
-  if (!selectedCompanyId) return;
-  const name = document.getElementById('newRouteName').value.trim();
-  const origin = document.getElementById('newRouteOrigin').value.trim();
-  const dest = document.getElementById('newRouteDest').value.trim();
-  if (!name) { showToast('Route name required', true); return; }
-  try {
-    const r = await fetch(API + '/api/bus/route', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({company_id:selectedCompanyId,route_name:name,origin:origin,destination:dest}) });
-    const d = await r.json();
-    if (d.success) {
-      showToast('Route saved!');
-      document.getElementById('newRouteName').value=''; document.getElementById('newRouteOrigin').value=''; document.getElementById('newRouteDest').value='';
-      hideNewRouteForm();
-      await loadRoutes();
-      selectRoute(d.route_id);
-    } else showToast(d.message, true);
-  } catch(e) { showToast('Network error', true); }
 }
 
 // ── SCREEN 3: STOPS ──
