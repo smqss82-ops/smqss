@@ -2,615 +2,660 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Bus Conductor — SMQSS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bus Display — SMQSS</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
-body{
-  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
-  background:#f5f5f0;color:#1a1a1a;
-  min-height:100vh;min-height:100dvh;
-  display:flex;flex-direction:column;
-  font-size:16px;
-}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#070d09;color:#fff;height:100vh;display:flex;flex-direction:column;overflow:hidden}
 
-/* ── responsive container: keeps things centered & readable on tablets/desktop, full-bleed on phones ── */
-.header,.main{width:100%}
-.header-inner,.screen-inner{width:100%;max-width:720px;margin:0 auto}
+.top-bar{background:linear-gradient(135deg,rgba(21,92,48,0.9),rgba(30,125,67,0.9));padding:12px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #d4aa00}
+.company-info{display:flex;align-items:center;gap:14px}
+.company-icon{width:42px;height:42px;background:rgba(255,215,0,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,215,0,0.3)}
+.company-icon svg{width:22px;height:22px;fill:#ffd700}
+.company-name{font-size:20px;font-weight:700;color:#fff}
+.company-route{font-size:13px;color:rgba(255,255,255,0.7);margin-top:1px}
+.top-clock{font-family:'Courier New',monospace;font-size:22px;font-weight:700;color:#fff;letter-spacing:2px;text-shadow:0 0 15px rgba(255,255,255,0.15)}
 
-.header{
-  background:#fff;border-bottom:3px solid #d4aa00;
-  padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 1px 4px rgba(0,0,0,0.08);
-  position:sticky;top:0;z-index:10;
-}
-.header-inner{display:flex;align-items:center;justify-content:space-between}
-.header-brand{display:flex;align-items:center;gap:10px}
-.header-brand svg{width:28px;height:28px;fill:#155c30;flex-shrink:0}
-.header-title{font-size:clamp(14px,4vw,17px);font-weight:700;color:#155c30;white-space:nowrap}
-.header-title span{color:#d4aa00}
-.header-status{font-size:11px;padding:4px 10px;border-radius:20px;background:#e8f4ed;color:#155c30;font-weight:600;white-space:nowrap}
+.display{flex:1;display:flex;position:relative;overflow:hidden}
 
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
-.screen{display:none;flex:1;flex-direction:column;overflow-y:auto;animation:slideIn .25s ease;
-  padding-bottom:calc(16px + env(safe-area-inset-bottom));
-}
-.screen.active{display:flex;align-items:center}
-.screen-inner{display:flex;flex-direction:column;gap:12px;padding:16px;width:100%}
-@keyframes slideIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+.stop-panel{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;z-index:2}
 
-.screen-back{display:flex;align-items:center;gap:8px;padding:4px 0;margin-bottom:4px;cursor:pointer;color:#6b7280;font-size:14px;font-weight:600;border:none;background:none;font-family:inherit}
-.screen-back:hover{color:#155c30}
-.screen-back svg{width:20px;height:20px;fill:currentColor}
-.screen-title{font-size:13px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.waiting-state{display:none;position:absolute;inset:0;z-index:10;background:#070d09;overflow:hidden}
 
-.card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.company-card{background:#fff;border:2px solid #e2e0da;border-radius:14px;padding:20px 14px;text-align:center;cursor:pointer;transition:all .2s}
-.company-card:hover{border-color:#155c30}
-.company-card:active{transform:scale(0.96);border-color:#155c30}
-.company-card-icon{width:48px;height:48px;background:linear-gradient(135deg,#155c30,#1e7d43);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;color:#fff;font-size:20px;font-weight:900}
-.company-card-name{font-size:clamp(14px,4vw,16px);font-weight:700;color:#1a1a1a;word-break:break-word}
-.company-card-code{font-size:12px;color:#6b7280;margin-top:2px}
+.ad-carousel{position:absolute;inset:0;display:none}
+.ad-slide{position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;opacity:0;transition:opacity 1.2s ease}
+.ad-slide.active{opacity:1}
+.ad-slide::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.55) 0,rgba(0,0,0,0) 25%)}
+.ad-carousel-dots{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:2}
+.ad-carousel-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.3);transition:all .3s}
+.ad-carousel-dot.active{background:#ffd700;border-color:#ffd700;box-shadow:0 0 8px rgba(255,215,0,0.5);width:22px;border-radius:5px}
 
-.route-card{background:#fff;border:2px solid #e2e0da;border-radius:12px;padding:16px;cursor:pointer;transition:all .2s}
-.route-card:hover{border-color:#155c30}
-.route-card:active{transform:scale(0.98);border-color:#155c30}
-.route-card-name{font-size:clamp(16px,4.5vw,18px);font-weight:700;color:#1a1a1a;word-break:break-word}
-.route-card-meta{font-size:13px;color:#6b7280;margin-top:4px}
-.route-card-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.route-btn{padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:all .2s}
-.route-btn-edit{background:#fff;color:#155c30;border-color:#155c30}
-.route-btn-edit:active{background:#155c30;color:#fff}
-.route-btn-delete{background:#fff;color:#c0392b;border-color:#c0392b}
-.route-btn-delete:active{background:#c0392b;color:#fff}
-.route-edit-form{display:flex;flex-direction:column;gap:8px;margin-top:10px}
-.route-edit-form input{padding:10px;border:1.5px solid #e2e0da;border-radius:8px;font-size:16px;font-family:inherit;width:100%}
-.route-edit-actions{display:flex;gap:8px}
-.route-edit-actions button{flex:1;padding:10px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}
+.waiting-fallback{display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+.waiting-icon{width:100px;height:100px;border:3px solid rgba(255,215,0,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;animation:float 3s ease-in-out infinite}
+.waiting-icon svg{width:50px;height:50px;fill:rgba(255,215,0,0.3)}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.waiting-text{font-size:22px;color:rgba(255,255,255,0.3);font-weight:300}
 
-.btn{width:100%;padding:12px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
-.btn-primary{background:#155c30;color:#fff}.btn-primary:hover{background:#1e7d43}
-.btn-disabled{background:#d1d5db!important;color:#9ca3af!important;cursor:not-allowed}
+.journey-state{display:none;flex-direction:column;align-items:center;gap:16px;text-align:center;padding:30px;width:100%;max-width:900px}
+.journey-state.active{display:flex;animation:fadeUp .6s ease}
+.journey-company{font-size:clamp(28px,5vw,48px);font-weight:800;color:#fff;text-shadow:0 0 30px rgba(255,255,255,0.1)}
+.journey-route-label{font-size:20px;color:rgba(255,215,0,0.8);font-weight:600;margin-top:-8px}
+.journey-track{position:relative;width:100%;height:100px;display:flex;align-items:center;margin:10px 0}
+.journey-line{position:absolute;top:50%;left:0;right:0;height:3px;background:repeating-linear-gradient(90deg,rgba(255,215,0,0.3) 0,rgba(255,215,0,0.3) 8px,transparent 8px,transparent 16px);transform:translateY(-50%)}
+.journey-line.scrolling{animation:roadScroll 0.6s linear infinite}
+@keyframes roadScroll{from{background-position:0 0}to{background-position:-16px 0}}
+.journey-dots{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 20px;z-index:1}
+.journey-dot{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.2);transition:all .3s}
+.journey-dot.visited{background:#ffd700;border-color:#ffd700;box-shadow:0 0 8px rgba(255,215,0,0.4)}
+.journey-dot.current{background:#4ade80;border-color:#4ade80;box-shadow:0 0 12px rgba(74,222,128,0.5);width:18px;height:18px}
+.journey-dot.upcoming{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.15)}
+.journey-message{font-size:18px;color:rgba(255,255,255,0.4);font-weight:400;margin-top:8px}
+.journey-ad{font-size:20px;color:rgba(255,215,0,0.7);font-weight:600;min-height:30px;transition:opacity .5s ease;margin-top:4px}
 
-.stop-list{display:flex;flex-direction:column;gap:6px}
-.stop-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border-radius:10px;border:1.5px solid #e2e0da}
-.stop-item.break-point{border-color:#d4aa00;background:#fdf3d8}
-.stop-num{font-size:16px;font-weight:800;color:#fff;background:#6b7280;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.stop-item.break-point .stop-num{background:#d4aa00}
-.stop-name{font-size:clamp(15px,4vw,17px);font-weight:600;flex:1;word-break:break-word}
-.stop-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;text-transform:uppercase;background:#d4aa00;color:#fff;flex-shrink:0}
-.delete-btn{width:28px;height:28px;background:transparent;color:#c0392b;border:1px solid #c0392b;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.journey-bus-icon{position:absolute;bottom:50%;z-index:3;transition:left 1.2s cubic-bezier(0.25,0.1,0.25,1);filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5));transform:translateY(6px)}
+.journey-bus-icon.driving{animation:busDrive 0.35s ease-in-out infinite}
+.journey-bus-icon.arriving{animation:busArrive 0.4s ease-in-out 3}
+.journey-bus-icon.stopped{animation:none;transform:translateY(6px)}
+.bus-img{width:130px;height:auto;display:block}
+@keyframes busDrive{0%,100%{transform:translateY(6px) rotate(0deg)}30%{transform:translateY(4px) rotate(-0.3deg)}60%{transform:translateY(5px) rotate(0.2deg)}}
+@keyframes busArrive{0%,100%{transform:translateY(6px)}50%{transform:translateY(0px)}}
 
-/* ── stop-adding controls: fully separate block from the Start Trip control ── */
-.stop-controls{
-  display:flex;flex-direction:column;gap:10px;
-  padding:12px;background:#fff;border:1.5px solid #e2e0da;border-radius:12px;margin-top:4px;
-}
-.add-stop-row{display:flex;gap:8px;flex-wrap:wrap}
-.add-stop-row input{flex:1 1 160px;min-width:0;font-size:16px;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-family:inherit}
-.add-stop-btn{padding:12px 18px;background:#155c30;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}
-.add-stop-btn:hover{background:#1e7d43}
-.toggle-row{display:flex;align-items:center;gap:10px;padding:2px 0}
-.toggle-label{font-size:14px;font-weight:600;color:#374151;flex:1}
-.toggle{position:relative;width:44px;height:24px;cursor:pointer;flex-shrink:0}
-.toggle input{opacity:0;width:0;height:0}
-.toggle-slider{position:absolute;top:0;left:0;right:0;bottom:0;background:#d1d5db;border-radius:24px;transition:background .2s}
-.toggle-slider::before{content:'';position:absolute;left:2px;top:2px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .2s}
-.toggle input:checked+.toggle-slider{background:#155c30}
-.toggle input:checked+.toggle-slider::before{transform:translateX(20px)}
+.motion-lines{position:absolute;right:100%;bottom:20px;display:flex;flex-direction:column;gap:5px;padding-right:6px;opacity:0;transition:opacity .3s}
+.driving .motion-lines{opacity:1}
+.arriving .motion-lines{opacity:0.6}
+.motion-line{height:2px;border-radius:2px;background:rgba(255,215,0,0.35);animation:motionFade 0.6s ease-in-out infinite}
+.motion-line:nth-child(1){width:28px;animation-delay:0s}
+.motion-line:nth-child(2){width:20px;animation-delay:0.12s}
+.motion-line:nth-child(3){width:14px;animation-delay:0.24s}
+@keyframes motionFade{0%,100%{opacity:0.15;transform:translateX(6px)}50%{opacity:0.6;transform:translateX(0)}}
 
-/* Start Trip lives in its own section, independent of the stop-controls above */
-.start-trip-section{margin-top:6px;padding-top:14px;border-top:1px dashed #d1d5db}
-.start-trip-hint{font-size:12px;color:#9ca3af;text-align:center;margin-bottom:8px}
+.announce-state{display:none;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:20px}
+.announce-state.active{display:flex;animation:fadeUp .6s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
 
-.trip-banner{background:linear-gradient(135deg,#155c30,#1e7d43);color:#fff;border-radius:12px;padding:16px;text-align:center}
-.trip-company{font-size:clamp(17px,5vw,20px);font-weight:700}
-.trip-route{font-size:14px;opacity:.8;margin-top:2px}
-.announce-card{display:flex;align-items:center;gap:14px;padding:16px;background:#fff;border-radius:12px;border:2px solid #e2e0da;cursor:pointer;transition:all .2s;flex-wrap:wrap}
-.announce-card:active{transform:scale(0.98)}
-.announce-card.done{border-color:#155c30;background:#e8f4ed}
-.announce-card.is-break{border-color:#d4aa00;background:#fdf3d8}
-.announce-card.done.is-break{border-color:#155c30;background:#e8f4ed}
-.announce-num{font-size:22px;font-weight:900;color:#fff;background:#9ca3af;width:50px;height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.announce-card.done .announce-num{background:#155c30}
-.announce-card.is-break .announce-num{background:#d4aa00}
-.announce-card.done.is-break .announce-num{background:#155c30}
-.announce-info{flex:1;min-width:120px}
-.announce-name{font-size:clamp(17px,5vw,20px);font-weight:700;color:#1a1a1a;word-break:break-word}
-.announce-card.done .announce-name{color:#155c30}
-.announce-status{font-size:12px;color:#6b7280;margin-top:2px}
-.announce-card.done .announce-status{color:#155c30;font-weight:600}
-.announce-action{padding:12px 20px;background:#155c30;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;min-width:100px;flex-shrink:0}
-.announce-card.done .announce-action{background:#e8f4ed;color:#155c30}
-.toast{position:fixed;bottom:calc(70px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);background:#155c30;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:99;pointer-events:none;max-width:90vw;text-align:center}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.toast.error{background:#c0392b}
-.ad-card{position:relative;border-radius:12px;overflow:hidden;border:2px solid #e2e0da;background:#fff}
-.ad-card img{width:100%;height:140px;object-fit:cover;display:block}
-.ad-card-delete{position:absolute;top:6px;right:6px;width:28px;height:28px;background:rgba(192,57,43,0.9);color:#fff;border:none;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.ad-card-name{padding:8px 10px;font-size:11px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.next-label{font-size:18px;font-weight:300;color:rgba(255,255,255,0.4);letter-spacing:6px;text-transform:uppercase}
+.stop-name-display{font-size:clamp(52px,12vw,110px);font-weight:800;color:#ffd700;line-height:1.05;text-shadow:0 0 60px rgba(255,215,0,0.4),0 0 120px rgba(255,215,0,0.15);padding:10px 40px;position:relative}
+.stop-name-display::after{content:'';position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:80%;height:3px;background:linear-gradient(90deg,transparent,#ffd700,transparent)}
 
-/* ── breakpoints ── */
-@media (min-width:520px){
-  .card-grid{grid-template-columns:repeat(3,1fr)}
-  .ad-grid,#adGrid{grid-template-columns:repeat(3,1fr)!important}
-}
-@media (min-width:820px){
-  .card-grid{grid-template-columns:repeat(4,1fr)}
-  .header-inner,.screen-inner{max-width:840px}
-  body{font-size:17px}
-  .ad-grid,#adGrid{grid-template-columns:repeat(4,1fr)!important}
-}
-@media (max-width:340px){
-  .add-stop-row{flex-direction:column}
-  .add-stop-btn{width:100%}
-}
-@media (hover:hover){
-  .announce-card:not(.done):hover{border-color:#155c30}
-}
+.announce-subtitle{max-width:800px;font-size:18px;color:rgba(255,255,255,0.55);line-height:1.5;margin-top:4px;animation:fadeUp .8s ease .2s both}
+
+.exit-arrows{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:18px;animation:bounceDown 1.2s ease-in-out infinite}
+.exit-arrows svg{width:56px;height:56px;fill:#4ade80;filter:drop-shadow(0 0 14px rgba(74,222,128,0.7)) drop-shadow(0 0 30px rgba(74,222,128,0.4));animation:exitPulse 1.5s ease-in-out infinite}
+.exit-label{font-size:18px;font-weight:900;color:#4ade80;letter-spacing:4px;text-transform:uppercase;text-shadow:0 0 20px rgba(74,222,128,0.6),0 0 40px rgba(74,222,128,0.3);animation:exitGlow 1.5s ease-in-out infinite alternate}
+@keyframes bounceDown{0%,100%{transform:translateY(0)}50%{transform:translateY(12px)}}
+@keyframes exitPulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 14px rgba(74,222,128,0.7)) drop-shadow(0 0 30px rgba(74,222,128,0.4))}50%{transform:scale(1.15);filter:drop-shadow(0 0 20px rgba(74,222,128,0.9)) drop-shadow(0 0 50px rgba(74,222,128,0.6))}}
+@keyframes exitGlow{0%{text-shadow:0 0 20px rgba(74,222,128,0.6),0 0 40px rgba(74,222,128,0.3)}100%{text-shadow:0 0 30px rgba(74,222,128,0.9),0 0 60px rgba(74,222,128,0.5),0 0 80px rgba(74,222,128,0.2)}}
+
+.prayer-box{margin-top:18px;max-width:700px;padding:16px 24px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);border-radius:12px;animation:fadeUp .8s ease .3s both}
+.prayer-text{font-size:15px;color:rgba(255,255,255,0.6);line-height:1.6;font-style:italic;text-align:center}
+.prayer-label{font-size:10px;font-weight:700;color:rgba(255,215,0,0.4);text-transform:uppercase;letter-spacing:2px;text-align:center;margin-bottom:6px}
+
+.side-panel{width:380px;background:rgba(255,255,255,0.03);border-left:2px solid rgba(255,215,0,0.15);padding:0 0 20px 0;display:flex;flex-direction:column;overflow-y:auto}
+
+.side-header{background:linear-gradient(135deg,rgba(212,170,0,0.12),rgba(212,170,0,0.04));padding:20px 20px 14px;border-bottom:2px solid rgba(255,215,0,0.2)}
+.side-title{font-size:32px;font-weight:900;color:#ffd700;letter-spacing:1px;line-height:1.1;text-transform:uppercase;text-shadow:0 0 30px rgba(255,215,0,0.2)}
+.side-subtitle{font-size:13px;color:rgba(255,215,0,0.5);margin-top:4px;font-weight:500}
+
+.side-stops{padding:16px 20px;display:flex;flex-direction:column;gap:6px;flex:1}
+
+.stop-list-item{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;margin-bottom:4px;transition:all .3s;border:1px solid rgba(74,222,128,0.15)}
+.stop-list-item.upcoming{background:rgba(74,222,128,0.08);border-color:rgba(74,222,128,0.2)}
+.stop-list-item.current{background:rgba(74,222,128,0.18);border:2px solid rgba(74,222,128,0.5);box-shadow:0 0 20px rgba(74,222,128,0.12)}
+
+.stop-num{font-size:16px;font-weight:800;color:rgba(74,222,128,0.6);width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.2);transition:all .3s}
+.stop-list-item.current .stop-num{background:#4ade80;color:#070d09;font-size:18px;box-shadow:0 0 12px rgba(74,222,128,0.4);border-color:#4ade80}
+
+.stop-list-label{font-size:20px;font-weight:600;color:rgba(74,222,128,0.7);line-height:1.2}
+.stop-list-item.current .stop-list-label{color:#fff;font-weight:700}
+
+.break-badge{font-size:12px;font-weight:700;background:rgba(212,170,0,0.2);color:#d4aa00;padding:3px 10px;border-radius:6px;margin-left:auto;text-transform:uppercase;letter-spacing:1px}
+.current-badge{font-size:12px;font-weight:700;background:rgba(74,222,128,0.2);color:#4ade80;padding:3px 10px;border-radius:6px;margin-left:auto;text-transform:uppercase;letter-spacing:1px}
+
+.ticker-wrap{position:fixed;bottom:0;left:0;right:0;z-index:60;display:flex;flex-direction:column;gap:0}
+.ticker-top-bar{height:3px;background:linear-gradient(90deg,#e8c547,#ffec6e,#c9a227,#e8c547);background-size:200% 100%;animation:barShimmer 3s linear infinite}
+@keyframes barShimmer{0%{background-position:0% 0%}100%{background-position:200% 0%}}
+.ticker-body{display:flex;align-items:stretch;background:rgba(5,10,6,0.97);border-top:1px solid rgba(201,162,39,0.4);overflow:hidden;height:56px}
+.ticker-label{display:flex;align-items:center;gap:8px;padding:0 28px 0 20px;background:#c9a227;flex-shrink:0;position:relative;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%);min-width:140px}
+.ticker-label-dot{width:8px;height:8px;border-radius:50%;background:#0f2318;animation:pulseDot 1s infinite;flex-shrink:0}
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.3)}}
+.ticker-label-text{font-size:13px;font-weight:800;color:#0f2318;letter-spacing:2px;text-transform:uppercase;white-space:nowrap}
+.ticker-scroll-track{flex:1;overflow:hidden;display:flex;align-items:center;position:relative}
+.ticker-scroll-inner{display:flex;align-items:center;gap:0;white-space:nowrap;animation:tickerScroll 28s linear infinite;will-change:transform}
+.ticker-scroll-track:hover .ticker-scroll-inner{animation-play-state:paused}
+@keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ticker-item{display:inline-flex;align-items:center;gap:0;padding:0 10px 0 0}
+.ticker-office-badge{display:inline-flex;align-items:center;background:rgba(105,255,156,0.12);border:1px solid rgba(105,255,156,0.35);color:#69ff9c;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:4px;margin-right:10px;flex-shrink:0}
+.ticker-message-text{font-size:16px;color:#ffffff;font-weight:500;letter-spacing:0.1px}
+.ticker-sep{display:inline-block;color:#e8c547;font-size:16px;margin:0 28px;opacity:0.7;flex-shrink:0}
+.ticker-scroll-track::after{content:'';position:absolute;top:0;right:0;width:80px;height:100%;background:linear-gradient(90deg,transparent,rgba(5,10,6,0.97));pointer-events:none;z-index:2}
+.ticker-scroll-track::before{content:'';position:absolute;top:0;left:0;width:30px;height:100%;background:linear-gradient(90deg,rgba(5,10,6,0.97),transparent);pointer-events:none;z-index:2}
+.ticker-time{display:flex;align-items:center;padding:0 16px;border-left:1px solid rgba(255,255,255,0.08);flex-shrink:0;font-family:'Courier New',monospace;font-size:14px;color:rgba(255,255,255,0.5);letter-spacing:1px}
+
+.particles{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:1;overflow:hidden}
+.particle{position:absolute;width:4px;height:4px;background:rgba(255,215,0,0.3);border-radius:50%;animation:rise linear infinite}
+@keyframes rise{0%{transform:translateY(100vh) scale(0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-10vh) scale(1);opacity:0}}
+
+.voice-indicator{position:absolute;bottom:54px;left:20px;display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,0.2);z-index:3}
+.voice-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;opacity:0.3}
+.voice-dot.active{opacity:1;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+
+.ripple{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:200px;height:200px;border:2px solid rgba(255,215,0,0.15);border-radius:50%;animation:rippleOut 2s ease-out infinite;pointer-events:none;z-index:1}
+@keyframes rippleOut{0%{width:100px;height:100px;opacity:0.6}100%{width:600px;height:600px;opacity:0}}
+
+@media(max-width:800px){.side-panel{display:none}}
 </style>
 </head>
 <body>
-<header class="header">
-  <div class="header-inner">
-    <div class="header-brand">
-      <svg viewBox="0 0 24 24"><path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/></svg>
-      <div class="header-title">SMQSS <span>Bus</span></div>
-    </div>
-    <div class="header-status">Connected</div>
-  </div>
-</header>
-
-<main class="main">
-
-  <!-- SCREEN 1: PICK COMPANY -->
-  <div class="screen active" id="screen1">
-    <div class="screen-inner">
-      <div class="screen-title">Your Companies</div>
-      <div class="card-grid" id="companyGrid"></div>
-      <button class="btn btn-primary" onclick="loadAds();showScreen('screen5')" style="margin-top:12px;background:#d4aa00">Manage TV Ads</button>
+<div class="top-bar">
+  <div class="company-info">
+    <div class="company-icon"><svg viewBox="0 0 24 24"><path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/></svg></div>
+    <div>
+      <div class="company-name" id="companyName">Bus Company</div>
+      <div class="company-route" id="companyRoute">Route</div>
     </div>
   </div>
+  <div class="top-clock" id="clock"></div>
+</div>
 
-  <!-- SCREEN 2: PICK ROUTE -->
-  <div class="screen" id="screen2">
-    <div class="screen-inner">
-      <button class="screen-back" onclick="showScreen('screen1')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back</button>
-      <div class="screen-title" id="screen2Title">Routes</div>
-      <div id="routeList" style="display:flex;flex-direction:column;gap:8px"></div>
-      <div id="addRouteForm" style="margin-top:12px;display:none">
-        <div class="screen-title">Add New Route</div>
-        <input type="text" id="newRouteName" placeholder="Route name" style="width:100%;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit;margin-bottom:8px">
-        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-          <input type="text" id="newRouteOrigin" placeholder="Origin (optional)" style="flex:1 1 140px;min-width:0;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit">
-          <input type="text" id="newRouteDest" placeholder="Destination (optional)" style="flex:1 1 140px;min-width:0;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit">
+<div class="display">
+  <div class="particles" id="particles"></div>
+  <div class="ripple" id="ripple" style="display:none"></div>
+
+  <div class="stop-panel">
+    <div class="waiting-state" id="waitingState">
+      <div class="ad-carousel" id="adCarousel"></div>
+      <div class="ad-carousel-dots" id="adCarouselDots"></div>
+
+      <div class="waiting-fallback" id="waitingFallback">
+        <div class="waiting-icon"><svg viewBox="0 0 24 24"><path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/></svg></div>
+        <div class="waiting-text">Waiting for conductor to start trip...</div>
+      </div>
+    </div>
+
+    <div class="journey-state" id="journeyState">
+      <div class="journey-company" id="journeyCompany"></div>
+      <div class="journey-route-label" id="journeyRouteLabel"></div>
+      <div class="journey-track">
+        <div class="journey-line"></div>
+        <div class="journey-bus-icon" id="journeyBus">
+          <div class="motion-lines">
+            <div class="motion-line"></div>
+            <div class="motion-line"></div>
+            <div class="motion-line"></div>
+          </div>
+          <img src="/bus.svg" alt="bus" class="bus-img">
         </div>
-        <button class="btn btn-primary" onclick="addRoute()" style="width:100%">+ Add Route</button>
+        <div class="journey-dots" id="journeyDots"></div>
+      </div>
+      <div class="journey-message" id="journeyMessage">Enjoy your journey</div>
+      <div class="journey-ad" id="journeyAd"></div>
+    </div>
+
+    <div class="announce-state" id="announceState">
+      <div class="next-label">Next Stop</div>
+      <div class="stop-name-display" id="stopNameDisplay"></div>
+      <div class="announce-subtitle" id="announceSubtitle"></div>
+      <div class="exit-arrows">
+        <svg viewBox="0 0 24 24"><path d="M11 3.5V1h-2v2.5H7.5v2H9V4.38l-4.12 4.12-1.41-1.41L7.59 2.55l.71-.71L11 3.5zm2 0V1h2v2.5h1.5v2H15V4.38l4.12 4.12 1.41-1.41L14.41 2.55l-.71-.71L11 3.5zM11 20.5V24h-2v-2.5H7.5v-2H9v1.12l-4.12-4.12-1.41 1.41L7.59 21.45l.71.71L11 20.5zm2 0V24h2v-2.5h1.5v-2H15v1.12l4.12-4.12 1.41 1.41L14.41 21.45l-.71.71L11 20.5z"/></svg>
+        <svg viewBox="0 0 24 24" style="width:42px;height:42px"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
+        <div class="exit-label">Getting Off</div>
+      </div>
+      <div class="prayer-box" id="prayerBox" style="display:none">
+        <div class="prayer-label">Journey Mercy Prayer</div>
+        <div class="prayer-text" id="prayerText"></div>
       </div>
     </div>
   </div>
 
-  <!-- SCREEN 3: ADD STOPS -->
-  <div class="screen" id="screen3">
-    <div class="screen-inner">
-      <button class="screen-back" onclick="showScreen('screen2')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back</button>
-      <div class="screen-title" id="screen3Title">Stop Points</div>
-      <div class="stop-list" id="stopList"></div>
+  <div class="side-panel" id="sidePanel">
+    <div class="side-header">
+      <div class="side-title">Our Stop Points</div>
+      <div class="side-subtitle" id="sideSubtitle">All stops on this route</div>
+    </div>
+    <div class="side-stops" id="routeStopsList"></div>
+  </div>
+</div>
 
-      <!-- Independent block #1: adding/listing stop points. Works on its own, with no dependency on the trip-start control below. -->
-      <div class="stop-controls">
-        <div class="add-stop-row">
-          <input type="text" id="newStopName" placeholder="Type stop name..." onkeydown="if(event.key==='Enter')addStop()">
-          <button class="add-stop-btn" onclick="addStop()">+ Add</button>
+<div class="ticker-wrap">
+  <div class="ticker-top-bar"></div>
+  <div class="ticker-body">
+    <div class="ticker-label">
+      <div class="ticker-label-dot"></div>
+      <span class="ticker-label-text" id="tickerLabel">BUS</span>
+    </div>
+    <div class="ticker-scroll-track">
+      <div class="ticker-scroll-inner" id="tickerInner">
+        <div class="ticker-item">
+          <span class="ticker-office-badge">INFO</span>
+          <span class="ticker-message-text">Welcome aboard. Safe travels. The next stop will be announced shortly.</span>
         </div>
-        <div class="toggle-row">
-          <span class="toggle-label">Rest Break Point</span>
-          <label class="toggle"><input type="checkbox" id="newStopBreak"><span class="toggle-slider"></span></label>
-        </div>
-      </div>
-
-      <!-- Independent block #2: starting the trip. Enabled purely by whether stops already exist, not by anything happening in the block above. -->
-      <div class="start-trip-section">
-        <div class="start-trip-hint" id="startHint" style="display:none">Add at least one stop point to enable Start Trip</div>
-        <button class="btn btn-primary" id="startBtn" onclick="startTrip()" style="display:none">Start Trip</button>
+        <span class="ticker-sep">&#9656;</span>
       </div>
     </div>
+    <div class="ticker-time" id="tickerTime">--:--</div>
   </div>
+</div>
 
-  <!-- SCREEN 4: ANNOUNCE -->
-  <div class="screen" id="screen4">
-    <div class="screen-inner">
-      <button class="screen-back" onclick="endTrip()"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>End Trip</button>
-      <div class="trip-banner">
-        <div class="trip-company" id="tripCompany"></div>
-        <div class="trip-route" id="tripRoute"></div>
-      </div>
-      <div id="announceList" style="display:flex;flex-direction:column;gap:10px"></div>
-    </div>
-  </div>
+<div class="voice-indicator">
+  <div class="voice-dot" id="voiceDot"></div>
+  <span id="voiceStatus">Voice Ready</span>
+</div>
 
-  <!-- SCREEN 5: MANAGE ADS -->
-  <div class="screen" id="screen5">
-    <div class="screen-inner">
-      <button class="screen-back" onclick="showScreen('screen1')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back</button>
-      <div class="screen-title">Manage TV Ads</div>
-      <div class="screen-title" style="font-size:12px;color:#9ca3af;text-transform:none;letter-spacing:0;margin-bottom:8px">These images show on the TV screen when no trip is active.</div>
-      <div id="adGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
-      <div style="margin-top:12px">
-        <input type="file" id="adFileInput" accept="image/*" style="display:none" onchange="uploadAd()">
-        <button class="btn btn-primary" onclick="document.getElementById('adFileInput').click()">+ Upload Ad Image</button>
-      </div>
-    </div>
-  </div>
-
-</main>
-
-<div class="toast" id="toast"></div>
+<audio id="audioPlayer"></audio>
 
 <script>
 const API = window.location.origin;
-let companies = [], routes = [], stops = [];
-let selectedCompanyId = null, selectedRouteId = null;
-let announcedIds = new Set();
+let lastStopId = null;
+let voiceQueue = [], isPlaying = false;
+let currentDestination = '';
+let currentTotalStops = 0;
+let tripStartTime = 0;
+let lastAnnounceTime = 0;
+let adIndex = 0;
+let adTimer = null;
+let currentCompanyName = '';
+let lastRenderedAnnouncedCount = -1;
+let lastRenderedCurrentId = null;
+let lastTickerCompany = '';
+let lastTickerRoute = '';
+let emptyPollStreak = 0;
+const EMPTY_POLL_THRESHOLD = 3;
+let d_all_stops = null;
+let d_announced_stops = [];
+let lastAnnouncedStopId = null;
+// Tracks the last stop_name we saw so we know when Proceed clears it
+let lastSeenStopName = null;
 
-function showToast(msg, err) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.className = 'toast show' + (err ? ' error' : '');
-  setTimeout(() => t.className = 'toast', 2500);
-}
+const adMessages = [
+  'Thank you for choosing __COMPANY__',
+  'Safety first: Hold on to handrails',
+  'Next stop coming soon...',
+  '__COMPANY__ - Your trusted partner',
+  'Enjoy your journey with __COMPANY__',
+  'Please keep your belongings safe',
+  '__COMPANY__ - Travel with confidence',
+  'We appreciate your patronage'
+];
 
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
-
-// ── SCREEN 1: COMPANIES ──
-
-async function loadCompanies() {
-  try {
-    const r = await fetch(API + '/api/bus/companies');
-    const d = await r.json();
-    if (d.success) { companies = d.companies; renderCompanies(); }
-  } catch(e) {}
-}
-
-function renderCompanies() {
-  const grid = document.getElementById('companyGrid');
-  grid.innerHTML = companies.map(c =>
-    '<div class="company-card" onclick="selectCompany('+c.id+')">'+
-    '<div class="company-card-icon">'+c.company_name.charAt(0)+'</div>'+
-    '<div class="company-card-name">'+c.company_name+'</div>'+
-    (c.company_code?'<div class="company-card-code">'+c.company_code+'</div>':'')+
-    '</div>'
-  ).join('');
-}
-
-function selectCompany(id) {
-  selectedCompanyId = id;
-  selectedRouteId = null;
-  const c = companies.find(x => x.id == id);
-  document.getElementById('screen2Title').textContent = (c ? c.company_name : '') + ' — Routes';
-  loadRoutes();
-  showScreen('screen2');
-}
-
-// ── SCREEN 2: ROUTES ──
-
-async function loadRoutes() {
-  if (!selectedCompanyId) return;
-  try {
-    const r = await fetch(API + '/api/bus/routes/' + selectedCompanyId);
-    const d = await r.json();
-    if (d.success) { routes = d.routes; renderRoutes(); }
-  } catch(e) {}
-}
-
-async function addRoute() {
-  if (!selectedCompanyId) return;
-  const name = document.getElementById('newRouteName').value.trim();
-  const origin = document.getElementById('newRouteOrigin').value.trim();
-  const dest = document.getElementById('newRouteDest').value.trim();
-  if (!name) { showToast('Enter a route name', true); return; }
-  try {
-    const r = await fetch(API+'/api/bus/route', { method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({company_id:selectedCompanyId, route_name:name, origin:origin, destination:dest}) });
-    const d = await r.json();
-    if (d.success) {
-      routes.push({id:d.route_id, route_name:name, origin:origin||null, destination:dest||null});
-      renderRoutes();
-      document.getElementById('newRouteName').value = '';
-      document.getElementById('newRouteOrigin').value = '';
-      document.getElementById('newRouteDest').value = '';
-      showToast('Route added');
-    } else showToast(d.message, true);
-  } catch(e) { showToast('Network error', true); }
-}
-
-function renderRoutes() {
-  const el = document.getElementById('routeList');
-  const addForm = document.getElementById('addRouteForm');
-  if (!routes.length) {
-    el.innerHTML = '<div style="padding:20px;text-align:center;color:#9ca3af">No routes yet. Add one below.</div>';
-    addForm.style.display = 'block';
-    return;
-  }
-  addForm.style.display = 'none';
-  el.innerHTML = routes.map(r => {
-    const meta = [r.origin, r.destination].filter(Boolean).join(' → ');
-    return '<div class="route-card" id="routeCard-'+r.id+'">'+
-    '<div onclick="selectRoute('+r.id+')">'+
-    '<div class="route-card-name">'+r.route_name+'</div>'+
-    (meta?'<div class="route-card-meta">'+meta+'</div>':'')+
-    '</div>'+
-    '<div class="route-card-actions">'+
-    '<button class="route-btn route-btn-edit" onclick="event.stopPropagation();startEditRoute('+r.id+')">Edit</button>'+
-    '<button class="route-btn route-btn-delete" onclick="event.stopPropagation();deleteRoute('+r.id+',\''+r.route_name.replace(/'/g,"\\'")+'\')">Delete</button>'+
-    '</div>'+
-    '</div>';
-  }).join('');
-}
-
-function selectRoute(id) {
-  selectedRouteId = id;
-  const r = routes.find(x => x.id == id);
-  document.getElementById('screen3Title').textContent = (r ? r.route_name : '') + ' - Stop Points';
-  loadStops();
-  showScreen('screen3');
-}
-
-function startEditRoute(id) {
-  const r = routes.find(x => x.id == id);
-  if (!r) return;
-  const card = document.getElementById('routeCard-'+id);
-  if (!card) return;
-  card.innerHTML = '<div class="route-edit-form">'+
-    '<input type="text" id="editRouteName-'+id+'" value="'+r.route_name.replace(/"/g,'&quot;')+'" placeholder="Route name">'+
-    '<input type="text" id="editRouteOrigin-'+id+'" value="'+(r.origin||'').replace(/"/g,'&quot;')+'" placeholder="Origin (optional)">'+
-    '<input type="text" id="editRouteDest-'+id+'" value="'+(r.destination||'').replace(/"/g,'&quot;')+'" placeholder="Destination (optional)">'+
-    '<div class="route-edit-actions">'+
-    '<button class="route-btn" style="background:#155c30;color:#fff;border-color:#155c30" onclick="saveEditRoute('+id+')">Save</button>'+
-    '<button class="route-btn" style="background:#fff;color:#6b7280;border-color:#d1d5db" onclick="renderRoutes()">Cancel</button>'+
-    '</div>'+
-    '</div>';
-  document.getElementById('editRouteName-'+id).focus();
-}
-
-async function saveEditRoute(id) {
-  const name = document.getElementById('editRouteName-'+id).value.trim();
-  const origin = document.getElementById('editRouteOrigin-'+id).value.trim();
-  const dest = document.getElementById('editRouteDest-'+id).value.trim();
-  if (!name) { showToast('Route name required', true); return; }
-  try {
-    const r = await fetch(API+'/api/bus/route/'+id, { method:'PUT', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({route_name:name, origin:origin, destination:dest}) });
-    const d = await r.json();
-    if (d.success) {
-      const route = routes.find(x => x.id == id);
-      if (route) { route.route_name = name; route.origin = origin || null; route.destination = dest || null; }
-      renderRoutes();
-      showToast('Route updated');
-    } else showToast(d.message, true);
-  } catch(e) { showToast('Network error', true); }
-}
-
-async function deleteRoute(id, name) {
-  if (!confirm('Delete route "'+name+'"? All stops will also be removed.')) return;
-  try {
-    const r = await fetch(API+'/api/bus/route/'+id, { method:'DELETE' });
-    const d = await r.json();
-    if (d.success) {
-      routes = routes.filter(x => x.id !== id);
-      renderRoutes();
-      showToast('Route deleted');
-    } else showToast(d.message, true);
-  } catch(e) { showToast('Network error', true); }
-}
-
-// ── SCREEN 3: STOPS ──
-// The two controls on this screen are intentionally decoupled:
-//  - addStop() / renderStops() only ever touch the stop list.
-//  - refreshStartTripAvailability() independently decides whether "Start Trip" is
-//    shown/enabled, based solely on stops.length. Neither function calls the other,
-//    so listing/adding stops never has to "wait" on the trip-start control or vice versa.
-
-async function loadStops() {
-  if (!selectedRouteId) return;
-  try {
-    const r = await fetch(API + '/api/bus/stops/' + selectedRouteId);
-    const d = await r.json();
-    if (d.success) { stops = d.stops; renderStops(); refreshStartTripAvailability(); }
-  } catch(e) {}
-}
-
-function renderStops() {
-  const el = document.getElementById('stopList');
-  if (!stops.length) { el.innerHTML = '<div style="padding:16px;text-align:center;color:#9ca3af;font-size:14px">No stops yet. Add your first stop below.</div>'; return; }
-  el.innerHTML = stops.sort((a,b) => a.stop_order - b.stop_order).map((s,i) =>
-    '<div class="stop-item'+(s.is_break_point?' break-point':'')+'">'+
-    '<div class="stop-num">'+(i+1)+'</div>'+
-    '<div class="stop-name">'+s.stop_name+'</div>'+
-    (s.is_break_point?'<span class="stop-badge">Break</span>':'')+
-    '<button class="delete-btn" onclick="deleteStop('+s.id+')">&times;</button></div>'
-  ).join('');
-}
-
-// Independently governs the Start Trip button — called after every stop add/delete,
-// but does not live inside those handlers and has no effect on them.
-function refreshStartTripAvailability() {
-  const btn = document.getElementById('startBtn');
-  const hint = document.getElementById('startHint');
-  const hasStops = stops.length > 0;
-  btn.style.display = 'block';
-  hint.style.display = hasStops ? 'none' : 'block';
-  btn.disabled = !hasStops;
-  btn.classList.toggle('btn-disabled', !hasStops);
-}
-
-async function addStop() {
-  if (!selectedRouteId) return;
-  const nameInput = document.getElementById('newStopName');
-  const name = nameInput.value.trim();
-  const isBreak = document.getElementById('newStopBreak').checked;
-  if (!name) { showToast('Enter a stop name', true); return; }
-  try {
-    const r = await fetch(API + '/api/bus/stop', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({route_id:selectedRouteId,stop_name:name,is_break_point:isBreak}) });
-    const d = await r.json();
-    if (d.success) {
-      stops.push({id:d.stop_id,stop_name:name,stop_order:d.stop_order,is_break_point:isBreak?1:0});
-      renderStops();
-      refreshStartTripAvailability();
-      nameInput.value='';
-      nameInput.focus();
-    }
-    else showToast(d.message, true);
-  } catch(e) { showToast('Network error', true); }
-}
-
-async function deleteStop(id) {
-  try {
-    await fetch(API + '/api/bus/stop/' + id, { method:'DELETE' });
-    stops = stops.filter(s => s.id !== id);
-    renderStops();
-    refreshStartTripAvailability();
-  } catch(e) {}
-}
-
-// ── SCREEN 4: ANNOUNCE ──
-
-async function startTrip() {
-  if (!stops.length) { showToast('Add stops first', true); return; }
-  const c = companies.find(x => x.id == selectedCompanyId);
-  const r = routes.find(x => x.id == selectedRouteId);
-  const companyName = c ? c.company_name : 'Bus';
-  const routeName = r ? r.route_name : '';
-  const origin = r ? (r.origin || '') : '';
-  const dest = r ? (r.destination || '') : '';
-  try {
-    const resp = await fetch(API + '/api/bus/start-trip', { method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({company_id:selectedCompanyId,company_name:companyName,route_id:selectedRouteId,route_name:routeName,origin:origin,destination:dest,stops:stops.map(s=>({id:s.id,stop_name:s.stop_name,stop_order:s.stop_order,is_break_point:s.is_break_point?true:false}))}) });
-    const d = await resp.json();
-    if (d.success) {
-      announcedIds = new Set();
-      document.getElementById('tripCompany').textContent = companyName;
-      document.getElementById('tripRoute').textContent = (origin ? origin+' → ' : '') + (dest || routeName);
-      renderAnnounceCards();
-      showScreen('screen4');
-      showToast('Trip started!');
-    }
-  } catch(e) { showToast('Network error', true); }
-}
-
-function renderAnnounceCards() {
-  const el = document.getElementById('announceList');
-  const remaining = stops.filter(s => !announcedIds.has(s.id));
-  const announced = stops.filter(s => announcedIds.has(s.id));
-  const sorted = [...remaining, ...announced];
-  el.innerHTML = sorted.map((s,i) => {
-    const done = announcedIds.has(s.id);
-    const cls = done ? ' done' : (s.is_break_point ? ' is-break' : '');
-    const num = done ? '✓' : (i+1);
-    const action = done
-      ? '<button class="announce-action" style="background:#e8f4ed;color:#155c30">Done</button>'
-      : '<button class="announce-action" onclick="event.stopPropagation();announceStop('+s.id+',\''+s.stop_name.replace(/'/g,"\\'")+'\','+s.stop_order+','+(s.is_break_point?1:0)+')">Announce</button>';
-    return '<div class="announce-card'+cls+'">'+
-      '<div class="announce-num">'+num+'</div>'+
-      '<div class="announce-info">'+
-      '<div class="announce-name">'+s.stop_name+'</div>'+
-      '<div class="announce-status">'+(done?'✓ Passengers may exit':(s.is_break_point?'Break Point — Tap to Announce':'Tap to Announce'))+'</div>'+
-      '</div>'+
-      action+
-      '</div>';
-  }).join('');
-}
-
-async function announceStop(id, name, order, isBreak) {
-  try {
-    const r = await fetch(API + '/api/bus/announce', { method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({stop_id:id,stop_name:name,stop_order:order,is_break_point:!!isBreak}) });
-    const d = await r.json();
-    if (d.success) { announcedIds.add(id); renderAnnounceCards(); showToast('Announced: ' + name); }
-  } catch(e) { showToast('Network error', true); }
-}
-
-async function endTrip() {
-  try {
-    await fetch(API + '/api/bus/reset', { method:'POST' });
-    announcedIds = new Set();
-    showScreen('screen1');
-    showToast('Trip ended');
-  } catch(e) {}
-}
-
-// ── SCREEN 5: MANAGE ADS ──
+let waitingAdImages = [];
+const AD_CAROUSEL_INTERVAL_MS = 6000;
+let adCarouselIndex = 0;
+let adCarouselTimer = null;
+let adCarouselBuilt = false;
 
 async function loadAds() {
   try {
     const r = await fetch(API + '/api/bus/ads');
     const d = await r.json();
-    if (d.success) renderAds(d.ads || []);
+    if (d.success && d.ads && d.ads.length) {
+      waitingAdImages = d.ads.map(a => '/ads/' + a.filename);
+    } else {
+      waitingAdImages = [];
+    }
+    adCarouselBuilt = false;
+  } catch(e) {
+    waitingAdImages = [];
+  }
+}
+
+function buildAdCarousel() {
+  const carousel = document.getElementById('adCarousel');
+  const dotsEl = document.getElementById('adCarouselDots');
+  const fallback = document.getElementById('waitingFallback');
+
+  if (!waitingAdImages.length) {
+    carousel.style.display = 'none';
+    dotsEl.style.display = 'none';
+    fallback.style.display = 'flex';
+    adCarouselBuilt = true;
+    return;
+  }
+
+  carousel.innerHTML = waitingAdImages.map((src, i) =>
+    '<div class="ad-slide' + (i === 0 ? ' active' : '') + '" style="background-image:url(\'' + src + '\')"></div>'
+  ).join('');
+  dotsEl.innerHTML = waitingAdImages.map((_, i) =>
+    '<div class="ad-carousel-dot' + (i === 0 ? ' active' : '') + '"></div>'
+  ).join('');
+
+  carousel.style.display = 'block';
+  fallback.style.display = 'none';
+  dotsEl.style.display = waitingAdImages.length > 1 ? 'flex' : 'none';
+  adCarouselIndex = 0;
+  adCarouselBuilt = true;
+}
+
+function startAdCarousel() {
+  if (!adCarouselBuilt) buildAdCarousel();
+  if (waitingAdImages.length < 2 || adCarouselTimer) return;
+  adCarouselTimer = setInterval(() => {
+    const slides = document.querySelectorAll('#adCarousel .ad-slide');
+    const dots = document.querySelectorAll('#adCarouselDots .ad-carousel-dot');
+    if (!slides.length) return;
+    slides[adCarouselIndex].classList.remove('active');
+    if (dots[adCarouselIndex]) dots[adCarouselIndex].classList.remove('active');
+    adCarouselIndex = (adCarouselIndex + 1) % slides.length;
+    slides[adCarouselIndex].classList.add('active');
+    if (dots[adCarouselIndex]) dots[adCarouselIndex].classList.add('active');
+  }, AD_CAROUSEL_INTERVAL_MS);
+}
+
+function stopAdCarousel() {
+  if (adCarouselTimer) { clearInterval(adCarouselTimer); adCarouselTimer = null; }
+}
+
+function showWaitingState() {
+  document.getElementById('waitingState').style.display = 'block';
+  if (!adCarouselBuilt) buildAdCarousel();
+  startAdCarousel();
+}
+
+function hideWaitingState() {
+  document.getElementById('waitingState').style.display = 'none';
+  stopAdCarousel();
+}
+
+function getOrdinal(n) {
+  const s = ['th','st','nd','rd'];
+  const v = n % 100;
+  return n + (s[(v-20)%10] || s[v] || s[0]);
+}
+
+function buildAnnouncement(stopName, stopOrder, totalStops, destination, isBreak) {
+  const ordinal = getOrdinal(stopOrder);
+  if (isBreak) {
+    return 'We have reached ' + stopName + ', our rest break point. Our dear Passengers we have 5 mins break, you may get out for a short break. We shall continue shortly.';
+  }
+  let msg = 'We have reached our ' + ordinal + ' stopping point, ' + stopName + '. Passengers of ' + stopName + ', may you please take a leave and thank you for choosing us.';
+  if (destination) {
+    msg += ' We continue to ' + destination + '.';
+  }
+  return msg;
+}
+
+function updateClock() {
+  const d = new Date();
+  const h = d.getHours(), m = String(d.getMinutes()).padStart(2,'0');
+  const timeStr = (h%12||12)+':'+m+' '+(h>=12?'PM':'AM');
+  document.getElementById('clock').textContent = timeStr;
+  document.getElementById('tickerTime').textContent = timeStr;
+}
+updateClock(); setInterval(updateClock, 10000);
+
+(function initParticles(){
+  const c = document.getElementById('particles');
+  for(let i=0;i<15;i++){
+    const p = document.createElement('div');
+    p.className='particle';
+    p.style.left=Math.random()*100+'%';
+    p.style.animationDuration=(8+Math.random()*12)+'s';
+    p.style.animationDelay=Math.random()*10+'s';
+    c.appendChild(p);
+  }
+})();
+
+function ensureBusDriving() {
+  const bus = document.getElementById('journeyBus');
+  if (bus && !bus.classList.contains('driving') && !bus.classList.contains('arriving')) {
+    bus.classList.remove('stopped');
+    bus.classList.add('driving');
+    const roadLine = document.querySelector('.journey-line');
+    if (roadLine) roadLine.classList.add('scrolling');
+  }
+}
+
+// Return the display to journey view once the conductor has Proceeded
+// (i.e. the backend cleared stop_name/stop_id, but all_stops is still present)
+function maybeReturnToJourney(d) {
+  if (lastSeenStopName !== null && !d.stop_name && d.all_stops && d.all_stops.length) {
+    document.getElementById('announceState').classList.remove('active');
+    document.getElementById('ripple').style.display = 'none';
+    lastStopId = null;
+    lastAnnouncedStopId = null;
+    showJourneyState(d.all_stops, d.announced_stops || []);
+  }
+}
+
+async function pollState() {
+  try {
+    const r = await fetch(API+'/api/bus/current-state');
+    const d = await r.json();
+    if (!d.success) return;
+
+    if (d.company_name) {
+      currentCompanyName = d.company_name;
+      document.getElementById('companyName').textContent = d.company_name;
+      document.getElementById('tickerLabel').textContent = d.company_name;
+      const route = (d.origin && d.destination) ? d.origin+' → '+d.destination : d.route_name;
+      document.getElementById('companyRoute').textContent = route;
+      if (d.company_name !== lastTickerCompany || route !== lastTickerRoute) { lastTickerCompany = d.company_name; lastTickerRoute = route; updateTickerContent(d.company_name, route); }
+      currentDestination = d.destination || '';
+    }
+
+    if (d.all_stops && d.all_stops.length) {
+      currentTotalStops = d.all_stops.length;
+      d_all_stops = d.all_stops;
+      d_announced_stops = d.announced_stops || [];
+      document.getElementById('sideSubtitle').textContent = d.all_stops.length + ' stops on this route';
+      const ac = (d.announced_stops || []).length;
+      if (ac !== lastRenderedAnnouncedCount || d.stop_id !== lastRenderedCurrentId) {
+        lastRenderedAnnouncedCount = ac;
+        lastRenderedCurrentId = d.stop_id;
+        renderRouteStops(d.all_stops, d.announced_stops || [], d.stop_id);
+      }
+    }
+
+    if (d.stop_name && d.stop_id !== lastStopId) {
+      lastStopId = d.stop_id;
+      lastAnnounceTime = Date.now();
+      if (d.stop_id !== lastAnnouncedStopId) {
+        showAnnouncement(d.stop_name, d.prayer);
+      }
+
+      if (!d.announced && d.stop_id !== lastAnnouncedStopId) {
+        lastAnnouncedStopId = d.stop_id;
+        const announcement = buildAnnouncement(d.stop_name, d.stop_order || 1, currentTotalStops, currentDestination, d.is_break_point);
+        document.getElementById('announceSubtitle').textContent = announcement;
+        queueVoice(announcement);
+        if (d.prayer) queueVoice(d.prayer);
+        fetch(API+'/api/bus/announce-confirm',{method:'POST'});
+      }
+    }
+
+    // Detect Proceed (stop cleared) while a trip is still active, and return to journey
+    if (lastSeenStopName !== null && !d.stop_name && d.all_stops && d.all_stops.length) {
+      maybeReturnToJourney(d);
+    }
+    lastSeenStopName = d.stop_name || null;
+
+    if (d.all_stops && d.all_stops.length && !d.stop_name) {
+      if (!tripStartTime) {
+        tripStartTime = Date.now();
+        lastAnnounceTime = Date.now();
+      }
+      if (!document.getElementById('journeyState').classList.contains('active')) {
+        showJourneyState(d.all_stops, d.announced_stops || []);
+      }
+      ensureBusDriving();
+    }
+
+    const hasTrip = (d.stop_name) || (d.all_stops && d.all_stops.length > 0);
+
+    if (hasTrip) {
+      emptyPollStreak = 0;
+    } else {
+      emptyPollStreak++;
+      if (emptyPollStreak >= EMPTY_POLL_THRESHOLD) {
+        tripStartTime = 0;
+        lastAnnounceTime = 0;
+        adIndex = 0; lastRenderedAnnouncedCount = -1; lastRenderedCurrentId = null; lastTickerCompany = ''; lastTickerRoute = '';
+        lastAnnouncedStopId = null;
+        lastSeenStopName = null;
+        lastStopId = null;
+        showWaitingState();
+        document.getElementById('journeyState').classList.remove('active');
+        document.getElementById('announceState').classList.remove('active');
+        document.getElementById('ripple').style.display = 'none';
+        if (adTimer) { clearInterval(adTimer); adTimer = null; }
+        emptyPollStreak = 0;
+      }
+    }
+    checkDelay();
   } catch(e) {}
 }
 
-function renderAds(ads) {
-  const el = document.getElementById('adGrid');
-  if (!ads.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:#9ca3af;grid-column:1/-1">No ads uploaded yet. Add your first ad below.</div>'; return; }
-  el.innerHTML = ads.map(a =>
-    '<div class="ad-card">'+
-    '<img src="/ads/'+a.filename+'" alt="ad">'+
-    '<button class="ad-card-delete" onclick="deleteAd('+a.id+')">&times;</button>'+
-    '<div class="ad-card-name">'+(a.original_name||'Ad')+'</div>'+
-    '</div>'
+function showJourneyState(stops, announcedIds) {
+  const js = document.getElementById('journeyState');
+  if (!js.classList.contains('active')) {
+    js.classList.add('active');
+  }
+  hideWaitingState();
+  document.getElementById('announceState').classList.remove('active');
+  document.getElementById('ripple').style.display = 'none';
+
+  document.getElementById('journeyCompany').textContent = currentCompanyName;
+  const route = document.getElementById('companyRoute').textContent;
+  document.getElementById('journeyRouteLabel').textContent = route;
+
+  const dotsEl = document.getElementById('journeyDots');
+  dotsEl.innerHTML = stops.map((s,i) => {
+    let cls = 'upcoming';
+    if (announcedIds.includes(s.id)) cls = 'visited';
+    return '<div class="journey-dot '+cls+'"></div>';
+  }).join('');
+
+  const announcedCount = announcedIds.length;
+  const total = stops.length;
+  const busPos = total > 1 ? (announcedCount / (total - 1)) * 80 + 10 : 50;
+  const bus = document.getElementById('journeyBus');
+  bus.classList.remove('stopped', 'arriving');
+  bus.classList.add('driving');
+  bus.style.left = busPos + '%';
+  const roadLine = document.querySelector('.journey-line');
+  if (roadLine) roadLine.classList.add('scrolling');
+  setTimeout(() => { bus.classList.remove('driving'); bus.classList.add('stopped'); if (roadLine) roadLine.classList.remove('scrolling'); }, 1800);
+
+  document.getElementById('journeyAd').textContent = '';
+  document.getElementById('journeyAd').style.opacity = '0';
+  startAdRotation();
+}
+
+function startAdRotation() {
+  if (adTimer) clearInterval(adTimer);
+  adTimer = setInterval(() => {
+    if (Date.now() - lastAnnounceTime > 180000) {
+      const adEl = document.getElementById('journeyAd');
+      adEl.style.opacity = '0';
+      setTimeout(() => {
+        const msg = adMessages[adIndex % adMessages.length].replace(/__COMPANY__/g, currentCompanyName);
+        adEl.textContent = msg;
+        adEl.style.opacity = '1';
+        adIndex++;
+      }, 500);
+    }
+  }, 5000);
+}
+
+function checkDelay() {
+  if (!tripStartTime || !lastAnnounceTime) return;
+  const elapsed = Date.now() - lastAnnounceTime;
+  const msgEl = document.getElementById('journeyMessage');
+  if (elapsed > 180000) {
+    msgEl.textContent = 'Next stop coming soon...';
+    msgEl.style.color = 'rgba(255,215,0,0.6)';
+  } else {
+    msgEl.textContent = 'Enjoy your journey with US,Your Number one First Class Bus Service Provider';
+    msgEl.style.color = 'rgba(255,255,255,0.4)';
+  }
+}
+
+function showAnnouncement(name, prayer) {
+  const as = document.getElementById('announceState');
+  if (as.classList.contains('active')) return;
+  as.classList.add('active');
+  hideWaitingState();
+  document.getElementById('journeyState').classList.remove('active');
+  document.getElementById('stopNameDisplay').textContent = name;
+  document.getElementById('ripple').style.display = 'block';
+
+  if (prayer) {
+    document.getElementById('prayerBox').style.display = 'block';
+    document.getElementById('prayerText').textContent = prayer;
+  } else {
+    document.getElementById('prayerBox').style.display = 'none';
+  }
+}
+
+function renderRouteStops(stops, announcedIds, currentId) {
+  const el = document.getElementById('routeStopsList');
+  const remaining = stops.filter(s => s.id === currentId || !announcedIds.includes(s.id));
+  let seq = 0;
+  el.innerHTML = remaining.map(s => {
+    seq++;
+    const cls = s.id === currentId ? 'current' : 'upcoming';
+    return '<div class="stop-list-item '+cls+'">'+
+      '<div class="stop-num">'+seq+'</div>'+
+      '<div class="stop-list-label">'+s.stop_name+'</div>'+
+      (s.is_break_point?'<span class="break-badge">REST</span>':'')+
+      (cls==='current'?'<span class="current-badge">NOW</span>':'')+
+      '</div>';
+  }).join('');
+}
+
+function queueVoice(text) {
+  voiceQueue.push(text);
+  if (!isPlaying) playNext();
+}
+
+async function playNext() {
+  if (!voiceQueue.length) {
+    isPlaying = false;
+    // Do NOT auto-return to journey here. The display stays on the announcement
+    // screen until the conductor taps Proceed (which clears stop_name server-side
+    // and is detected by pollState → maybeReturnToJourney).
+    return;
+  }
+  isPlaying = true;
+  const text = voiceQueue.shift();
+  document.getElementById('voiceDot').classList.add('active');
+  document.getElementById('voiceStatus').textContent = 'Announcing...';
+  try {
+    const r = await fetch(API+'/api/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+    if (r.ok) {
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = document.getElementById('audioPlayer');
+      audio.src = url;
+      await new Promise(res => { audio.onended=res; audio.onerror=res; audio.play().catch(res); });
+      URL.revokeObjectURL(url);
+    }
+  } catch(e) {}
+  document.getElementById('voiceDot').classList.remove('active');
+  document.getElementById('voiceStatus').textContent = 'Voice Ready';
+  playNext();
+}
+
+function updateTickerContent(company, route) {
+  const inner = document.getElementById('tickerInner');
+  const msgs = [
+    {badge:'INFO', text:'Welcome aboard '+company+'. Safe travels.'},
+    {badge:'ROUTE', text:route+'. Listen for stop announcements.'},
+    {badge:'SAFETY', text:'Please hold on to handrails while the bus is in motion.'},
+    {badge:'INFO', text:route+' - Next stop will be announced shortly.'},
+    {badge:company.toUpperCase(), text:'Thank you for choosing '+company+'. Have a pleasant journey.'},
+    {badge:'SAFETY', text:'Keep your belongings safe at all times.'},
+    {badge:company.toUpperCase(), text:route+' - Enjoy your journey with us.'}
+  ];
+  inner.innerHTML = msgs.map(m =>
+    '<div class="ticker-item"><span class="ticker-office-badge">'+m.badge+'</span><span class="ticker-message-text">'+m.text+'</span></div><span class="ticker-sep">&#9656;</span>'
   ).join('');
 }
 
-async function uploadAd() {
-  const input = document.getElementById('adFileInput');
-  const file = input.files[0];
-  if (!file) return;
-  const fd = new FormData();
-  fd.append('file', file);
-  try {
-    const r = await fetch(API + '/api/bus/ads', { method:'POST', body:fd });
-    const d = await r.json();
-    if (d.success) { showToast('Ad uploaded'); loadAds(); }
-    else showToast(d.message, true);
-  } catch(e) { showToast('Upload failed', true); }
-  input.value = '';
-}
-
-async function deleteAd(id) {
-  if (!confirm('Delete this ad?')) return;
-  try {
-    const r = await fetch(API + '/api/bus/ads/' + id, { method:'DELETE' });
-    const d = await r.json();
-    if (d.success) { showToast('Ad deleted'); loadAds(); }
-    else showToast(d.message, true);
-  } catch(e) { showToast('Delete failed', true); }
-}
-
-async function init() {
-  try {
-    const r = await fetch(API + '/api/bus/current-state');
-    const d = await r.json();
-    if (d.success && d.is_active && d.all_stops && d.all_stops.length) {
-      stops = d.all_stops;
-      announcedIds = new Set(d.announced_stops || []);
-      selectedCompanyId = d.company_id;
-      selectedRouteId = d.route_id;
-      document.getElementById('tripCompany').textContent = d.company_name;
-      const routeLabel = (d.origin ? d.origin + ' → ' : '') + (d.destination || d.route_name);
-      document.getElementById('tripRoute').textContent = routeLabel;
-      renderAnnounceCards();
-      showScreen('screen4');
-      showToast('Resumed active trip');
-      return;
-    }
-  } catch(e) {}
-  loadCompanies();
-}
-init();
+loadAds();
+showWaitingState();
+pollState();
+setInterval(pollState, 2000);
 </script>
 </body>
 </html>

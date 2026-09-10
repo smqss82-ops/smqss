@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory, redirect
+from flask import Flask, request, jsonify, send_from_directory, redirect, Response
 from flask_cors import CORS
 import mysql.connector
 from mysql.connector import Error
@@ -300,6 +300,7 @@ _CREATE_BUS_TRIP_STATE_SQL = """
         current_stop_id INT DEFAULT NULL,
         current_stop_name VARCHAR(200) DEFAULT NULL,
         current_stop_order INT DEFAULT 0,
+        pending_stop_id INT DEFAULT NULL,
         is_break_point TINYINT(1) DEFAULT 0,
         announced TINYINT(1) DEFAULT 0,
         prayer TEXT,
@@ -312,6 +313,8 @@ _CREATE_BUS_ADS_SQL = """
         id INT AUTO_INCREMENT PRIMARY KEY,
         filename VARCHAR(255) NOT NULL,
         original_name VARCHAR(255),
+        mime_type VARCHAR(50) DEFAULT 'image/jpeg',
+        image_data LONGBLOB,
         uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         is_active TINYINT(1) DEFAULT 1
     )"""
@@ -516,6 +519,29 @@ try:
             cursor.execute("ALTER TABLE university_tokens ADD COLUMN served_count_excluded TINYINT(1) DEFAULT 0 AFTER feedback_submitted_at")
             connection.commit()
             print("[OK] served_count_excluded column added to university_tokens")
+
+        # ── BUS TRIP STATE: pending_stop_id for two-stage announce/proceed ──
+        cursor.execute("SHOW COLUMNS FROM bus_trip_state LIKE 'pending_stop_id'")
+        if not cursor.fetchone():
+            print("[WARN] bus_trip_state table missing pending_stop_id column! Adding...")
+            cursor.execute("ALTER TABLE bus_trip_state ADD COLUMN pending_stop_id INT DEFAULT NULL AFTER current_stop_order")
+            connection.commit()
+            print("[OK] pending_stop_id column added to bus_trip_state")
+
+        # ── BUS ADS: store image bytes in MySQL (survives ephemeral FS wipes) ──
+        cursor.execute("SHOW COLUMNS FROM bus_ads LIKE 'mime_type'")
+        if not cursor.fetchone():
+            print("[WARN] bus_ads missing mime_type column! Adding...")
+            cursor.execute("ALTER TABLE bus_ads ADD COLUMN mime_type VARCHAR(50) DEFAULT 'image/jpeg'")
+            connection.commit()
+            print("[OK] mime_type column added to bus_ads")
+
+        cursor.execute("SHOW COLUMNS FROM bus_ads LIKE 'image_data'")
+        if not cursor.fetchone():
+            print("[WARN] bus_ads missing image_data column! Adding...")
+            cursor.execute("ALTER TABLE bus_ads ADD COLUMN image_data LONGBLOB")
+            connection.commit()
+            print("[OK] image_data column added to bus_ads")
 
         cursor.execute("SHOW INDEX FROM university_tokens WHERE Column_name = 'token_number' AND Non_unique = 0")
         has_global_unique = cursor.fetchone()
@@ -5078,7 +5104,7 @@ _bus_state = {'company_id': None, 'company_name': '', 'route_id': None, 'route_n
               'origin': '', 'destination': '',
               'stop_name': None, 'stop_id': None, 'stop_order': 0, 'is_break_point': False,
               'timestamp': None, 'announced': False, 'prayer': None,
-              'all_stops': [], 'announced_stops': []}
+              'all_stops': [], 'announced_stops': [], 'pending_stop_id': None}
 
 def save_trip_state():
     try:
@@ -5089,15 +5115,16 @@ def save_trip_state():
             cursor.execute("""
                 INSERT INTO bus_trip_state (id, company_id, company_name, route_id, route_name,
                     origin, destination, all_stops, announced_stops, current_stop_id,
-                    current_stop_name, current_stop_order, is_break_point, announced, prayer, is_active)
-                VALUES (1, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1)
+                    current_stop_name, current_stop_order, pending_stop_id, is_break_point, announced, prayer, is_active)
+                VALUES (1, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1)
                 ON DUPLICATE KEY UPDATE
                     company_id=VALUES(company_id), company_name=VALUES(company_name),
                     route_id=VALUES(route_id), route_name=VALUES(route_name),
                     origin=VALUES(origin), destination=VALUES(destination),
                     all_stops=VALUES(all_stops), announced_stops=VALUES(announced_stops),
                     current_stop_id=VALUES(current_stop_id), current_stop_name=VALUES(current_stop_name),
-                    current_stop_order=VALUES(current_stop_order), is_break_point=VALUES(is_break_point),
+                    current_stop_order=VALUES(current_stop_order), pending_stop_id=VALUES(pending_stop_id),
+                    is_break_point=VALUES(is_break_point),
                     announced=VALUES(announced), prayer=VALUES(prayer), is_active=1
             """, (
                 _bus_state.get('company_id'), _bus_state.get('company_name', ''),
@@ -5106,7 +5133,8 @@ def save_trip_state():
                 json.dumps(_bus_state.get('all_stops', [])),
                 json.dumps(_bus_state.get('announced_stops', [])),
                 _bus_state.get('stop_id'), _bus_state.get('stop_name'),
-                _bus_state.get('stop_order', 0), 1 if _bus_state.get('is_break_point') else 0,
+                _bus_state.get('stop_order', 0), _bus_state.get('pending_stop_id'),
+                1 if _bus_state.get('is_break_point') else 0,
                 1 if _bus_state.get('announced') else 0, _bus_state.get('prayer')
             ))
             conn.commit()
@@ -5154,6 +5182,7 @@ def load_trip_state_on_startup():
                     'stop_id': row.get('current_stop_id'),
                     'stop_name': row.get('current_stop_name'),
                     'stop_order': row.get('current_stop_order', 0),
+                    'pending_stop_id': row.get('pending_stop_id'),
                     'is_break_point': bool(row.get('is_break_point', 0)),
                     'announced': bool(row.get('announced', 0)),
                     'prayer': row.get('prayer'),
@@ -5350,22 +5379,51 @@ def start_bus_trip():
         route_name = data.get('route_name', '').strip()
         origin = data.get('origin', '').strip()
         destination = data.get('destination', '').strip()
-        stops = data.get('stops', [])
-        if not stops:
-            return jsonify({'success': False, 'message': 'No stops provided.'}), 400
+
+        if not route_id:
+            return jsonify({'success': False, 'message': 'Route is required.'}), 400
+
+        # ── Read stops directly from the DB (single source of truth) ──
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute("""
+                SELECT id, stop_name, stop_order, is_break_point
+                FROM bus_stops
+                WHERE route_id = %s AND is_active = 1
+                ORDER BY stop_order
+            """, (route_id,))
+            db_stops = cursor.fetchall()
+        finally:
+            cursor.close(); conn.close()
+
+        if not db_stops:
+            return jsonify({
+                'success': False,
+                'message': 'No stops on this route yet. Add at least one stop first.'
+            }), 400
+
+        # Normalise is_break_point to bool so the display page keeps working
+        stops = [{
+            'id': s['id'],
+            'stop_name': s['stop_name'],
+            'stop_order': s['stop_order'],
+            'is_break_point': bool(s['is_break_point'])
+        } for s in db_stops]
+
         _bus_state.update({
             'company_id': company_id, 'company_name': company_name,
             'route_id': route_id, 'route_name': route_name,
             'origin': origin, 'destination': destination,
             'stop_name': None, 'stop_id': None, 'stop_order': 0,
             'is_break_point': False, 'timestamp': None, 'announced': False,
-            'prayer': None, 'all_stops': stops, 'announced_stops': []
+            'prayer': None, 'all_stops': stops, 'announced_stops': [],
+            'pending_stop_id': None
         })
         save_trip_state()
-        return jsonify({'success': True, 'message': 'Trip started.'})
+        return jsonify({'success': True, 'message': 'Trip started.', 'stop_count': len(stops)})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
-
 # ── CONDUCTOR: ANNOUNCE STOP ──
 @app.route('/api/bus/announce', methods=['POST'])
 def announce_bus_stop():
@@ -5377,6 +5435,14 @@ def announce_bus_stop():
         is_break = data.get('is_break_point', False)
         if not stop_name:
             return jsonify({'success': False, 'message': 'Stop name required.'}), 400
+
+        # Block re-announce while a previous stop is still pending Proceed
+        if _bus_state.get('pending_stop_id') and _bus_state.get('pending_stop_id') != stop_id:
+            return jsonify({
+                'success': False,
+                'message': 'Proceed from the current stop before announcing the next one.'
+            }), 400
+
         now = datetime.now().isoformat()
         _bus_state['stop_name'] = stop_name
         _bus_state['stop_id'] = stop_id
@@ -5385,8 +5451,9 @@ def announce_bus_stop():
         _bus_state['timestamp'] = now
         _bus_state['announced'] = False
         _bus_state['prayer'] = None
+        # NOTE: do NOT append to announced_stops here — that happens on Proceed (stop-done)
         if stop_id:
-            _bus_state['announced_stops'].append(stop_id)
+            _bus_state['pending_stop_id'] = stop_id
         prayer = generate_journey_prayer(stop_name, _bus_state.get('destination', ''), is_break)
         if prayer:
             _bus_state['prayer'] = prayer
@@ -5434,14 +5501,15 @@ def confirm_bus_announce():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
-# ── CONDUCTOR: MARK STOP DONE ──
+# ── CONDUCTOR: MARK STOP DONE (Proceed) ──
 @app.route('/api/bus/stop-done', methods=['POST'])
 def mark_stop_done():
     try:
         data = request.get_json(force=True)
-        stop_id = data.get('stop_id')
+        stop_id = data.get('stop_id') or _bus_state.get('pending_stop_id')
         if stop_id and stop_id not in _bus_state.get('announced_stops', []):
             _bus_state['announced_stops'].append(stop_id)
+        _bus_state['pending_stop_id'] = None
         _bus_state['stop_name'] = None
         _bus_state['stop_id'] = None
         _bus_state['announced'] = True
@@ -5458,7 +5526,8 @@ def reset_bus_trip():
                            'route_name': '', 'origin': '', 'destination': '',
                            'stop_name': None, 'stop_id': None, 'stop_order': 0,
                            'is_break_point': False, 'timestamp': None, 'announced': False,
-                           'prayer': None, 'all_stops': [], 'announced_stops': []})
+                           'prayer': None, 'all_stops': [], 'announced_stops': [],
+                           'pending_stop_id': None})
         clear_trip_state()
         return jsonify({'success': True})
     except Exception as e:
@@ -5472,14 +5541,19 @@ def list_bus_ads():
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         try:
-            cursor.execute("SELECT id, filename, original_name, uploaded_at FROM bus_ads WHERE is_active=1 ORDER BY uploaded_at DESC")
+            cursor.execute("""
+                SELECT id, filename, original_name, uploaded_at
+                FROM bus_ads
+                WHERE is_active=1
+                ORDER BY uploaded_at DESC
+            """)
             return jsonify({'success': True, 'ads': cursor.fetchall()})
         finally:
             cursor.close(); conn.close()
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
-# ── BUS ADS: UPLOAD ──
+# ── BUS ADS: UPLOAD (store bytes in DB) ──
 @app.route('/api/bus/ads', methods=['POST'])
 def upload_bus_ad():
     try:
@@ -5488,18 +5562,35 @@ def upload_bus_ad():
         f = request.files['file']
         if not f.filename:
             return jsonify({'success': False, 'message': 'No file selected.'}), 400
+
         ext = os.path.splitext(f.filename)[1].lower()
         if ext not in ('.jpg', '.jpeg', '.png', '.gif', '.webp'):
             return jsonify({'success': False, 'message': 'Only JPG, PNG, GIF, WEBP allowed.'}), 400
+
+        mime_map = {
+            '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+            '.png': 'image/png',  '.gif': 'image/gif',
+            '.webp': 'image/webp'
+        }
+        mime_type = mime_map.get(ext, f.mimetype or 'image/jpeg')
+
+        data = f.read()
+        if not data:
+            return jsonify({'success': False, 'message': 'Uploaded file is empty.'}), 400
+        # Guard: cap at ~8 MB to protect the DB
+        if len(data) > 8 * 1024 * 1024:
+            return jsonify({'success': False, 'message': 'Image too large (max 8 MB).'}), 400
+
         import uuid
         filename = str(uuid.uuid4())[:12] + ext
-        ads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'ads')
-        os.makedirs(ads_dir, exist_ok=True)
-        f.save(os.path.join(ads_dir, filename))
+
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("INSERT INTO bus_ads (filename, original_name) VALUES (%s, %s)", (filename, f.filename))
+            cursor.execute("""
+                INSERT INTO bus_ads (filename, original_name, mime_type, image_data)
+                VALUES (%s, %s, %s, %s)
+            """, (filename, f.filename, mime_type, data))
             conn.commit()
             return jsonify({'success': True, 'id': cursor.lastrowid, 'filename': filename})
         finally:
@@ -5512,15 +5603,8 @@ def upload_bus_ad():
 def delete_bus_ad(ad_id):
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor()
         try:
-            cursor.execute("SELECT filename FROM bus_ads WHERE id=%s", (ad_id,))
-            row = cursor.fetchone()
-            if row:
-                ads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'ads')
-                filepath = os.path.join(ads_dir, row['filename'])
-                if os.path.exists(filepath):
-                    os.remove(filepath)
             cursor.execute("DELETE FROM bus_ads WHERE id=%s", (ad_id,))
             conn.commit()
             return jsonify({'success': True})
@@ -5529,11 +5613,31 @@ def delete_bus_ad(ad_id):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
-# ── BUS ADS: SERVE STATIC ──
+# ── BUS ADS: SERVE FROM DB ──
 @app.route('/ads/<path:filename>')
 def serve_bus_ad(filename):
-    ads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'ads')
-    return send_from_directory(ads_dir, filename)
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute("""
+                SELECT image_data, mime_type
+                FROM bus_ads
+                WHERE filename=%s AND is_active=1
+                LIMIT 1
+            """, (filename,))
+            row = cursor.fetchone()
+        finally:
+            cursor.close(); conn.close()
+
+        if not row or not row.get('image_data'):
+            return jsonify({'success': False, 'message': 'Ad not found'}), 404
+
+        resp = Response(row['image_data'], mimetype=row.get('mime_type') or 'image/jpeg')
+        resp.headers['Cache-Control'] = 'public, max-age=86400'
+        return resp
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 
 # ============================================
