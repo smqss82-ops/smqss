@@ -11,24 +11,50 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f5f5f
 .header-brand{display:flex;align-items:center;gap:10px}
 .header-brand svg{width:28px;height:28px;fill:#155c30}
 .header-title{font-size:16px;font-weight:700;color:#155c30}.header-title span{color:#d4aa00}
-.header-right{display:flex;align-items:center;gap:10px}
 .header-status{font-size:11px;padding:4px 10px;border-radius:20px;background:#e8f4ed;color:#155c30;font-weight:600}
-.reset-btn{display:none;padding:6px 12px;background:#c0392b;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer}
-.main{flex:1;padding:16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;padding-bottom:80px}
-.card{background:#fff;border:1px solid #e2e0da;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
-.card-title{font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
-label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px}
-select{width:100%;padding:12px;border:1.5px solid #e2e0da;border-radius:8px;font-size:16px;color:#1a1a1a;background:#f7f6f2;outline:none;font-family:inherit;font-weight:600}
-select:focus{border-color:#155c30;background:#fff}
-input[type=text]{width:100%;padding:12px;border:1.5px solid #e2e0da;border-radius:8px;font-size:16px;color:#1a1a1a;background:#f7f6f2;outline:none;font-family:inherit}
-input[type=text]:focus{border-color:#155c30;background:#fff}
-.btn{width:100%;padding:14px;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.screen{display:none;flex:1;flex-direction:column;padding:16px;gap:12px;overflow-y:auto;animation:slideIn .25s ease}
+.screen.active{display:flex}
+@keyframes slideIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+.screen-back{display:flex;align-items:center;gap:8px;padding:4px 0;margin-bottom:4px;cursor:pointer;color:#6b7280;font-size:14px;font-weight:600;border:none;background:none;font-family:inherit}
+.screen-back:hover{color:#155c30}
+.screen-back svg{width:20px;height:20px;fill:currentColor}
+.screen-title{font-size:13px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.card-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.company-card{background:#fff;border:2px solid #e2e0da;border-radius:14px;padding:20px 14px;text-align:center;cursor:pointer;transition:all .2s}
+.company-card:active{transform:scale(0.96);border-color:#155c30}
+.company-card-icon{width:48px;height:48px;background:linear-gradient(135deg,#155c30,#1e7d43);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;color:#fff;font-size:20px;font-weight:900}
+.company-card-name{font-size:16px;font-weight:700;color:#1a1a1a}
+.company-card-code{font-size:12px;color:#6b7280;margin-top:2px}
+.route-card{background:#fff;border:2px solid #e2e0da;border-radius:12px;padding:16px;cursor:pointer;transition:all .2s}
+.route-card:active{transform:scale(0.98);border-color:#155c30}
+.route-card-name{font-size:18px;font-weight:700;color:#1a1a1a}
+.route-card-meta{font-size:13px;color:#6b7280;margin-top:4px}
+.add-card{background:#f7f6f2;border:2px dashed #d1d5db;border-radius:14px;padding:20px 14px;text-align:center;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:6px}
+.add-card:hover{border-color:#d4aa00;background:#fdf3d8}
+.add-card-plus{width:40px;height:40px;background:#d4aa00;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700}
+.add-card-label{font-size:13px;font-weight:700;color:#6b7280}
+.inline-form{display:none;background:#fff;border:2px solid #d4aa00;border-radius:12px;padding:16px;margin-top:8px;animation:slideIn .2s ease}
+.inline-form.show{display:block}
+.inline-form label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px}
+.inline-form input[type=text]{width:100%;padding:10px 12px;border:1.5px solid #e2e0da;border-radius:8px;font-size:15px;color:#1a1a1a;background:#f7f6f2;outline:none;font-family:inherit;margin-bottom:8px}
+.inline-form input[type=text]:focus{border-color:#155c30;background:#fff}
+.form-row{display:flex;gap:8px}.form-row>*{flex:1}
+.btn{width:100%;padding:12px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
 .btn-primary{background:#155c30;color:#fff}.btn-primary:hover{background:#1e7d43}
 .btn-gold{background:#d4aa00;color:#fff}.btn-gold:hover{background:#b8890a}
-.form-group{margin-bottom:12px}
-.add-row{display:flex;gap:8px;align-items:flex-end}
-.add-row .form-group{flex:1;margin-bottom:0}
-.add-row .add-stop-btn{padding:12px 16px;background:#155c30;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-outline{background:transparent;color:#155c30;border:2px solid #155c30}.btn-outline:hover{background:#155c30;color:#fff}
+.stop-list{display:flex;flex-direction:column;gap:6px}
+.stop-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border-radius:10px;border:1.5px solid #e2e0da}
+.stop-item.break-point{border-color:#d4aa00;background:#fdf3d8}
+.stop-num{font-size:16px;font-weight:800;color:#fff;background:#6b7280;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.stop-item.break-point .stop-num{background:#d4aa00}
+.stop-name{font-size:17px;font-weight:600;flex:1}
+.stop-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;text-transform:uppercase;background:#d4aa00;color:#fff}
+.delete-btn{width:28px;height:28px;background:transparent;color:#c0392b;border:1px solid #c0392b;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.add-stop-row{display:flex;gap:8px;align-items:flex-end;margin-top:4px}
+.add-stop-row input{flex:1;font-size:16px;padding:12px}
+.add-stop-btn{padding:12px 18px;background:#155c30;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;white-space:nowrap}
 .add-stop-btn:hover{background:#1e7d43}
 .toggle-row{display:flex;align-items:center;gap:10px;padding:6px 0}
 .toggle-label{font-size:14px;font-weight:600;color:#374151;flex:1}
@@ -38,32 +64,25 @@ input[type=text]:focus{border-color:#155c30;background:#fff}
 .toggle-slider::before{content:'';position:absolute;left:2px;top:2px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .2s}
 .toggle input:checked+.toggle-slider{background:#155c30}
 .toggle input:checked+.toggle-slider::before{transform:translateX(20px)}
-
-.trip-banner{background:linear-gradient(135deg,#155c30,#1e7d43);color:#fff;border-radius:12px;padding:18px;text-align:center;display:none}
+.trip-banner{background:linear-gradient(135deg,#155c30,#1e7d43);color:#fff;border-radius:12px;padding:16px;text-align:center}
 .trip-company{font-size:20px;font-weight:700}
 .trip-route{font-size:14px;opacity:.8;margin-top:2px}
-
-.stop-list{display:flex;flex-direction:column;gap:8px}
-.trip-stop{display:flex;align-items:center;gap:14px;padding:16px;background:#fff;border-radius:12px;border:2px solid #e2e0da;cursor:pointer;transition:all .2s}
-.trip-stop:active{transform:scale(0.98)}
-.trip-stop.done{border-color:#155c30;background:#e8f4ed}
-.trip-stop.is-break{border-color:#d4aa00;background:#fdf3d8}
-.trip-stop.done.is-break{border-color:#155c30;background:#e8f4ed}
-.trip-num{font-size:22px;font-weight:900;color:#fff;background:#9ca3af;width:50px;height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.trip-stop.done .trip-num{background:#155c30}
-.trip-stop.is-break .trip-num{background:#d4aa00}
-.trip-stop.done.is-break .trip-num{background:#155c30}
-.trip-info{flex:1}
-.trip-name{font-size:20px;font-weight:700;color:#1a1a1a}
-.trip-stop.done .trip-name{color:#155c30}
-.trip-status{font-size:12px;color:#6b7280;margin-top:2px}
-.trip-stop.done .trip-status{color:#155c30;font-weight:600}
-.trip-action{padding:12px 20px;background:#155c30;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;min-width:100px}
-.trip-stop.done .trip-action{background:#e8f4ed;color:#155c30}
-
-.empty-msg{text-align:center;padding:40px 20px;color:#9ca3af;font-size:15px}
-.empty-msg strong{display:block;font-size:18px;color:#6b7280;margin-bottom:4px}
-
+.announce-card{display:flex;align-items:center;gap:14px;padding:16px;background:#fff;border-radius:12px;border:2px solid #e2e0da;cursor:pointer;transition:all .2s}
+.announce-card:active{transform:scale(0.98)}
+.announce-card.done{border-color:#155c30;background:#e8f4ed}
+.announce-card.is-break{border-color:#d4aa00;background:#fdf3d8}
+.announce-card.done.is-break{border-color:#155c30;background:#e8f4ed}
+.announce-num{font-size:22px;font-weight:900;color:#fff;background:#9ca3af;width:50px;height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.announce-card.done .announce-num{background:#155c30}
+.announce-card.is-break .announce-num{background:#d4aa00}
+.announce-card.done.is-break .announce-num{background:#155c30}
+.announce-info{flex:1}
+.announce-name{font-size:20px;font-weight:700;color:#1a1a1a}
+.announce-card.done .announce-name{color:#155c30}
+.announce-status{font-size:12px;color:#6b7280;margin-top:2px}
+.announce-card.done .announce-status{color:#155c30;font-weight:600}
+.announce-action{padding:12px 20px;background:#155c30;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;min-width:100px}
+.announce-card.done .announce-action{background:#e8f4ed;color:#155c30}
 .toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(20px);background:#155c30;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:99;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.error{background:#c0392b}
@@ -75,51 +94,80 @@ input[type=text]:focus{border-color:#155c30;background:#fff}
     <svg viewBox="0 0 24 24"><path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/></svg>
     <div class="header-title">SMQSS <span>Bus</span></div>
   </div>
-  <div class="header-right">
-    <button class="reset-btn" id="resetBtn" onclick="resetTrip()">Reset Trip</button>
-    <div class="header-status" id="connStatus">Connected</div>
-  </div>
+  <div class="header-status">Connected</div>
 </header>
 
 <main class="main">
-  <!-- SELECT ROUTE -->
-  <div id="selectSection">
-    <div class="card">
-      <div class="card-title">Select Your Route</div>
-      <div class="form-group">
-        <label>Bus Company</label>
-        <select id="companySelect" onchange="loadRoutes()"><option value="">-- Choose company --</option></select>
-      </div>
-      <div class="form-group">
-        <label>Route</label>
-        <select id="routeSelect" onchange="loadStops()"><option value="">-- Choose route --</option></select>
-      </div>
-      <div id="stopsPreview" style="margin-top:8px"></div>
-      <button class="btn btn-primary" id="startBtn" onclick="startTrip()" style="margin-top:12px;display:none">Start Trip</button>
-    </div>
 
-    <!-- ADD STOP (one-time config) -->
-    <div class="card" id="addStopCard" style="display:none">
-      <div class="card-title">Add a Stop Point</div>
-      <div class="add-row">
-        <div class="form-group"><label>Stop Name</label><input type="text" id="newStopName" placeholder="e.g. Kamdini"></div>
-        <button class="add-stop-btn" onclick="addStop()">+ Add</button>
+  <!-- SCREEN 1: PICK COMPANY -->
+  <div class="screen active" id="screen1">
+    <div class="screen-title">Your Companies</div>
+    <div class="card-grid" id="companyGrid"></div>
+    <div class="add-card" onclick="showNewCompanyForm()">
+      <div class="add-card-plus">+</div>
+      <div class="add-card-label">New Company</div>
+    </div>
+    <div class="inline-form" id="newCompanyForm">
+      <div class="form-row">
+        <div><label>Company Name</label><input type="text" id="newCompanyName" placeholder="e.g. Modern Coast"></div>
+        <div style="flex:0 0 100px"><label>Code</label><input type="text" id="newCompanyCode" placeholder="MCD" maxlength="10" style="text-transform:uppercase"></div>
       </div>
-      <div class="toggle-row">
-        <span class="toggle-label">Rest Break Point</span>
-        <label class="toggle"><input type="checkbox" id="newStopBreak"><span class="toggle-slider"></span></label>
+      <div style="margin-bottom:10px"><label>Phone (optional)</label><input type="text" id="newCompanyPhone" placeholder="0700000000"></div>
+      <div class="form-row">
+        <button class="btn btn-gold" onclick="createCompany()">Save Company</button>
+        <button class="btn btn-outline" onclick="hideNewCompanyForm()">Cancel</button>
       </div>
     </div>
   </div>
 
-  <!-- ANNOUNCE STOPS -->
-  <div id="announceSection" style="display:none">
-    <div class="trip-banner" id="tripBanner">
+  <!-- SCREEN 2: PICK ROUTE -->
+  <div class="screen" id="screen2">
+    <button class="screen-back" onclick="showScreen('screen1')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back</button>
+    <div class="screen-title" id="screen2Title">Routes</div>
+    <div id="routeList" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="add-card" onclick="showNewRouteForm()" style="margin-top:4px">
+      <div class="add-card-plus">+</div>
+      <div class="add-card-label">Add New Route</div>
+    </div>
+    <div class="inline-form" id="newRouteForm">
+      <div style="margin-bottom:8px"><label>Route Name</label><input type="text" id="newRouteName" placeholder="e.g. Kampala - Jinja"></div>
+      <div class="form-row">
+        <div><label>From</label><input type="text" id="newRouteOrigin" placeholder="Kampala"></div>
+        <div><label>To</label><input type="text" id="newRouteDest" placeholder="Jinja"></div>
+      </div>
+      <div class="form-row" style="margin-top:8px">
+        <button class="btn btn-gold" onclick="createRoute()">Save Route</button>
+        <button class="btn btn-outline" onclick="hideNewRouteForm()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: ADD STOPS -->
+  <div class="screen" id="screen3">
+    <button class="screen-back" onclick="showScreen('screen2')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back</button>
+    <div class="screen-title" id="screen3Title">Stop Points</div>
+    <div class="stop-list" id="stopList"></div>
+    <div class="add-stop-row">
+      <input type="text" id="newStopName" placeholder="Type stop name...">
+      <button class="add-stop-btn" onclick="addStop()">+ Add</button>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">Rest Break Point</span>
+      <label class="toggle"><input type="checkbox" id="newStopBreak"><span class="toggle-slider"></span></label>
+    </div>
+    <button class="btn btn-primary" id="startBtn" onclick="startTrip()" style="margin-top:8px;display:none">Start Trip</button>
+  </div>
+
+  <!-- SCREEN 4: ANNOUNCE -->
+  <div class="screen" id="screen4">
+    <button class="screen-back" onclick="endTrip()"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>End Trip</button>
+    <div class="trip-banner">
       <div class="trip-company" id="tripCompany"></div>
       <div class="trip-route" id="tripRoute"></div>
     </div>
-    <div class="stop-list" id="tripStopList"></div>
+    <div id="announceList" style="display:flex;flex-direction:column;gap:10px"></div>
   </div>
+
 </main>
 
 <div class="toast" id="toast"></div>
@@ -136,60 +184,138 @@ function showToast(msg, err) {
   setTimeout(() => t.className = 'toast', 2500);
 }
 
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── SCREEN 1: COMPANIES ──
+
 async function loadCompanies() {
   try {
     const r = await fetch(API + '/api/bus/companies');
     const d = await r.json();
-    if (d.success) {
-      companies = d.companies;
-      document.getElementById('companySelect').innerHTML = '<option value="">-- Choose company --</option>' + companies.map(c => '<option value="'+c.id+'">'+c.company_name+'</option>').join('');
-    }
+    if (d.success) { companies = d.companies; renderCompanies(); }
   } catch(e) {}
 }
+
+function renderCompanies() {
+  const grid = document.getElementById('companyGrid');
+  grid.innerHTML = companies.map(c =>
+    '<div class="company-card" onclick="selectCompany('+c.id+')">'+
+    '<div class="company-card-icon">'+c.company_name.charAt(0)+'</div>'+
+    '<div class="company-card-name">'+c.company_name+'</div>'+
+    (c.company_code?'<div class="company-card-code">'+c.company_code+'</div>':'')+
+    '</div>'
+  ).join('');
+}
+
+function selectCompany(id) {
+  selectedCompanyId = id;
+  selectedRouteId = null;
+  const c = companies.find(x => x.id == id);
+  document.getElementById('screen2Title').textContent = (c ? c.company_name : '') + ' — Routes';
+  loadRoutes();
+  showScreen('screen2');
+}
+
+function showNewCompanyForm() { document.getElementById('newCompanyForm').classList.add('show'); document.getElementById('newCompanyName').focus(); }
+function hideNewCompanyForm() { document.getElementById('newCompanyForm').classList.remove('show'); }
+
+async function createCompany() {
+  const name = document.getElementById('newCompanyName').value.trim();
+  const code = document.getElementById('newCompanyCode').value.trim();
+  const phone = document.getElementById('newCompanyPhone').value.trim();
+  if (!name || !code) { showToast('Name and code required', true); return; }
+  try {
+    const r = await fetch(API + '/api/bus/company', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({company_name:name,company_code:code,contact_phone:phone}) });
+    const d = await r.json();
+    if (d.success) {
+      showToast('Company saved!');
+      document.getElementById('newCompanyName').value=''; document.getElementById('newCompanyCode').value=''; document.getElementById('newCompanyPhone').value='';
+      hideNewCompanyForm();
+      await loadCompanies();
+      selectCompany(d.company_id);
+    } else showToast(d.message, true);
+  } catch(e) { showToast('Network error', true); }
+}
+
+// ── SCREEN 2: ROUTES ──
 
 async function loadRoutes() {
-  const cid = document.getElementById('companySelect').value;
-  selectedCompanyId = cid || null;
-  selectedRouteId = null;
-  stops = [];
-  document.getElementById('routeSelect').innerHTML = '<option value="">-- Choose route --</option>';
-  document.getElementById('startBtn').style.display = 'none';
-  document.getElementById('addStopCard').style.display = 'none';
-  document.getElementById('stopsPreview').innerHTML = '';
-  if (!cid) return;
+  if (!selectedCompanyId) return;
   try {
-    const r = await fetch(API + '/api/bus/routes/' + cid);
+    const r = await fetch(API + '/api/bus/routes/' + selectedCompanyId);
     const d = await r.json();
-    if (d.success) {
-      routes = d.routes;
-      document.getElementById('routeSelect').innerHTML = '<option value="">-- Choose route --</option>' + routes.map(r => '<option value="'+r.id+'">'+r.route_name+'</option>').join('');
-    }
+    if (d.success) { routes = d.routes; renderRoutes(); }
   } catch(e) {}
 }
+
+function renderRoutes() {
+  const el = document.getElementById('routeList');
+  if (!routes.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:#9ca3af">No routes yet. Add one below.</div>'; return; }
+  el.innerHTML = routes.map(r => {
+    const meta = [r.origin, r.destination].filter(Boolean).join(' → ');
+    return '<div class="route-card" onclick="selectRoute('+r.id+')">'+
+    '<div class="route-card-name">'+r.route_name+'</div>'+
+    (meta?'<div class="route-card-meta">'+meta+'</div>':'')+
+    '</div>';
+  }).join('');
+}
+
+function selectRoute(id) {
+  selectedRouteId = id;
+  const r = routes.find(x => x.id == id);
+  document.getElementById('screen3Title').textContent = (r ? r.route_name : '') + ' — Stop Points';
+  loadStops();
+  showScreen('screen3');
+}
+
+function showNewRouteForm() { document.getElementById('newRouteForm').classList.add('show'); document.getElementById('newRouteName').focus(); }
+function hideNewRouteForm() { document.getElementById('newRouteForm').classList.remove('show'); }
+
+async function createRoute() {
+  if (!selectedCompanyId) return;
+  const name = document.getElementById('newRouteName').value.trim();
+  const origin = document.getElementById('newRouteOrigin').value.trim();
+  const dest = document.getElementById('newRouteDest').value.trim();
+  if (!name) { showToast('Route name required', true); return; }
+  try {
+    const r = await fetch(API + '/api/bus/route', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({company_id:selectedCompanyId,route_name:name,origin:origin,destination:dest}) });
+    const d = await r.json();
+    if (d.success) {
+      showToast('Route saved!');
+      document.getElementById('newRouteName').value=''; document.getElementById('newRouteOrigin').value=''; document.getElementById('newRouteDest').value='';
+      hideNewRouteForm();
+      await loadRoutes();
+      selectRoute(d.route_id);
+    } else showToast(d.message, true);
+  } catch(e) { showToast('Network error', true); }
+}
+
+// ── SCREEN 3: STOPS ──
 
 async function loadStops() {
-  const rid = document.getElementById('routeSelect').value;
-  selectedRouteId = rid || null;
-  if (!rid) { stops = []; document.getElementById('startBtn').style.display = 'none'; document.getElementById('addStopCard').style.display = 'none'; document.getElementById('stopsPreview').innerHTML = ''; return; }
+  if (!selectedRouteId) return;
   try {
-    const r = await fetch(API + '/api/bus/stops/' + rid);
+    const r = await fetch(API + '/api/bus/stops/' + selectedRouteId);
     const d = await r.json();
-    if (d.success) {
-      stops = d.stops;
-      renderPreview();
-      document.getElementById('addStopCard').style.display = 'block';
-      if (stops.length) document.getElementById('startBtn').style.display = 'block';
-    }
+    if (d.success) { stops = d.stops; renderStops(); }
   } catch(e) {}
 }
 
-function renderPreview() {
-  const el = document.getElementById('stopsPreview');
-  if (!stops.length) { el.innerHTML = '<div style="padding:8px 0;font-size:13px;color:#9ca3af">No stops yet — add some below.</div>'; return; }
-  el.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:4px">' + stops.sort((a,b)=>a.stop_order-b.stop_order).map((s,i) =>
-    '<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#f7f6f2;border:1px solid #e2e0da;border-radius:6px;font-size:13px;color:#374151">'+
-    '<strong style="color:#6b7280">'+(i+1)+'</strong> '+s.stop_name+(s.is_break_point?' 🛑':'')+'</span>'
-  ).join('') + '</div>';
+function renderStops() {
+  const el = document.getElementById('stopList');
+  const btn = document.getElementById('startBtn');
+  if (!stops.length) { el.innerHTML = '<div style="padding:16px;text-align:center;color:#9ca3af;font-size:14px">No stops yet. Add your first stop below.</div>'; btn.style.display='none'; return; }
+  btn.style.display = 'block';
+  el.innerHTML = stops.sort((a,b) => a.stop_order - b.stop_order).map((s,i) =>
+    '<div class="stop-item'+(s.is_break_point?' break-point':'')+'">'+
+    '<div class="stop-num">'+(i+1)+'</div>'+
+    '<div class="stop-name">'+s.stop_name+'</div>'+
+    (s.is_break_point?'<span class="stop-badge">Break</span>':'')+
+    '<button class="delete-btn" onclick="deleteStop('+s.id+')">&times;</button></div>'
+  ).join('');
 }
 
 async function addStop() {
@@ -200,49 +326,52 @@ async function addStop() {
   try {
     const r = await fetch(API + '/api/bus/stop', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({route_id:selectedRouteId,stop_name:name,is_break_point:isBreak}) });
     const d = await r.json();
-    if (d.success) { stops.push({id:d.stop_id,stop_name:name,stop_order:d.stop_order,is_break_point:isBreak?1:0}); renderPreview(); document.getElementById('newStopName').value=''; document.getElementById('newStopBreak').checked=false; document.getElementById('newStopName').focus(); document.getElementById('startBtn').style.display='block'; }
+    if (d.success) { stops.push({id:d.stop_id,stop_name:name,stop_order:d.stop_order,is_break_point:isBreak?1:0}); renderStops(); document.getElementById('newStopName').value=''; document.getElementById('newStopName').focus(); }
     else showToast(d.message, true);
   } catch(e) { showToast('Network error', true); }
 }
 
+async function deleteStop(id) {
+  try { await fetch(API + '/api/bus/stop/' + id, { method:'DELETE' }); stops = stops.filter(s => s.id !== id); renderStops(); } catch(e) {}
+}
+
+// ── SCREEN 4: ANNOUNCE ──
+
 async function startTrip() {
   if (!stops.length) { showToast('Add stops first', true); return; }
-  const company = companies.find(c => c.id == selectedCompanyId);
-  const route = routes.find(r => r.id == selectedRouteId);
-  const companyName = company ? company.company_name : 'Bus';
-  const routeName = route ? route.route_name : '';
-  const origin = route ? (route.origin || '') : '';
-  const dest = route ? (route.destination || '') : '';
+  const c = companies.find(x => x.id == selectedCompanyId);
+  const r = routes.find(x => x.id == selectedRouteId);
+  const companyName = c ? c.company_name : 'Bus';
+  const routeName = r ? r.route_name : '';
+  const origin = r ? (r.origin || '') : '';
+  const dest = r ? (r.destination || '') : '';
   try {
-    const r = await fetch(API + '/api/bus/start-trip', { method:'POST', headers:{'Content-Type':'application/json'},
+    const resp = await fetch(API + '/api/bus/start-trip', { method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({company_name:companyName,route_name:routeName,origin:origin,destination:dest,stops:stops.map(s=>({id:s.id,stop_name:s.stop_name,stop_order:s.stop_order,is_break_point:s.is_break_point?true:false}))}) });
-    const d = await r.json();
+    const d = await resp.json();
     if (d.success) {
       announcedIds = new Set();
-      document.getElementById('selectSection').style.display = 'none';
-      document.getElementById('announceSection').style.display = 'block';
-      document.getElementById('tripBanner').style.display = 'block';
       document.getElementById('tripCompany').textContent = companyName;
       document.getElementById('tripRoute').textContent = (origin ? origin+' → ' : '') + (dest || routeName);
-      document.getElementById('resetBtn').style.display = 'inline-block';
-      renderTripStops();
+      renderAnnounceCards();
+      showScreen('screen4');
       showToast('Trip started!');
     }
   } catch(e) { showToast('Network error', true); }
 }
 
-function renderTripStops() {
-  const el = document.getElementById('tripStopList');
+function renderAnnounceCards() {
+  const el = document.getElementById('announceList');
   el.innerHTML = stops.sort((a,b)=>a.stop_order-b.stop_order).map((s,i) => {
     const done = announcedIds.has(s.id);
     const cls = done ? ' done' : (s.is_break_point ? ' is-break' : '');
-    return '<div class="trip-stop'+cls+'" onclick="'+(done?'':'announceStop('+s.id+',\''+s.stop_name.replace(/'/g,"\\'")+'\','+s.stop_order+','+(s.is_break_point?1:0)+')')+'">'+
-      '<div class="trip-num">'+(i+1)+'</div>'+
-      '<div class="trip-info">'+
-      '<div class="trip-name">'+s.stop_name+'</div>'+
-      '<div class="trip-status">'+(done?'✓ Announced':(s.is_break_point?'Break Point':'Tap to Announce'))+'</div>'+
+    return '<div class="announce-card'+cls+'" onclick="'+(done?'':'announceStop('+s.id+',\''+s.stop_name.replace(/'/g,"\\'")+'\','+s.stop_order+','+(s.is_break_point?1:0)+')')+'">'+
+      '<div class="announce-num">'+(i+1)+'</div>'+
+      '<div class="announce-info">'+
+      '<div class="announce-name">'+s.stop_name+'</div>'+
+      '<div class="announce-status">'+(done?'✓ Announced':(s.is_break_point?'Break Point — Tap to Announce':'Tap to Announce'))+'</div>'+
       '</div>'+
-      '<button class="trip-action">'+(done?'Done':'Announce')+'</button>'+
+      '<button class="announce-action">'+(done?'Done':'Announce')+'</button>'+
       '</div>';
   }).join('');
 }
@@ -252,19 +381,16 @@ async function announceStop(id, name, order, isBreak) {
     const r = await fetch(API + '/api/bus/announce', { method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({stop_id:id,stop_name:name,stop_order:order,is_break_point:!!isBreak}) });
     const d = await r.json();
-    if (d.success) { announcedIds.add(id); renderTripStops(); showToast('Announced: ' + name); }
+    if (d.success) { announcedIds.add(id); renderAnnounceCards(); showToast('Announced: ' + name); }
   } catch(e) { showToast('Network error', true); }
 }
 
-async function resetTrip() {
+async function endTrip() {
   try {
     await fetch(API + '/api/bus/reset', { method:'POST' });
     announcedIds = new Set();
-    document.getElementById('selectSection').style.display = 'block';
-    document.getElementById('announceSection').style.display = 'none';
-    document.getElementById('tripBanner').style.display = 'none';
-    document.getElementById('resetBtn').style.display = 'none';
-    showToast('Trip reset');
+    showScreen('screen1');
+    showToast('Trip ended');
   } catch(e) {}
 }
 
