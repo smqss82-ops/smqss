@@ -241,6 +241,10 @@ let lastAnnounceTime = 0;
 let adIndex = 0;
 let adTimer = null;
 let currentCompanyName = '';
+let lastRenderedAnnouncedCount = -1;
+let lastRenderedCurrentId = null;
+let lastTickerCompany = '';
+let lastTickerRoute = '';
 const adMessages = [
   'Thank you for choosing __COMPANY__',
   'Safety first: Hold on to handrails',
@@ -313,14 +317,14 @@ async function pollState() {
       document.getElementById('tickerLabel').textContent = d.company_name;
       const route = (d.origin && d.destination) ? d.origin+' → '+d.destination : d.route_name;
       document.getElementById('companyRoute').textContent = route;
-      updateTickerContent(d.company_name, route);
+      if (d.company_name !== lastTickerCompany || route !== lastTickerRoute) { lastTickerCompany = d.company_name; lastTickerRoute = route; updateTickerContent(d.company_name, route); }
       currentDestination = d.destination || '';
     }
 
     if (d.all_stops && d.all_stops.length) {
       currentTotalStops = d.all_stops.length;
       document.getElementById('sideSubtitle').textContent = d.all_stops.length + ' stops on this route';
-      renderRouteStops(d.all_stops, d.announced_stops || [], d.stop_id);
+      const ac = (d.announced_stops || []).length; if (ac !== lastRenderedAnnouncedCount || d.stop_id !== lastRenderedCurrentId) { lastRenderedAnnouncedCount = ac; lastRenderedCurrentId = d.stop_id; renderRouteStops(d.all_stops, d.announced_stops || [], d.stop_id); }
     }
 
     if (d.stop_name && d.stop_id !== lastStopId) {
@@ -349,7 +353,7 @@ async function pollState() {
     if (!d.stop_name && !d.all_stops.length) {
       tripStartTime = 0;
       lastAnnounceTime = 0;
-      adIndex = 0;
+      adIndex = 0; lastRenderedAnnouncedCount = -1; lastRenderedCurrentId = null; lastTickerCompany = ""; lastTickerRoute = "";
       document.getElementById('waitingState').style.display = 'flex';
       document.getElementById('journeyState').classList.remove('active');
       document.getElementById('announceState').classList.remove('active');
