@@ -45,7 +45,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#070d0
 .prayer-text{font-size:15px;color:rgba(255,255,255,0.6);line-height:1.6;font-style:italic;text-align:center}
 .prayer-label{font-size:10px;font-weight:700;color:rgba(255,215,0,0.4);text-transform:uppercase;letter-spacing:2px;text-align:center;margin-bottom:6px}
 
-.side-panel{width:380px;background:rgba(255,255,255,0.03);border-left:2px solid rgba(255,215,0,0.15);padding:0 0 20px 0;display:flex;flex-direction:column;overflow-y:auto}
+.side-panel{width:380px;background:rgba(255,255,255,0.03);border-left:3px solid rgba(255,215,0,0.25);padding:0 0 20px 0;display:flex;flex-direction:column;overflow-y:auto}
 
 .side-header{background:linear-gradient(135deg,rgba(212,170,0,0.12),rgba(212,170,0,0.04));padding:20px 20px 14px;border-bottom:2px solid rgba(255,215,0,0.2)}
 .side-title{font-size:32px;font-weight:900;color:#ffd700;letter-spacing:1px;line-height:1.1;text-transform:uppercase;text-shadow:0 0 30px rgba(255,215,0,0.2)}
@@ -53,21 +53,21 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#070d0
 
 .side-stops{padding:16px 20px;display:flex;flex-direction:column;gap:6px;flex:1}
 
-.stop-list-item{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;margin-bottom:2px;transition:all .3s;border:1px solid transparent}
-.stop-list-item.upcoming{background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.04)}
-.stop-list-item.visited{background:rgba(255,215,0,0.06);border-color:rgba(255,215,0,0.12)}
-.stop-list-item.current{background:rgba(74,222,128,0.1);border:2px solid rgba(74,222,128,0.35);box-shadow:0 0 20px rgba(74,222,128,0.08)}
+.stop-list-item{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:12px;margin-bottom:4px;transition:all .3s;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.05)}
+.stop-list-item.upcoming{background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.08)}
+.stop-list-item.visited{background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3)}
+.stop-list-item.current{background:rgba(74,222,128,0.15);border:2px solid rgba(74,222,128,0.5);box-shadow:0 0 24px rgba(74,222,128,0.12)}
 
-.stop-num{font-size:16px;font-weight:800;color:rgba(255,255,255,0.25);width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(255,255,255,0.05);transition:all .3s}
-.stop-list-item.current .stop-num{background:#4ade80;color:#070d09;font-size:18px;box-shadow:0 0 12px rgba(74,222,128,0.4)}
-.stop-list-item.visited .stop-num{background:rgba(255,215,0,0.2);color:#ffd700}
+.stop-num{font-size:18px;font-weight:800;color:rgba(255,255,255,0.5);width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.1);transition:all .3s}
+.stop-list-item.current .stop-num{background:#4ade80;color:#070d09;font-size:20px;font-weight:900;box-shadow:0 0 14px rgba(74,222,128,0.4)}
+.stop-list-item.visited .stop-num{background:rgba(255,215,0,0.3);color:#ffd700;font-weight:900}
 
-.stop-list-label{font-size:20px;font-weight:600;color:rgba(255,255,255,0.35);line-height:1.2}
-.stop-list-item.current .stop-list-label{color:#fff;font-weight:700}
-.stop-list-item.visited .stop-list-label{color:rgba(255,215,0,0.8)}
+.stop-list-label{font-size:22px;font-weight:600;color:rgba(255,255,255,0.85);line-height:1.2}
+.stop-list-item.current .stop-list-label{color:#fff;font-weight:800;font-size:24px}
+.stop-list-item.visited .stop-list-label{color:#ffd700;font-weight:700}
 
-.break-badge{font-size:12px;font-weight:700;background:rgba(212,170,0,0.2);color:#d4aa00;padding:3px 10px;border-radius:6px;margin-left:auto;text-transform:uppercase;letter-spacing:1px}
-.current-badge{font-size:12px;font-weight:700;background:rgba(74,222,128,0.2);color:#4ade80;padding:3px 10px;border-radius:6px;margin-left:auto;text-transform:uppercase;letter-spacing:1px}
+.break-badge{font-size:12px;font-weight:700;background:rgba(212,170,0,0.3);color:#ffd700;padding:4px 12px;border-radius:6px;margin-left:auto;text-transform:uppercase;letter-spacing:1px}
+.current-badge{font-size:12px;font-weight:700;background:rgba(74,222,128,0.3);color:#4ade80;padding:4px 12px;border-radius:6px;margin-left:auto;text-transform:uppercase;letter-spacing:1px}
 
 .ticker{height:44px;background:rgba(21,92,48,0.15);border-top:1px solid rgba(255,215,0,0.1);display:flex;align-items:center;overflow:hidden;flex-shrink:0}
 .ticker-label{padding:0 16px;font-size:11px;font-weight:700;color:#d4aa00;letter-spacing:1px;white-space:nowrap;border-right:1px solid rgba(255,215,0,0.1)}
