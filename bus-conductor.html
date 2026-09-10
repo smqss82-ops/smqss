@@ -395,13 +395,16 @@ function renderAnnounceCards() {
     const done = announcedIds.has(s.id);
     const cls = done ? ' done' : (s.is_break_point ? ' is-break' : '');
     const num = done ? '✓' : (i+1);
-    return '<div class="announce-card'+cls+'" onclick="'+(done?'':'announceStop('+s.id+',\''+s.stop_name.replace(/'/g,"\\'")+'\','+s.stop_order+','+(s.is_break_point?1:0)+')')+'">'+
+    const action = done
+      ? '<button class="announce-action" style="background:#e8f4ed;color:#155c30">Done</button>'
+      : '<button class="announce-action" onclick="event.stopPropagation();announceStop('+s.id+',\''+s.stop_name.replace(/'/g,"\\'")+'\','+s.stop_order+','+(s.is_break_point?1:0)+')">Announce</button>';
+    return '<div class="announce-card'+cls+'">'+
       '<div class="announce-num">'+num+'</div>'+
       '<div class="announce-info">'+
       '<div class="announce-name">'+s.stop_name+'</div>'+
-      '<div class="announce-status">'+(done?'✓ Done — Removed from screen':(s.is_break_point?'Break Point — Tap to Announce':'Tap to Announce'))+'</div>'+
+      '<div class="announce-status">'+(done?'✓ Passengers may exit':(s.is_break_point?'Break Point — Tap to Announce':'Tap to Announce'))+'</div>'+
       '</div>'+
-      '<button class="announce-action">'+(done?'Done':'Announce')+'</button>'+
+      action+
       '</div>';
   }).join('');
 }

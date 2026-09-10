@@ -261,6 +261,9 @@ let lastTickerCompany = '';
 let lastTickerRoute = '';
 let emptyPollStreak = 0;
 const EMPTY_POLL_THRESHOLD = 3;
+let d_all_stops = null;
+let d_announced_stops = [];
+let lastAnnouncedStopId = null;
 const adMessages = [
   'Thank you for choosing __COMPANY__',
   'Safety first: Hold on to handrails',
@@ -417,6 +420,8 @@ async function pollState() {
 
     if (d.all_stops && d.all_stops.length) {
       currentTotalStops = d.all_stops.length;
+      d_all_stops = d.all_stops;
+      d_announced_stops = d.announced_stops || [];
       document.getElementById('sideSubtitle').textContent = d.all_stops.length + ' stops on this route';
       const ac = (d.announced_stops || []).length; if (ac !== lastRenderedAnnouncedCount || d.stop_id !== lastRenderedCurrentId) { lastRenderedAnnouncedCount = ac; lastRenderedCurrentId = d.stop_id; renderRouteStops(d.all_stops, d.announced_stops || [], d.stop_id); }
     }
@@ -424,9 +429,12 @@ async function pollState() {
     if (d.stop_name && d.stop_id !== lastStopId) {
       lastStopId = d.stop_id;
       lastAnnounceTime = Date.now();
-      showAnnouncement(d.stop_name, d.prayer);
+      if (d.stop_id !== lastAnnouncedStopId) {
+        showAnnouncement(d.stop_name, d.prayer);
+      }
 
-      if (!d.announced) {
+      if (!d.announced && d.stop_id !== lastAnnouncedStopId) {
+        lastAnnouncedStopId = d.stop_id;
         const announcement = buildAnnouncement(d.stop_name, d.stop_order || 1, currentTotalStops, currentDestination, d.is_break_point);
         document.getElementById('announceSubtitle').textContent = announcement;
         queueVoice(announcement);
@@ -439,6 +447,8 @@ async function pollState() {
       if (!tripStartTime) {
         tripStartTime = Date.now();
         lastAnnounceTime = Date.now();
+      }
+      if (!document.getElementById('journeyState').classList.contains('active')) {
         showJourneyState(d.all_stops, d.announced_stops || []);
       }
       ensureBusDriving();
@@ -454,6 +464,7 @@ async function pollState() {
         tripStartTime = 0;
         lastAnnounceTime = 0;
         adIndex = 0; lastRenderedAnnouncedCount = -1; lastRenderedCurrentId = null; lastTickerCompany = ''; lastTickerRoute = '';
+        lastAnnouncedStopId = null;
         showWaitingState();
         document.getElementById('journeyState').classList.remove('active');
         document.getElementById('announceState').classList.remove('active');
@@ -533,9 +544,8 @@ function checkDelay() {
 
 function showAnnouncement(name, prayer) {
   const as = document.getElementById('announceState');
-  if (!as.classList.contains('active')) {
-    as.classList.add('active');
-  }
+  if (as.classList.contains('active')) return;
+  as.classList.add('active');
   hideWaitingState();
   document.getElementById('journeyState').classList.remove('active');
   document.getElementById('stopNameDisplay').textContent = name;
@@ -571,7 +581,19 @@ function queueVoice(text) {
 }
 
 async function playNext() {
-  if (!voiceQueue.length) { isPlaying=false; return; }
+  if (!voiceQueue.length) {
+    isPlaying = false;
+    if (document.getElementById('announceState').classList.contains('active') && document.getElementById('journeyState').id) {
+      setTimeout(() => {
+        document.getElementById('announceState').classList.remove('active');
+        document.getElementById('ripple').style.display = 'none';
+        if (d_all_stops && d_all_stops.length) {
+          showJourneyState(d_all_stops, d_announced_stops);
+        }
+      }, 2500);
+    }
+    return;
+  }
   isPlaying = true;
   const text = voiceQueue.shift();
   document.getElementById('voiceDot').classList.add('active');
