@@ -126,6 +126,15 @@ body{
 .announce-card.done .announce-action{background:#e8f4ed;color:#155c30}
 .announce-action.proceed{background:#d4aa00;color:#fff}
 .announce-action.proceed:hover{background:#c39a00}
+.lang-row{display:flex;gap:6px;margin-top:4px}
+.lang-btn{flex:1;padding:10px 8px;border:2px solid #e2e0da;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;background:#fff;color:#6b7280;transition:all .2s;font-family:inherit}
+.lang-btn.active{border-color:#155c30;background:#e8f4ed;color:#155c30}
+.lang-btn:active{transform:scale(0.96)}
+.custom-announce-row{display:flex;gap:8px;align-items:stretch}
+.custom-announce-row input{flex:1;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:15px;font-family:inherit;min-width:0}
+.custom-announce-row button{padding:12px 16px;background:#155c30;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit}
+.custom-announce-row button:hover{background:#1e7d43}
+.custom-announce-row button:active{transform:scale(0.96)}
 .toast{position:fixed;bottom:calc(70px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);background:#155c30;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:99;pointer-events:none;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.error{background:#c0392b}
@@ -225,6 +234,23 @@ body{
       <div class="trip-banner">
         <div class="trip-company" id="tripCompany"></div>
         <div class="trip-route" id="tripRoute"></div>
+      </div>
+      <div style="padding:10px 14px;background:#fff;border-radius:12px;border:1.5px solid #e2e0da;display:flex;flex-direction:column;gap:10px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Announcement Language</div>
+          <div class="lang-row">
+            <button class="lang-btn active" onclick="setLanguage('','English',this)">English</button>
+            <button class="lang-btn" onclick="setLanguage('sw-KE-ZuriNeural','Swahili',this)">Swahili</button>
+            <button class="lang-btn" onclick="setLanguage('en-KE-AsiliaNeural','Luganda',this)">Luganda</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Custom Announcement</div>
+          <div class="custom-announce-row">
+            <input type="text" id="customMsg" placeholder="Type a message to announce..." onkeydown="if(event.key==='Enter')sendCustomAnnouncement()">
+            <button onclick="sendCustomAnnouncement()">📢 Send</button>
+          </div>
+        </div>
       </div>
       <div id="announceList" style="display:flex;flex-direction:column;gap:10px"></div>
     </div>
@@ -682,6 +708,37 @@ async function deleteAd(id) {
   } catch(e) { showToast('Delete failed', true); }
 }
 
+// ── LANGUAGE SELECTION ──
+
+async function setLanguage(voice, label, btn) {
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  try {
+    const r = await fetch(API + '/api/bus/language', { method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({voice: voice}) });
+    const d = await r.json();
+    if (d.success) showToast('Language: ' + label);
+    else showToast(d.message || 'Could not set language', true);
+  } catch(e) { showToast('Network error', true); }
+}
+
+// ── CUSTOM ANNOUNCEMENT ──
+
+async function sendCustomAnnouncement() {
+  const input = document.getElementById('customMsg');
+  const text = input.value.trim();
+  if (!text) { showToast('Type a message first', true); return; }
+  try {
+    const r = await fetch(API + '/api/bus/custom-announcement', { method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text: text}) });
+    const d = await r.json();
+    if (d.success) {
+      input.value = '';
+      showToast('Announcement sent');
+    } else showToast(d.message || 'Could not send', true);
+  } catch(e) { showToast('Network error', true); }
+}
+
 async function init() {
   try {
     const r = await fetch(API + '/api/bus/current-state');
@@ -697,6 +754,16 @@ async function init() {
       document.getElementById('tripRoute').textContent = routeLabel;
       renderAnnounceCards();
       showScreen('screen4');
+      // Restore language selector from state
+      if (d.tts_voice) {
+        document.querySelectorAll('.lang-btn').forEach(b => {
+          b.classList.remove('active');
+          if ((d.tts_voice === 'sw-KE-ZuriNeural' && b.textContent.trim() === 'Swahili') ||
+              (d.tts_voice === 'en-KE-AsiliaNeural' && b.textContent.trim() === 'Luganda')) {
+            b.classList.add('active');
+          }
+        });
+      }
       showToast('Resumed active trip');
       return;
     }

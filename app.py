@@ -528,6 +528,22 @@ try:
             connection.commit()
             print("[OK] pending_stop_id column added to bus_trip_state")
 
+        # ── BUS TRIP STATE: tts_voice for multi-language TTS ──
+        cursor.execute("SHOW COLUMNS FROM bus_trip_state LIKE 'tts_voice'")
+        if not cursor.fetchone():
+            print("[WARN] bus_trip_state table missing tts_voice column! Adding...")
+            cursor.execute("ALTER TABLE bus_trip_state ADD COLUMN tts_voice VARCHAR(50) DEFAULT NULL AFTER pending_stop_id")
+            connection.commit()
+            print("[OK] tts_voice column added to bus_trip_state")
+
+        # ── BUS TRIP STATE: custom_announcement for ad-hoc messages ──
+        cursor.execute("SHOW COLUMNS FROM bus_trip_state LIKE 'custom_announcement'")
+        if not cursor.fetchone():
+            print("[WARN] bus_trip_state table missing custom_announcement column! Adding...")
+            cursor.execute("ALTER TABLE bus_trip_state ADD COLUMN custom_announcement TEXT DEFAULT NULL AFTER tts_voice")
+            connection.commit()
+            print("[OK] custom_announcement column added to bus_trip_state")
+
         # ── BUS ADS: store image bytes in MySQL (survives ephemeral FS wipes) ──
         cursor.execute("SHOW COLUMNS FROM bus_ads LIKE 'mime_type'")
         if not cursor.fetchone():
@@ -5072,13 +5088,14 @@ def text_to_speech():
 
     data = request.get_json()
     text = data.get('text', '').strip()
+    voice = data.get('voice', '').strip() or _TTS_VOICE
 
     if not text:
         return jsonify({'success': False, 'message': 'Text is required'}), 400
 
     try:
         async def _synthesize():
-            tts = edge_tts.Communicate(text, _TTS_VOICE, rate="-10%")
+            tts = edge_tts.Communicate(text, voice, rate="-10%")
             audio = b""
             async for chunk in tts.stream():
                 if chunk["type"] == "audio":
@@ -5104,7 +5121,8 @@ _bus_state = {'company_id': None, 'company_name': '', 'route_id': None, 'route_n
               'origin': '', 'destination': '',
               'stop_name': None, 'stop_id': None, 'stop_order': 0, 'is_break_point': False,
               'timestamp': None, 'announced': False, 'prayer': None,
-              'all_stops': [], 'announced_stops': [], 'pending_stop_id': None}
+              'all_stops': [], 'announced_stops': [], 'pending_stop_id': None,
+              'tts_voice': None, 'custom_announcement': None}
 
 def save_trip_state():
     try:
@@ -5115,8 +5133,9 @@ def save_trip_state():
             cursor.execute("""
                 INSERT INTO bus_trip_state (id, company_id, company_name, route_id, route_name,
                     origin, destination, all_stops, announced_stops, current_stop_id,
-                    current_stop_name, current_stop_order, pending_stop_id, is_break_point, announced, prayer, is_active)
-                VALUES (1, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1)
+                    current_stop_name, current_stop_order, pending_stop_id, tts_voice,
+                    custom_announcement, is_break_point, announced, prayer, is_active)
+                VALUES (1, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1)
                 ON DUPLICATE KEY UPDATE
                     company_id=VALUES(company_id), company_name=VALUES(company_name),
                     route_id=VALUES(route_id), route_name=VALUES(route_name),
@@ -5124,6 +5143,7 @@ def save_trip_state():
                     all_stops=VALUES(all_stops), announced_stops=VALUES(announced_stops),
                     current_stop_id=VALUES(current_stop_id), current_stop_name=VALUES(current_stop_name),
                     current_stop_order=VALUES(current_stop_order), pending_stop_id=VALUES(pending_stop_id),
+                    tts_voice=VALUES(tts_voice), custom_announcement=VALUES(custom_announcement),
                     is_break_point=VALUES(is_break_point),
                     announced=VALUES(announced), prayer=VALUES(prayer), is_active=1
             """, (
@@ -5134,6 +5154,7 @@ def save_trip_state():
                 json.dumps(_bus_state.get('announced_stops', [])),
                 _bus_state.get('stop_id'), _bus_state.get('stop_name'),
                 _bus_state.get('stop_order', 0), _bus_state.get('pending_stop_id'),
+                _bus_state.get('tts_voice'), _bus_state.get('custom_announcement'),
                 1 if _bus_state.get('is_break_point') else 0,
                 1 if _bus_state.get('announced') else 0, _bus_state.get('prayer')
             ))
@@ -5183,6 +5204,8 @@ def load_trip_state_on_startup():
                     'stop_name': row.get('current_stop_name'),
                     'stop_order': row.get('current_stop_order', 0),
                     'pending_stop_id': row.get('pending_stop_id'),
+                    'tts_voice': row.get('tts_voice'),
+                    'custom_announcement': row.get('custom_announcement'),
                     'is_break_point': bool(row.get('is_break_point', 0)),
                     'announced': bool(row.get('announced', 0)),
                     'prayer': row.get('prayer'),
@@ -5418,7 +5441,7 @@ def start_bus_trip():
             'stop_name': None, 'stop_id': None, 'stop_order': 0,
             'is_break_point': False, 'timestamp': None, 'announced': False,
             'prayer': None, 'all_stops': stops, 'announced_stops': [],
-            'pending_stop_id': None
+            'pending_stop_id': None, 'tts_voice': None, 'custom_announcement': None
         })
         save_trip_state()
         return jsonify({'success': True, 'message': 'Trip started.', 'stop_count': len(stops)})
@@ -5486,8 +5509,46 @@ def generate_journey_prayer(stop_name, destination, is_break_point):
 @app.route('/api/bus/current-state', methods=['GET'])
 def get_bus_current_state():
     try:
-        is_active = bool(_bus_state.get('all_stops'))
-        return jsonify({'success': True, 'is_active': is_active, **_bus_state})
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute("SELECT * FROM bus_trip_state WHERE id=1 AND is_active=1")
+            row = cursor.fetchone()
+        finally:
+            cursor.close(); conn.close()
+
+        if not row:
+            return jsonify({'success': True, 'is_active': False, **_bus_state})
+
+        import json as _json
+        all_stops = row.get('all_stops')
+        if isinstance(all_stops, str):
+            all_stops = _json.loads(all_stops)
+        announced_stops = row.get('announced_stops')
+        if isinstance(announced_stops, str):
+            announced_stops = _json.loads(announced_stops)
+
+        state = {
+            'company_id': row.get('company_id'),
+            'company_name': row.get('company_name', ''),
+            'route_id': row.get('route_id'),
+            'route_name': row.get('route_name', ''),
+            'origin': row.get('origin', ''),
+            'destination': row.get('destination', ''),
+            'stop_name': row.get('current_stop_name'),
+            'stop_id': row.get('current_stop_id'),
+            'stop_order': row.get('current_stop_order', 0),
+            'is_break_point': bool(row.get('is_break_point', 0)),
+            'timestamp': str(row.get('updated_at', '')),
+            'announced': bool(row.get('announced', 0)),
+            'prayer': row.get('prayer'),
+            'all_stops': all_stops or [],
+            'announced_stops': announced_stops or [],
+            'pending_stop_id': row.get('pending_stop_id'),
+            'tts_voice': row.get('tts_voice'),
+            'custom_announcement': row.get('custom_announcement'),
+        }
+        return jsonify({'success': True, 'is_active': True, **state})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
@@ -5518,6 +5579,42 @@ def mark_stop_done():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
+# ── CONDUCTOR: SET TTS LANGUAGE ──
+@app.route('/api/bus/language', methods=['POST'])
+def set_bus_language():
+    try:
+        data = request.get_json(force=True)
+        voice = data.get('voice', '').strip()
+        _bus_state['tts_voice'] = voice or None
+        save_trip_state()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# ── CONDUCTOR: CUSTOM ANNOUNCEMENT ──
+@app.route('/api/bus/custom-announcement', methods=['POST'])
+def set_custom_announcement():
+    try:
+        data = request.get_json(force=True)
+        text = data.get('text', '').strip()
+        if not text:
+            return jsonify({'success': False, 'message': 'Announcement text required.'}), 400
+        _bus_state['custom_announcement'] = text
+        save_trip_state()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# ── TV: CONFIRM CUSTOM ANNOUNCEMENT PLAYED ──
+@app.route('/api/bus/custom-announcement/confirm', methods=['POST'])
+def confirm_custom_announcement():
+    try:
+        _bus_state['custom_announcement'] = None
+        save_trip_state()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 # ── CONDUCTOR: RESET TRIP ──
 @app.route('/api/bus/reset', methods=['POST'])
 def reset_bus_trip():
@@ -5527,7 +5624,7 @@ def reset_bus_trip():
                            'stop_name': None, 'stop_id': None, 'stop_order': 0,
                            'is_break_point': False, 'timestamp': None, 'announced': False,
                            'prayer': None, 'all_stops': [], 'announced_stops': [],
-                           'pending_stop_id': None})
+                           'pending_stop_id': None, 'tts_voice': None, 'custom_announcement': None})
         clear_trip_state()
         return jsonify({'success': True})
     except Exception as e:
