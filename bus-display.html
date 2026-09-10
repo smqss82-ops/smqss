@@ -264,6 +264,9 @@ const EMPTY_POLL_THRESHOLD = 3;
 let d_all_stops = null;
 let d_announced_stops = [];
 let lastAnnouncedStopId = null;
+// Tracks the last stop_name we saw so we know when Proceed clears it
+let lastSeenStopName = null;
+
 const adMessages = [
   'Thank you for choosing __COMPANY__',
   'Safety first: Hold on to handrails',
@@ -402,6 +405,18 @@ function ensureBusDriving() {
   }
 }
 
+// Return the display to journey view once the conductor has Proceeded
+// (i.e. the backend cleared stop_name/stop_id, but all_stops is still present)
+function maybeReturnToJourney(d) {
+  if (lastSeenStopName !== null && !d.stop_name && d.all_stops && d.all_stops.length) {
+    document.getElementById('announceState').classList.remove('active');
+    document.getElementById('ripple').style.display = 'none';
+    lastStopId = null;
+    lastAnnouncedStopId = null;
+    showJourneyState(d.all_stops, d.announced_stops || []);
+  }
+}
+
 async function pollState() {
   try {
     const r = await fetch(API+'/api/bus/current-state');
@@ -423,7 +438,12 @@ async function pollState() {
       d_all_stops = d.all_stops;
       d_announced_stops = d.announced_stops || [];
       document.getElementById('sideSubtitle').textContent = d.all_stops.length + ' stops on this route';
-      const ac = (d.announced_stops || []).length; if (ac !== lastRenderedAnnouncedCount || d.stop_id !== lastRenderedCurrentId) { lastRenderedAnnouncedCount = ac; lastRenderedCurrentId = d.stop_id; renderRouteStops(d.all_stops, d.announced_stops || [], d.stop_id); }
+      const ac = (d.announced_stops || []).length;
+      if (ac !== lastRenderedAnnouncedCount || d.stop_id !== lastRenderedCurrentId) {
+        lastRenderedAnnouncedCount = ac;
+        lastRenderedCurrentId = d.stop_id;
+        renderRouteStops(d.all_stops, d.announced_stops || [], d.stop_id);
+      }
     }
 
     if (d.stop_name && d.stop_id !== lastStopId) {
@@ -442,6 +462,12 @@ async function pollState() {
         fetch(API+'/api/bus/announce-confirm',{method:'POST'});
       }
     }
+
+    // Detect Proceed (stop cleared) while a trip is still active, and return to journey
+    if (lastSeenStopName !== null && !d.stop_name && d.all_stops && d.all_stops.length) {
+      maybeReturnToJourney(d);
+    }
+    lastSeenStopName = d.stop_name || null;
 
     if (d.all_stops && d.all_stops.length && !d.stop_name) {
       if (!tripStartTime) {
@@ -465,6 +491,8 @@ async function pollState() {
         lastAnnounceTime = 0;
         adIndex = 0; lastRenderedAnnouncedCount = -1; lastRenderedCurrentId = null; lastTickerCompany = ''; lastTickerRoute = '';
         lastAnnouncedStopId = null;
+        lastSeenStopName = null;
+        lastStopId = null;
         showWaitingState();
         document.getElementById('journeyState').classList.remove('active');
         document.getElementById('announceState').classList.remove('active');
@@ -583,15 +611,9 @@ function queueVoice(text) {
 async function playNext() {
   if (!voiceQueue.length) {
     isPlaying = false;
-    if (document.getElementById('announceState').classList.contains('active') && document.getElementById('journeyState').id) {
-      setTimeout(() => {
-        document.getElementById('announceState').classList.remove('active');
-        document.getElementById('ripple').style.display = 'none';
-        if (d_all_stops && d_all_stops.length) {
-          showJourneyState(d_all_stops, d_announced_stops);
-        }
-      }, 2500);
-    }
+    // Do NOT auto-return to journey here. The display stays on the announcement
+    // screen until the conductor taps Proceed (which clears stop_name server-side
+    // and is detected by pollState → maybeReturnToJourney).
     return;
   }
   isPlaying = true;
