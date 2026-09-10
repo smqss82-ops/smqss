@@ -221,8 +221,7 @@ body{
       </div>
 
       <div class="start-trip-section">
-        <div class="start-trip-hint" id="startHint" style="display:none">Add at least one stop point to enable Start Trip</div>
-        <button class="btn btn-primary" id="startBtn" onclick="startTrip()" style="display:none">Start Trip</button>
+        <button class="btn btn-primary" id="startBtn" onclick="startTrip()">Start Trip</button>
       </div>
     </div>
   </div>
@@ -490,13 +489,6 @@ function renderStops() {
 }
 
 function refreshStartTripAvailability() {
-  const btn = document.getElementById('startBtn');
-  const hint = document.getElementById('startHint');
-  const hasStops = stops.length > 0;
-  btn.style.display = 'block';
-  hint.style.display = hasStops ? 'none' : 'block';
-  btn.disabled = !hasStops;
-  btn.classList.toggle('btn-disabled', !hasStops);
 }
 
 async function addStop() {
@@ -536,7 +528,6 @@ async function deleteStop(id) {
 // ── SCREEN 4: ANNOUNCE / PROCEED ──
 
 async function startTrip() {
-  if (!stops.length) { showToast('Add stops first', true); return; }
   const c = companies.find(x => x.id == selectedCompanyId);
   const r = routes.find(x => x.id == selectedRouteId);
   const companyName = c ? c.company_name : 'Bus';
