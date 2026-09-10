@@ -309,7 +309,11 @@ async function endTrip() {
   } catch(e) {}
 }
 
-loadCompanies();
+async function init() {
+  try { await fetch(API + '/api/bus/reset', { method:'POST' }); } catch(e) {}
+  loadCompanies();
+}
+init();
 </script>
 </body>
 </html>
