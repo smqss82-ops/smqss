@@ -32,6 +32,8 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#070d0
 .journey-route-label{font-size:20px;color:rgba(255,215,0,0.8);font-weight:600;margin-top:-8px}
 .journey-track{position:relative;width:100%;height:100px;display:flex;align-items:center;margin:10px 0}
 .journey-line{position:absolute;top:50%;left:0;right:0;height:3px;background:repeating-linear-gradient(90deg,rgba(255,215,0,0.3) 0,rgba(255,215,0,0.3) 8px,transparent 8px,transparent 16px);transform:translateY(-50%)}
+.journey-line.scrolling{animation:roadScroll 0.6s linear infinite}
+@keyframes roadScroll{from{background-position:0 0}to{background-position:-16px 0}}
 .journey-dots{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 20px;z-index:1}
 .journey-dot{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.2);transition:all .3s}
 .journey-dot.visited{background:#ffd700;border-color:#ffd700;box-shadow:0 0 8px rgba(255,215,0,0.4)}
@@ -41,18 +43,21 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#070d0
 .journey-ad{font-size:20px;color:rgba(255,215,0,0.7);font-weight:600;min-height:30px;transition:opacity .5s ease;margin-top:4px}
 
 .journey-bus-icon{position:absolute;bottom:50%;z-index:3;transition:left 1.2s cubic-bezier(0.25,0.1,0.25,1);filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5));transform:translateY(6px)}
-.journey-bus-icon.moving{animation:busBounce 0.5s ease-in-out infinite}
+.journey-bus-icon.driving{animation:busDrive 0.35s ease-in-out infinite}
+.journey-bus-icon.arriving{animation:busArrive 0.4s ease-in-out 3}
 .journey-bus-icon.stopped{animation:none;transform:translateY(6px)}
 .bus-img{width:130px;height:auto;display:block}
-@keyframes busBounce{0%,100%{transform:translateY(6px)}50%{transform:translateY(2px)}}
+@keyframes busDrive{0%,100%{transform:translateY(6px) rotate(0deg)}30%{transform:translateY(4px) rotate(-0.3deg)}60%{transform:translateY(5px) rotate(0.2deg)}}
+@keyframes busArrive{0%,100%{transform:translateY(6px)}50%{transform:translateY(0px)}}
 
 .motion-lines{position:absolute;right:100%;bottom:20px;display:flex;flex-direction:column;gap:5px;padding-right:6px;opacity:0;transition:opacity .3s}
-.moving .motion-lines{opacity:1}
-.motion-line{height:2px;border-radius:2px;background:rgba(255,215,0,0.25);animation:motionFade 0.8s ease-in-out infinite}
-.motion-line:nth-child(1){width:25px;animation-delay:0s}
-.motion-line:nth-child(2){width:18px;animation-delay:0.15s}
-.motion-line:nth-child(3){width:12px;animation-delay:0.3s}
-@keyframes motionFade{0%,100%{opacity:0.1;transform:translateX(4px)}50%{opacity:0.5;transform:translateX(0)}}
+.driving .motion-lines{opacity:1}
+.arriving .motion-lines{opacity:0.6}
+.motion-line{height:2px;border-radius:2px;background:rgba(255,215,0,0.35);animation:motionFade 0.6s ease-in-out infinite}
+.motion-line:nth-child(1){width:28px;animation-delay:0s}
+.motion-line:nth-child(2){width:20px;animation-delay:0.12s}
+.motion-line:nth-child(3){width:14px;animation-delay:0.24s}
+@keyframes motionFade{0%,100%{opacity:0.15;transform:translateX(6px)}50%{opacity:0.6;transform:translateX(0)}}
 
 .announce-state{display:none;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:20px}
 .announce-state.active{display:flex;animation:fadeUp .6s ease}
@@ -286,6 +291,16 @@ updateClock(); setInterval(updateClock, 10000);
   }
 })();
 
+function ensureBusDriving() {
+  const bus = document.getElementById('journeyBus');
+  if (bus && !bus.classList.contains('driving') && !bus.classList.contains('arriving')) {
+    bus.classList.remove('stopped');
+    bus.classList.add('driving');
+    const roadLine = document.querySelector('.journey-line');
+    if (roadLine) roadLine.classList.add('scrolling');
+  }
+}
+
 async function pollState() {
   try {
     const r = await fetch(API+'/api/bus/current-state');
@@ -328,6 +343,7 @@ async function pollState() {
         lastAnnounceTime = Date.now();
         showJourneyState(d.all_stops, d.announced_stops || []);
       }
+      ensureBusDriving();
     }
 
     if (!d.stop_name && !d.all_stops.length) {
@@ -369,10 +385,12 @@ function showJourneyState(stops, announcedIds) {
   const total = stops.length;
   const busPos = total > 1 ? (announcedCount / (total - 1)) * 80 + 10 : 50;
   const bus = document.getElementById('journeyBus');
-  bus.classList.add('moving');
-  bus.classList.remove('stopped');
+  bus.classList.remove('stopped', 'arriving');
+  bus.classList.add('driving');
   bus.style.left = busPos + '%';
-  setTimeout(() => { bus.classList.remove('moving'); bus.classList.add('stopped'); }, 1400);
+  const roadLine = document.querySelector('.journey-line');
+  if (roadLine) roadLine.classList.add('scrolling');
+  setTimeout(() => { bus.classList.remove('driving'); bus.classList.add('stopped'); if (roadLine) roadLine.classList.remove('scrolling'); }, 1800);
 
   document.getElementById('journeyAd').textContent = '';
   document.getElementById('journeyAd').style.opacity = '0';

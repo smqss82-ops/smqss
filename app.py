@@ -286,6 +286,27 @@ _CREATE_OFFICER_SYSTEM_RATINGS_SQL = """
         CONSTRAINT fk_rating_officer FOREIGN KEY (officer_id) REFERENCES officers(id) ON DELETE CASCADE
     )"""
 
+_CREATE_BUS_TRIP_STATE_SQL = """
+    CREATE TABLE IF NOT EXISTS bus_trip_state (
+        id INT PRIMARY KEY DEFAULT 1,
+        company_id INT DEFAULT NULL,
+        company_name VARCHAR(200) DEFAULT '',
+        route_id INT DEFAULT NULL,
+        route_name VARCHAR(200) DEFAULT '',
+        origin VARCHAR(200) DEFAULT '',
+        destination VARCHAR(200) DEFAULT '',
+        all_stops JSON,
+        announced_stops JSON,
+        current_stop_id INT DEFAULT NULL,
+        current_stop_name VARCHAR(200) DEFAULT NULL,
+        current_stop_order INT DEFAULT 0,
+        is_break_point TINYINT(1) DEFAULT 0,
+        announced TINYINT(1) DEFAULT 0,
+        prayer TEXT,
+        is_active TINYINT(1) DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )"""
+
 _CREATE_BUS_COMPANIES_SQL = """
     CREATE TABLE IF NOT EXISTS bus_companies (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -336,6 +357,7 @@ _ALL_TABLES = [
     ('bus_companies', _CREATE_BUS_COMPANIES_SQL),
     ('bus_routes', _CREATE_BUS_ROUTES_SQL),
     ('bus_stops', _CREATE_BUS_STOPS_SQL),
+    ('bus_trip_state', _CREATE_BUS_TRIP_STATE_SQL),
 ]
 
 _SEED_OFFICES_SQL = """
@@ -539,13 +561,14 @@ try:
                     print(f"[WARN] Could not create index {name}: {e}")
         cursor.close()
     connection.close()
+    load_trip_state_on_startup()
 except Error as e:
     print(f"[ERROR] Error while connecting to MySQL: {e}")
 
 # ============================================
 # TTS SETUP (edge-tts)
 # ============================================
-_TTS_VOICE = os.environ.get('TTS_VOICE', 'en-ZA-LeahNeural')
+_TTS_VOICE = os.environ.get('TTS_VOICE', 'en-KE-AsiliaNeural')
 _TTS_AVAILABLE = True
 _SERVER_START = datetime.now()
 
@@ -5041,10 +5064,98 @@ def text_to_speech():
 # ============================================
 # BUS STOP ANNOUNCEMENT SYSTEM
 # ============================================
-_bus_state = {'company_name': '', 'route_name': '', 'origin': '', 'destination': '',
+_bus_state = {'company_id': None, 'company_name': '', 'route_id': None, 'route_name': '',
+              'origin': '', 'destination': '',
               'stop_name': None, 'stop_id': None, 'stop_order': 0, 'is_break_point': False,
               'timestamp': None, 'announced': False, 'prayer': None,
               'all_stops': [], 'announced_stops': []}
+
+def save_trip_state():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            import json
+            cursor.execute("""
+                INSERT INTO bus_trip_state (id, company_id, company_name, route_id, route_name,
+                    origin, destination, all_stops, announced_stops, current_stop_id,
+                    current_stop_name, current_stop_order, is_break_point, announced, prayer, is_active)
+                VALUES (1, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1)
+                ON DUPLICATE KEY UPDATE
+                    company_id=VALUES(company_id), company_name=VALUES(company_name),
+                    route_id=VALUES(route_id), route_name=VALUES(route_name),
+                    origin=VALUES(origin), destination=VALUES(destination),
+                    all_stops=VALUES(all_stops), announced_stops=VALUES(announced_stops),
+                    current_stop_id=VALUES(current_stop_id), current_stop_name=VALUES(current_stop_name),
+                    current_stop_order=VALUES(current_stop_order), is_break_point=VALUES(is_break_point),
+                    announced=VALUES(announced), prayer=VALUES(prayer), is_active=1
+            """, (
+                _bus_state.get('company_id'), _bus_state.get('company_name', ''),
+                _bus_state.get('route_id'), _bus_state.get('route_name', ''),
+                _bus_state.get('origin', ''), _bus_state.get('destination', ''),
+                json.dumps(_bus_state.get('all_stops', [])),
+                json.dumps(_bus_state.get('announced_stops', [])),
+                _bus_state.get('stop_id'), _bus_state.get('stop_name'),
+                _bus_state.get('stop_order', 0), 1 if _bus_state.get('is_break_point') else 0,
+                1 if _bus_state.get('announced') else 0, _bus_state.get('prayer')
+            ))
+            conn.commit()
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        print(f"[WARN] save_trip_state error: {e}")
+
+def clear_trip_state():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE bus_trip_state SET is_active=0 WHERE id=1")
+            conn.commit()
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        print(f"[WARN] clear_trip_state error: {e}")
+
+def load_trip_state_on_startup():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute("SELECT * FROM bus_trip_state WHERE id=1 AND is_active=1")
+            row = cursor.fetchone()
+            if row:
+                import json
+                all_stops = row.get('all_stops')
+                if isinstance(all_stops, str):
+                    all_stops = json.loads(all_stops)
+                announced_stops = row.get('announced_stops')
+                if isinstance(announced_stops, str):
+                    announced_stops = json.loads(announced_stops)
+                _bus_state.update({
+                    'company_id': row.get('company_id'),
+                    'company_name': row.get('company_name', ''),
+                    'route_id': row.get('route_id'),
+                    'route_name': row.get('route_name', ''),
+                    'origin': row.get('origin', ''),
+                    'destination': row.get('destination', ''),
+                    'all_stops': all_stops or [],
+                    'announced_stops': announced_stops or [],
+                    'stop_id': row.get('current_stop_id'),
+                    'stop_name': row.get('current_stop_name'),
+                    'stop_order': row.get('current_stop_order', 0),
+                    'is_break_point': bool(row.get('is_break_point', 0)),
+                    'announced': bool(row.get('announced', 0)),
+                    'prayer': row.get('prayer'),
+                    'timestamp': row.get('updated_at')
+                })
+                print(f"[OK] Restored bus trip state: {_bus_state['company_name']} (active)")
+            else:
+                print("[OK] No active bus trip to restore")
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        print(f"[WARN] load_trip_state_on_startup error: {e}")
 
 # ── CONDUCTOR: CREATE COMPANY ──
 @app.route('/api/bus/company', methods=['POST'])
@@ -5185,7 +5296,9 @@ def delete_bus_stop(stop_id):
 def start_bus_trip():
     try:
         data = request.get_json(force=True)
+        company_id = data.get('company_id')
         company_name = data.get('company_name', '').strip()
+        route_id = data.get('route_id')
         route_name = data.get('route_name', '').strip()
         origin = data.get('origin', '').strip()
         destination = data.get('destination', '').strip()
@@ -5193,12 +5306,14 @@ def start_bus_trip():
         if not stops:
             return jsonify({'success': False, 'message': 'No stops provided.'}), 400
         _bus_state.update({
-            'company_name': company_name, 'route_name': route_name,
+            'company_id': company_id, 'company_name': company_name,
+            'route_id': route_id, 'route_name': route_name,
             'origin': origin, 'destination': destination,
             'stop_name': None, 'stop_id': None, 'stop_order': 0,
             'is_break_point': False, 'timestamp': None, 'announced': False,
             'prayer': None, 'all_stops': stops, 'announced_stops': []
         })
+        save_trip_state()
         return jsonify({'success': True, 'message': 'Trip started.'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -5227,6 +5342,7 @@ def announce_bus_stop():
         prayer = generate_journey_prayer(stop_name, _bus_state.get('destination', ''), is_break)
         if prayer:
             _bus_state['prayer'] = prayer
+        save_trip_state()
         return jsonify({'success': True, 'stop_name': stop_name, 'prayer': prayer, 'timestamp': now})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -5255,7 +5371,8 @@ def generate_journey_prayer(stop_name, destination, is_break_point):
 @app.route('/api/bus/current-state', methods=['GET'])
 def get_bus_current_state():
     try:
-        return jsonify({'success': True, **_bus_state})
+        is_active = bool(_bus_state.get('all_stops'))
+        return jsonify({'success': True, 'is_active': is_active, **_bus_state})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
@@ -5264,6 +5381,7 @@ def get_bus_current_state():
 def confirm_bus_announce():
     try:
         _bus_state['announced'] = True
+        save_trip_state()
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -5272,9 +5390,12 @@ def confirm_bus_announce():
 @app.route('/api/bus/reset', methods=['POST'])
 def reset_bus_trip():
     try:
-        _bus_state.update({'stop_name': None, 'stop_id': None, 'stop_order': 0,
+        _bus_state.update({'company_id': None, 'company_name': '', 'route_id': None,
+                           'route_name': '', 'origin': '', 'destination': '',
+                           'stop_name': None, 'stop_id': None, 'stop_order': 0,
                            'is_break_point': False, 'timestamp': None, 'announced': False,
-                           'prayer': None, 'announced_stops': []})
+                           'prayer': None, 'all_stops': [], 'announced_stops': []})
+        clear_trip_state()
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500

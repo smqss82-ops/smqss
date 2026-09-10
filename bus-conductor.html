@@ -262,7 +262,7 @@ async function startTrip() {
   const dest = r ? (r.destination || '') : '';
   try {
     const resp = await fetch(API + '/api/bus/start-trip', { method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({company_name:companyName,route_name:routeName,origin:origin,destination:dest,stops:stops.map(s=>({id:s.id,stop_name:s.stop_name,stop_order:s.stop_order,is_break_point:s.is_break_point?true:false}))}) });
+      body:JSON.stringify({company_id:selectedCompanyId,company_name:companyName,route_id:selectedRouteId,route_name:routeName,origin:origin,destination:dest,stops:stops.map(s=>({id:s.id,stop_name:s.stop_name,stop_order:s.stop_order,is_break_point:s.is_break_point?true:false}))}) });
     const d = await resp.json();
     if (d.success) {
       announcedIds = new Set();
@@ -310,7 +310,23 @@ async function endTrip() {
 }
 
 async function init() {
-  try { await fetch(API + '/api/bus/reset', { method:'POST' }); } catch(e) {}
+  try {
+    const r = await fetch(API + '/api/bus/current-state');
+    const d = await r.json();
+    if (d.success && d.is_active && d.all_stops && d.all_stops.length) {
+      stops = d.all_stops;
+      announcedIds = new Set(d.announced_stops || []);
+      selectedCompanyId = d.company_id;
+      selectedRouteId = d.route_id;
+      document.getElementById('tripCompany').textContent = d.company_name;
+      const routeLabel = (d.origin ? d.origin + ' → ' : '') + (d.destination || d.route_name);
+      document.getElementById('tripRoute').textContent = routeLabel;
+      renderAnnounceCards();
+      showScreen('screen4');
+      showToast('Resumed active trip');
+      return;
+    }
+  } catch(e) {}
   loadCompanies();
 }
 init();
