@@ -362,13 +362,13 @@ async function pollState() {
 }
 
 function showJourneyState(stops, announcedIds) {
+  const js = document.getElementById('journeyState');
+  if (!js.classList.contains('active')) {
+    js.classList.add('active');
+  }
   document.getElementById('waitingState').style.display = 'none';
   document.getElementById('announceState').classList.remove('active');
   document.getElementById('ripple').style.display = 'none';
-  const js = document.getElementById('journeyState');
-  js.classList.remove('active');
-  void js.offsetWidth;
-  js.classList.add('active');
 
   document.getElementById('journeyCompany').textContent = currentCompanyName;
   const route = document.getElementById('companyRoute').textContent;
@@ -427,12 +427,12 @@ function checkDelay() {
 }
 
 function showAnnouncement(name, prayer) {
+  const as = document.getElementById('announceState');
+  if (!as.classList.contains('active')) {
+    as.classList.add('active');
+  }
   document.getElementById('waitingState').style.display = 'none';
   document.getElementById('journeyState').classList.remove('active');
-  const as = document.getElementById('announceState');
-  as.classList.remove('active');
-  void as.offsetWidth;
-  as.classList.add('active');
   document.getElementById('stopNameDisplay').textContent = name;
   document.getElementById('ripple').style.display = 'block';
 
