@@ -459,12 +459,13 @@
 
   function renderRouteStops(stops, announcedIds, currentId) {
     const el = document.getElementById('routeStopsList');
-    el.innerHTML = stops.map((s,i) => {
-      let cls = 'upcoming';
-      if (s.id === currentId) cls = 'current';
-      else if (announcedIds.includes(s.id)) cls = 'visited';
+    const remaining = stops.filter(s => s.id === currentId || !announcedIds.includes(s.id));
+    let seq = 0;
+    el.innerHTML = remaining.map(s => {
+      seq++;
+      const cls = s.id === currentId ? 'current' : 'upcoming';
       return '<div class="stop-list-item '+cls+'">'+
-        '<div class="stop-num">'+(i+1)+'</div>'+
+        '<div class="stop-num">'+seq+'</div>'+
         '<div class="stop-list-label">'+s.stop_name+'</div>'+
         (s.is_break_point?'<span class="break-badge">REST</span>':'')+
         (cls==='current'?'<span class="current-badge">NOW</span>':'')+

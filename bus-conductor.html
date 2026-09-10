@@ -30,6 +30,16 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f5f5f
 .route-card:active{transform:scale(0.98);border-color:#155c30}
 .route-card-name{font-size:18px;font-weight:700;color:#1a1a1a}
 .route-card-meta{font-size:13px;color:#6b7280;margin-top:4px}
+.route-card-actions{display:flex;gap:8px;margin-top:10px}
+.route-btn{padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:all .2s}
+.route-btn-edit{background:#fff;color:#155c30;border-color:#155c30}
+.route-btn-edit:active{background:#155c30;color:#fff}
+.route-btn-delete{background:#fff;color:#c0392b;border-color:#c0392b}
+.route-btn-delete:active{background:#c0392b;color:#fff}
+.route-edit-form{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.route-edit-form input{padding:10px;border:1.5px solid #e2e0da;border-radius:8px;font-size:14px;font-family:inherit}
+.route-edit-actions{display:flex;gap:8px}
+.route-edit-actions button{flex:1;padding:10px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}
 .btn{width:100%;padding:12px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
 .btn-primary{background:#155c30;color:#fff}.btn-primary:hover{background:#1e7d43}
 .stop-list{display:flex;flex-direction:column;gap:6px}
@@ -98,6 +108,15 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f5f5f
     <button class="screen-back" onclick="showScreen('screen1')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back</button>
     <div class="screen-title" id="screen2Title">Routes</div>
     <div id="routeList" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div style="margin-top:12px">
+      <div class="screen-title">Add New Route</div>
+      <input type="text" id="newRouteName" placeholder="Route name" style="width:100%;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit;margin-bottom:8px">
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input type="text" id="newRouteOrigin" placeholder="Origin (optional)" style="flex:1;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit">
+        <input type="text" id="newRouteDest" placeholder="Destination (optional)" style="flex:1;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit">
+      </div>
+      <button class="btn btn-primary" onclick="addRoute()" style="width:100%">+ Add Route</button>
+    </div>
   </div>
 
   <!-- SCREEN 3: ADD STOPS -->
@@ -188,14 +207,39 @@ async function loadRoutes() {
   } catch(e) {}
 }
 
+async function addRoute() {
+  if (!selectedCompanyId) return;
+  const name = document.getElementById('newRouteName').value.trim();
+  const origin = document.getElementById('newRouteOrigin').value.trim();
+  const dest = document.getElementById('newRouteDest').value.trim();
+  if (!name) { showToast('Enter a route name', true); return; }
+  try {
+    const r = await fetch(API+'/api/bus/route', { method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({company_id:selectedCompanyId, route_name:name, origin:origin, destination:dest}) });
+    const d = await r.json();
+    if (d.success) {
+      routes.push({id:d.route_id, route_name:name, origin:origin||null, destination:dest||null});
+      renderRoutes();
+      document.getElementById('newRouteName').value = '';
+      document.getElementById('newRouteOrigin').value = '';
+      document.getElementById('newRouteDest').value = '';
+      showToast('Route added');
+    } else showToast(d.message, true);
+  } catch(e) { showToast('Network error', true); }
+}
+
 function renderRoutes() {
   const el = document.getElementById('routeList');
   if (!routes.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:#9ca3af">No routes yet. Add one below.</div>'; return; }
   el.innerHTML = routes.map(r => {
     const meta = [r.origin, r.destination].filter(Boolean).join(' → ');
-    return '<div class="route-card" onclick="selectRoute('+r.id+')">'+
+    return '<div class="route-card" id="routeCard-'+r.id+'">'+
     '<div class="route-card-name">'+r.route_name+'</div>'+
     (meta?'<div class="route-card-meta">'+meta+'</div>':'')+
+    '<div class="route-card-actions">'+
+    '<button class="route-btn route-btn-edit" onclick="event.stopPropagation();startEditRoute('+r.id+')">Edit</button>'+
+    '<button class="route-btn route-btn-delete" onclick="event.stopPropagation();deleteRoute('+r.id+',\''+r.route_name.replace(/'/g,"\\'")+'\')">Delete</button>'+
+    '</div>'+
     '</div>';
   }).join('');
 }
@@ -203,9 +247,57 @@ function renderRoutes() {
 function selectRoute(id) {
   selectedRouteId = id;
   const r = routes.find(x => x.id == id);
-  document.getElementById('screen3Title').textContent = (r ? r.route_name : '') + ' — Stop Points';
+  document.getElementById('screen3Title').textContent = (r ? r.route_name : '') + ' - Stop Points';
   loadStops();
   showScreen('screen3');
+}
+
+function startEditRoute(id) {
+  const r = routes.find(x => x.id == id);
+  if (!r) return;
+  const card = document.getElementById('routeCard-'+id);
+  if (!card) return;
+  card.innerHTML = '<div class="route-edit-form">'+
+    '<input type="text" id="editRouteName-'+id+'" value="'+r.route_name.replace(/"/g,'&quot;')+'" placeholder="Route name">'+
+    '<input type="text" id="editRouteOrigin-'+id+'" value="'+(r.origin||'').replace(/"/g,'&quot;')+'" placeholder="Origin (optional)">'+
+    '<input type="text" id="editRouteDest-'+id+'" value="'+(r.destination||'').replace(/"/g,'&quot;')+'" placeholder="Destination (optional)">'+
+    '<div class="route-edit-actions">'+
+    '<button class="route-btn" style="background:#155c30;color:#fff;border-color:#155c30" onclick="saveEditRoute('+id+')">Save</button>'+
+    '<button class="route-btn" style="background:#fff;color:#6b7280;border-color:#d1d5db" onclick="renderRoutes()">Cancel</button>'+
+    '</div>'+
+    '</div>';
+  document.getElementById('editRouteName-'+id).focus();
+}
+
+async function saveEditRoute(id) {
+  const name = document.getElementById('editRouteName-'+id).value.trim();
+  const origin = document.getElementById('editRouteOrigin-'+id).value.trim();
+  const dest = document.getElementById('editRouteDest-'+id).value.trim();
+  if (!name) { showToast('Route name required', true); return; }
+  try {
+    const r = await fetch(API+'/api/bus/route/'+id, { method:'PUT', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({route_name:name, origin:origin, destination:dest}) });
+    const d = await r.json();
+    if (d.success) {
+      const route = routes.find(x => x.id == id);
+      if (route) { route.route_name = name; route.origin = origin || null; route.destination = dest || null; }
+      renderRoutes();
+      showToast('Route updated');
+    } else showToast(d.message, true);
+  } catch(e) { showToast('Network error', true); }
+}
+
+async function deleteRoute(id, name) {
+  if (!confirm('Delete route "'+name+'"? All stops will also be removed.')) return;
+  try {
+    const r = await fetch(API+'/api/bus/route/'+id, { method:'DELETE' });
+    const d = await r.json();
+    if (d.success) {
+      routes = routes.filter(x => x.id !== id);
+      renderRoutes();
+      showToast('Route deleted');
+    } else showToast(d.message, true);
+  } catch(e) { showToast('Network error', true); }
 }
 
 // ── SCREEN 3: STOPS ──

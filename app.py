@@ -5235,6 +5235,44 @@ def list_bus_routes(company_id):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
+# ── CONDUCTOR: EDIT ROUTE ──
+@app.route('/api/bus/route/<int:route_id>', methods=['PUT'])
+def edit_bus_route(route_id):
+    try:
+        data = request.get_json(force=True)
+        name = data.get('route_name', '').strip()
+        origin = data.get('origin', '').strip()
+        destination = data.get('destination', '').strip()
+        if not name:
+            return jsonify({'success': False, 'message': 'Route name required.'}), 400
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE bus_routes SET route_name=%s, origin=%s, destination=%s WHERE id=%s",
+                           (name, origin or None, destination or None, route_id))
+            conn.commit()
+            return jsonify({'success': True})
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# ── CONDUCTOR: DELETE ROUTE ──
+@app.route('/api/bus/route/<int:route_id>', methods=['DELETE'])
+def delete_bus_route(route_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("DELETE FROM bus_stops WHERE route_id=%s", (route_id,))
+            cursor.execute("DELETE FROM bus_routes WHERE id=%s", (route_id,))
+            conn.commit()
+            return jsonify({'success': True})
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 # ── CONDUCTOR: CREATE STOP ──
 @app.route('/api/bus/stop', methods=['POST'])
 def create_bus_stop():
