@@ -20,7 +20,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#070d0
 
 .stop-panel{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;z-index:2}
 
-.waiting-state{display:flex;flex-direction:column;align-items:center;gap:20px}
+.waiting-state{display:none;flex-direction:column;align-items:center;gap:20px}
 .waiting-icon{width:100px;height:100px;border:3px solid rgba(255,215,0,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;animation:float 3s ease-in-out infinite}
 .waiting-icon svg{width:50px;height:50px;fill:rgba(255,215,0,0.3)}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
@@ -261,9 +261,9 @@ function getOrdinal(n) {
 function buildAnnouncement(stopName, stopOrder, totalStops, destination, isBreak) {
   const ordinal = getOrdinal(stopOrder);
   if (isBreak) {
-    return 'We have reached ' + stopName + ', our rest break point. Passengers of ' + stopName + ', you may get out for a short break. We shall continue shortly.';
+    return 'We have reached ' + stopName + ', our rest break point. Our dear Passengers we have 5 mins break, you may get out for a short break. We shall continue shortly.';
   }
-  let msg = 'We have reached our ' + ordinal + ' stopping point, ' + stopName + '. Passengers of ' + stopName + ', you can get out now.';
+  let msg = 'We have reached our ' + ordinal + ' stopping point, ' + stopName + '. Passengers of ' + stopName + ', may you please take a leave and thank you for choosing us.';
   if (destination) {
     msg += ' We continue to ' + destination + '.';
   }
@@ -502,6 +502,7 @@ function updateTickerContent(company, route) {
   ).join('');
 }
 
+document.getElementById('waitingState').style.display = 'flex';
 pollState();
 setInterval(pollState, 2000);
 </script>

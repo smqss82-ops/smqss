@@ -5042,7 +5042,7 @@ def text_to_speech():
 
     try:
         async def _synthesize():
-            tts = edge_tts.Communicate(text, _TTS_VOICE)
+            tts = edge_tts.Communicate(text, _TTS_VOICE, rate="-10%")
             audio = b""
             async for chunk in tts.stream():
                 if chunk["type"] == "audio":
