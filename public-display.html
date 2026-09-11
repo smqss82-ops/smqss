@@ -1330,19 +1330,25 @@
         }
 
         // ── DISPLAY AD CAROUSEL ──
+        let _lastDisplayAdSig = '';
         async function loadDisplayAds() {
             try {
                 var r = await fetch(API_BASE_URL + '/api/display/ads');
                 var d = await r.json();
+                var newImages = [];
                 if (d.success && d.ads && d.ads.length) {
-                    displayAdImages = d.ads.map(function(a) { return '/display/ads/' + a.filename; });
-                } else {
-                    displayAdImages = [];
+                    newImages = d.ads.map(function(a) { return '/display/ads/' + a.filename; });
                 }
-                displayAdBuilt = false;
-            } catch(e) {
-                displayAdImages = [];
-            }
+                var newSig = newImages.join('|');
+                if (newSig !== _lastDisplayAdSig) {
+                    _lastDisplayAdSig = newSig;
+                    displayAdImages = newImages;
+                    displayAdBuilt = false;
+                    stopDisplayAdCarousel();
+                    buildDisplayAdCarousel();
+                    startDisplayAdCarousel();
+                }
+            } catch(e) {}
         }
 
         function buildDisplayAdCarousel() {
@@ -1527,7 +1533,6 @@
                 activeGrid.style.display = 'none';
                 noActive.style.display = 'flex';
                 newsTicker.classList.add('visible');
-                buildDisplayAdCarousel();
                 startDisplayAdCarousel();
                 var unavailSig = currentUnavailNotices.map(n => n.office_code + '|' + n.message).join('~~');
                 if (unavailSig !== updateDisplay._unavailSig) {
