@@ -5556,8 +5556,14 @@ def get_bus_current_state():
 @app.route('/api/bus/announce-confirm', methods=['POST'])
 def confirm_bus_announce():
     try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE bus_trip_state SET announced=1 WHERE id=1 AND is_active=1")
+            conn.commit()
+        finally:
+            cursor.close(); conn.close()
         _bus_state['announced'] = True
-        save_trip_state()
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -5586,7 +5592,13 @@ def set_bus_language():
         data = request.get_json(force=True)
         voice = data.get('voice', '').strip()
         _bus_state['tts_voice'] = voice or None
-        save_trip_state()
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE bus_trip_state SET tts_voice=%s WHERE id=1 AND is_active=1", (voice or None,))
+            conn.commit()
+        finally:
+            cursor.close(); conn.close()
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -5600,7 +5612,13 @@ def set_custom_announcement():
         if not text:
             return jsonify({'success': False, 'message': 'Announcement text required.'}), 400
         _bus_state['custom_announcement'] = text
-        save_trip_state()
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE bus_trip_state SET custom_announcement=%s WHERE id=1 AND is_active=1", (text,))
+            conn.commit()
+        finally:
+            cursor.close(); conn.close()
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -5609,8 +5627,14 @@ def set_custom_announcement():
 @app.route('/api/bus/custom-announcement/confirm', methods=['POST'])
 def confirm_custom_announcement():
     try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE bus_trip_state SET custom_announcement=NULL WHERE id=1 AND is_active=1")
+            conn.commit()
+        finally:
+            cursor.close(); conn.close()
         _bus_state['custom_announcement'] = None
-        save_trip_state()
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
