@@ -470,16 +470,6 @@
             transition: opacity 1.2s ease;
         }
         .ad-slide.active { opacity: 1; }
-        .ad-arrows { position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); display: flex; justify-content: space-between; padding: 0 12px; pointer-events: none; z-index: 3; }
-        .ad-arrow {
-            width: 44px; height: 44px; border-radius: 50%;
-            background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.15);
-            color: #fff; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; pointer-events: auto; transition: all 0.2s;
-            backdrop-filter: blur(4px);
-        }
-        .ad-arrow:hover { background: rgba(0,0,0,0.7); border-color: rgba(232,197,71,0.4); }
-        .ad-arrow svg { width: 20px; height: 20px; fill: currentColor; }
         .ad-carousel-dots {
             position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
             display: flex; gap: 8px; z-index: 3;
@@ -878,10 +868,6 @@
             </div>
             <div class="ad-panel" id="adPanel">
                 <div id="adCarousel"></div>
-                <div class="ad-arrows">
-                    <div class="ad-arrow" onclick="prevDisplayAd()"><svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></div>
-                    <div class="ad-arrow" onclick="nextDisplayAd()"><svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></div>
-                </div>
                 <div class="ad-carousel-dots" id="adCarouselDots"></div>
             </div>
         </div>
@@ -1403,28 +1389,6 @@
 
         function stopDisplayAdCarousel() {
             if (displayAdTimer) { clearInterval(displayAdTimer); displayAdTimer = null; }
-        }
-
-        function prevDisplayAd() {
-            var slides = document.querySelectorAll('#adCarousel .ad-slide');
-            var dots = document.querySelectorAll('#adCarouselDots .ad-carousel-dot');
-            if (!slides.length) return;
-            slides[displayAdIndex].classList.remove('active');
-            if (dots[displayAdIndex]) dots[displayAdIndex].classList.remove('active');
-            displayAdIndex = (displayAdIndex - 1 + slides.length) % slides.length;
-            slides[displayAdIndex].classList.add('active');
-            if (dots[displayAdIndex]) dots[displayAdIndex].classList.add('active');
-        }
-
-        function nextDisplayAd() {
-            var slides = document.querySelectorAll('#adCarousel .ad-slide');
-            var dots = document.querySelectorAll('#adCarouselDots .ad-carousel-dot');
-            if (!slides.length) return;
-            slides[displayAdIndex].classList.remove('active');
-            if (dots[displayAdIndex]) dots[displayAdIndex].classList.remove('active');
-            displayAdIndex = (displayAdIndex + 1) % slides.length;
-            slides[displayAdIndex].classList.add('active');
-            if (dots[displayAdIndex]) dots[displayAdIndex].classList.add('active');
         }
 
         // ── UPDATE DISPLAY (Single definition) ──
