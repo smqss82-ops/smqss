@@ -437,6 +437,64 @@
         .on-duty-card .avail-badge { display: none; }
         .on-duty-card.available .avail-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #69ff9c; margin-top: 8px; }
 
+        /* ── DISPLAY ADS: IDLE TWO-COLUMN LAYOUT ── */
+        .no-active.has-ads {
+            flex-direction: row;
+            align-items: stretch;
+            justify-content: center;
+            gap: 24px;
+            padding: 0 24px;
+        }
+        .no-active.has-ads .on-duty-section { flex: 0 0 340px; max-width: 380px; text-align: left; }
+        .no-active.has-ads .on-duty-header { justify-content: flex-start; }
+        .no-active.has-ads .on-duty-grid { grid-template-columns: 1fr; }
+        .no-active.has-ads #noActiveDefault { display: none !important; }
+        .ad-panel {
+            display: none;
+            flex: 1;
+            max-width: 820px;
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(201,162,39,0.15);
+        }
+        .no-active.has-ads .ad-panel { display: block; }
+        .ad-slide {
+            position: absolute; inset: 0;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-color: rgba(0,0,0,0.4);
+            opacity: 0;
+            transition: opacity 1.2s ease;
+        }
+        .ad-slide.active { opacity: 1; }
+        .ad-arrows { position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); display: flex; justify-content: space-between; padding: 0 12px; pointer-events: none; z-index: 3; }
+        .ad-arrow {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.15);
+            color: #fff; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; pointer-events: auto; transition: all 0.2s;
+            backdrop-filter: blur(4px);
+        }
+        .ad-arrow:hover { background: rgba(0,0,0,0.7); border-color: rgba(232,197,71,0.4); }
+        .ad-arrow svg { width: 20px; height: 20px; fill: currentColor; }
+        .ad-carousel-dots {
+            position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 8px; z-index: 3;
+        }
+        .ad-carousel-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.3);
+            transition: all 0.3s;
+        }
+        .ad-carousel-dot.active {
+            background: #e8c547; border-color: #e8c547;
+            box-shadow: 0 0 8px rgba(232,197,71,0.5);
+            width: 22px; border-radius: 5px;
+        }
+
         /* ── FALLBACK (all offices closed) ── */
         .on-duty-closed {
             margin-top: 20px;
@@ -818,6 +876,14 @@
                 <div class="on-duty-grid" id="onDutyGrid"></div>
                 <div class="on-duty-closed" id="onDutyClosed" style="display:none;">All offices are currently closed.</div>
             </div>
+            <div class="ad-panel" id="adPanel">
+                <div id="adCarousel"></div>
+                <div class="ad-arrows">
+                    <div class="ad-arrow" onclick="prevDisplayAd()"><svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></div>
+                    <div class="ad-arrow" onclick="nextDisplayAd()"><svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></div>
+                </div>
+                <div class="ad-carousel-dots" id="adCarouselDots"></div>
+            </div>
         </div>
 
         <!-- ── NOTICES & UP NEXT ── -->
@@ -898,6 +964,12 @@
         let idleMessageIndex = 0;
         let idleMessageRotationTimer = null;
         let currentUpNextItems = [];
+
+        // Display ad carousel state
+        let displayAdImages = [];
+        let displayAdIndex = 0;
+        let displayAdTimer = null;
+        let displayAdBuilt = false;
 
         // TV Display stability variables
         let failedFetches = 0;
@@ -1271,6 +1343,90 @@
             }, 7000);
         }
 
+        // ── DISPLAY AD CAROUSEL ──
+        async function loadDisplayAds() {
+            try {
+                var r = await fetch(API_BASE_URL + '/api/display/ads');
+                var d = await r.json();
+                if (d.success && d.ads && d.ads.length) {
+                    displayAdImages = d.ads.map(function(a) { return '/display/ads/' + a.filename; });
+                } else {
+                    displayAdImages = [];
+                }
+                displayAdBuilt = false;
+            } catch(e) {
+                displayAdImages = [];
+            }
+        }
+
+        function buildDisplayAdCarousel() {
+            var carousel = document.getElementById('adCarousel');
+            var dotsEl = document.getElementById('adCarouselDots');
+            var panel = document.getElementById('adPanel');
+            var noActive = document.getElementById('noActive');
+
+            if (!displayAdImages.length) {
+                panel.style.display = 'none';
+                noActive.classList.remove('has-ads');
+                displayAdBuilt = true;
+                return;
+            }
+
+            carousel.innerHTML = displayAdImages.map(function(src, i) {
+                return '<div class="ad-slide' + (i === 0 ? ' active' : '') + '" style="background-image:url(\'' + src + '\')"></div>';
+            }).join('');
+            dotsEl.innerHTML = displayAdImages.map(function(_, i) {
+                return '<div class="ad-carousel-dot' + (i === 0 ? ' active' : '') + '"></div>';
+            }).join('');
+
+            noActive.classList.add('has-ads');
+            panel.style.display = 'block';
+            dotsEl.style.display = displayAdImages.length > 1 ? 'flex' : 'none';
+            displayAdIndex = 0;
+            displayAdBuilt = true;
+        }
+
+        function startDisplayAdCarousel() {
+            if (!displayAdBuilt) buildDisplayAdCarousel();
+            if (displayAdImages.length < 2 || displayAdTimer) return;
+            displayAdTimer = setInterval(function() {
+                var slides = document.querySelectorAll('#adCarousel .ad-slide');
+                var dots = document.querySelectorAll('#adCarouselDots .ad-carousel-dot');
+                if (!slides.length) return;
+                slides[displayAdIndex].classList.remove('active');
+                if (dots[displayAdIndex]) dots[displayAdIndex].classList.remove('active');
+                displayAdIndex = (displayAdIndex + 1) % slides.length;
+                slides[displayAdIndex].classList.add('active');
+                if (dots[displayAdIndex]) dots[displayAdIndex].classList.add('active');
+            }, 6000);
+        }
+
+        function stopDisplayAdCarousel() {
+            if (displayAdTimer) { clearInterval(displayAdTimer); displayAdTimer = null; }
+        }
+
+        function prevDisplayAd() {
+            var slides = document.querySelectorAll('#adCarousel .ad-slide');
+            var dots = document.querySelectorAll('#adCarouselDots .ad-carousel-dot');
+            if (!slides.length) return;
+            slides[displayAdIndex].classList.remove('active');
+            if (dots[displayAdIndex]) dots[displayAdIndex].classList.remove('active');
+            displayAdIndex = (displayAdIndex - 1 + slides.length) % slides.length;
+            slides[displayAdIndex].classList.add('active');
+            if (dots[displayAdIndex]) dots[displayAdIndex].classList.add('active');
+        }
+
+        function nextDisplayAd() {
+            var slides = document.querySelectorAll('#adCarousel .ad-slide');
+            var dots = document.querySelectorAll('#adCarouselDots .ad-carousel-dot');
+            if (!slides.length) return;
+            slides[displayAdIndex].classList.remove('active');
+            if (dots[displayAdIndex]) dots[displayAdIndex].classList.remove('active');
+            displayAdIndex = (displayAdIndex + 1) % slides.length;
+            slides[displayAdIndex].classList.add('active');
+            if (dots[displayAdIndex]) dots[displayAdIndex].classList.add('active');
+        }
+
         // ── UPDATE DISPLAY (Single definition) ──
         function updateDisplay(queues) {
             // Mark that we received an update (for frozen screen detection)
@@ -1341,8 +1497,10 @@
                 isIdle = false;
                 newsTicker.classList.remove('visible');
                 noActive.style.display = 'none';
+                noActive.classList.remove('has-ads');
                 activeGrid.style.display = 'grid';
                 document.getElementById('noticesUpNext').style.display = 'none';
+                stopDisplayAdCarousel();
 
                 var html = activeTokens.map(t => {
                     if (t.type === 'called' && t.tokens && t.tokens.length > 1) {
@@ -1405,6 +1563,8 @@
                 activeGrid.style.display = 'none';
                 noActive.style.display = 'flex';
                 newsTicker.classList.add('visible');
+                buildDisplayAdCarousel();
+                startDisplayAdCarousel();
                 var unavailSig = currentUnavailNotices.map(n => n.office_code + '|' + n.message).join('~~');
                 if (unavailSig !== updateDisplay._unavailSig) {
                     updateDisplay._unavailSig = unavailSig;
@@ -1599,6 +1759,7 @@
             fetchUpNext();
             fetchRecentRecalls();
             startIdleMessageRotation();
+            loadDisplayAds();
             
             // Poll queue data every 5 seconds (gentle on TV browser)
             setInterval(fetchQueueData, 2000);
@@ -1608,6 +1769,8 @@
             setInterval(fetchRecentRecalls, 3000);
             // Poll messages only when idle
             setInterval(fetchAndDisplayMessages, 10000);
+            // Refresh display ads every 60 seconds
+            setInterval(loadDisplayAds, 60000);
             
             // Monitor screen health every 15 seconds
             setInterval(monitorScreenHealth, 15000);
