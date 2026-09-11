@@ -551,15 +551,16 @@ function showJourneyState(stops, announcedIds) {
   document.getElementById('journeyRouteLabel').textContent = route;
 
   const dotsEl = document.getElementById('journeyDots');
-  dotsEl.innerHTML = stops.map((s,i) => {
+  const remainingDots = stops.filter(s => !announcedIds.includes(s.id));
+  dotsEl.innerHTML = remainingDots.map((s,i) => {
     let cls = 'upcoming';
-    if (announcedIds.includes(s.id)) cls = 'visited';
     return '<div class="journey-dot '+cls+'"></div>';
   }).join('');
 
   const announcedCount = announcedIds.length;
   const total = stops.length;
-  const busPos = total > 1 ? (announcedCount / (total - 1)) * 80 + 10 : 50;
+  const remaining = total - announcedCount;
+  const busPos = remaining > 1 ? ((announcedCount) / (total - 1)) * 80 + 10 : 50;
   const bus = document.getElementById('journeyBus');
   bus.classList.remove('stopped', 'arriving');
   bus.classList.add('driving');
