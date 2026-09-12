@@ -666,6 +666,7 @@ OFFICER_TOKEN = _get_persistent_token()
 FEEDBACK_TOKEN = secrets.token_hex(16)
 BUS_DISPLAY_TOKEN = _get_persistent_token(".bus_display_token")
 BUS_CONDUCTOR_TOKEN = _get_persistent_token(".bus_conductor_token")
+PUBLIC_DISPLAY_TOKEN = _get_persistent_token(".public_display_token")
 
 @app.route('/')
 def index():
@@ -727,10 +728,23 @@ def admin_bus_display_token():
 def admin_bus_conductor_token():
     return jsonify({'success': True, 'token': BUS_CONDUCTOR_TOKEN, 'url': '/bus-conductor/' + BUS_CONDUCTOR_TOKEN})
 
+@app.route('/api/admin/public-display-token')
+def admin_public_display_token():
+    return jsonify({'success': True, 'token': PUBLIC_DISPLAY_TOKEN, 'url': '/public/' + PUBLIC_DISPLAY_TOKEN})
+
 @app.route('/public')
 @app.route('/public-view')
-def public_view_alias():
-    return send_from_directory('.', 'public-display.html')
+def public_view_decoy():
+    return send_from_directory('.', '404.html'), 404
+
+@app.route('/public/<token>')
+@app.route('/public-view/<token>')
+def public_view_page(token):
+    if token != PUBLIC_DISPLAY_TOKEN:
+        return send_from_directory('.', '404.html'), 404
+    resp = send_from_directory('.', 'public-display.html')
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    return resp
 
 @app.route('/kiosk-setup')
 def kiosk_setup():
@@ -5952,5 +5966,6 @@ if __name__ == '__main__':
     print(f"  >>> Feedback URL: http://127.0.0.1:{PORT}/feedback.html/{FEEDBACK_TOKEN}/TOKEN")
     print(f"  >>> Bus Display URL: http://127.0.0.1:{PORT}/bus-display/{BUS_DISPLAY_TOKEN}")
     print(f"  >>> Bus Conductor URL: http://127.0.0.1:{PORT}/bus-conductor/{BUS_CONDUCTOR_TOKEN}")
+    print(f"  >>> Public Display URL: http://127.0.0.1:{PORT}/public/{PUBLIC_DISPLAY_TOKEN}")
     print("=" * 55)
     app.run(host='0.0.0.0', port=PORT, debug=True)
