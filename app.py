@@ -664,6 +664,8 @@ def _get_persistent_token(path=".officer_token"):
 
 OFFICER_TOKEN = _get_persistent_token()
 FEEDBACK_TOKEN = secrets.token_hex(16)
+BUS_DISPLAY_TOKEN = _get_persistent_token(".bus_display_token")
+BUS_CONDUCTOR_TOKEN = _get_persistent_token(".bus_conductor_token")
 
 @app.route('/')
 def index():
@@ -717,6 +719,14 @@ def admin_officer_token():
 def admin_feedback_token():
     return jsonify({'success': True, 'url_prefix': '/feedback.html/' + FEEDBACK_TOKEN})
 
+@app.route('/api/admin/bus-display-token')
+def admin_bus_display_token():
+    return jsonify({'success': True, 'token': BUS_DISPLAY_TOKEN, 'url': '/bus-display/' + BUS_DISPLAY_TOKEN})
+
+@app.route('/api/admin/bus-conductor-token')
+def admin_bus_conductor_token():
+    return jsonify({'success': True, 'token': BUS_CONDUCTOR_TOKEN, 'url': '/bus-conductor/' + BUS_CONDUCTOR_TOKEN})
+
 @app.route('/public')
 @app.route('/public-view')
 def public_view_alias():
@@ -732,11 +742,27 @@ def download_page():
 
 @app.route('/bus-display')
 def bus_display():
-    return send_from_directory('.', 'bus-display.html')
+    return send_from_directory('.', '404.html'), 404
+
+@app.route('/bus-display/<token>')
+def bus_display_page(token):
+    if token != BUS_DISPLAY_TOKEN:
+        return send_from_directory('.', '404.html'), 404
+    resp = send_from_directory('.', 'bus-display.html')
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    return resp
 
 @app.route('/bus-conductor')
 def bus_conductor():
-    return send_from_directory('.', 'bus-conductor.html')
+    return send_from_directory('.', '404.html'), 404
+
+@app.route('/bus-conductor/<token>')
+def bus_conductor_page(token):
+    if token != BUS_CONDUCTOR_TOKEN:
+        return send_from_directory('.', '404.html'), 404
+    resp = send_from_directory('.', 'bus-conductor.html')
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    return resp
 
 @app.route('/admin')
 def admin_decoy():
@@ -5924,5 +5950,7 @@ if __name__ == '__main__':
     print(f"  >>> Admin URL: http://127.0.0.1:{PORT}/admin/{ADMIN_TOKEN}")
     print(f"  >>> Officer URL: http://127.0.0.1:{PORT}/officer/{OFFICER_TOKEN}")
     print(f"  >>> Feedback URL: http://127.0.0.1:{PORT}/feedback.html/{FEEDBACK_TOKEN}/TOKEN")
+    print(f"  >>> Bus Display URL: http://127.0.0.1:{PORT}/bus-display/{BUS_DISPLAY_TOKEN}")
+    print(f"  >>> Bus Conductor URL: http://127.0.0.1:{PORT}/bus-conductor/{BUS_CONDUCTOR_TOKEN}")
     print("=" * 55)
     app.run(host='0.0.0.0', port=PORT, debug=True)
