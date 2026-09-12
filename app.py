@@ -752,7 +752,11 @@ def kiosk_setup():
 
 @app.route('/download')
 def download_page():
-    return send_from_directory('.', 'download.html')
+    resp = send_from_directory('.', 'download.html')
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
 
 @app.route('/bus-display')
 def bus_display():
