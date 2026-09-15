@@ -197,7 +197,7 @@ body{
           <input type="text" id="newRouteOrigin" placeholder="Origin (optional)" style="flex:1 1 140px;min-width:0;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit">
           <input type="text" id="newRouteDest" placeholder="Destination (optional)" style="flex:1 1 140px;min-width:0;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit">
         </div>
-        <button class="btn btn-primary" onclick="addRoute()" style="width:100%">+ Add Route</button>
+        <button class="btn btn-primary" onclick="addRoute(this)" style="width:100%">+ Add Route</button>
       </div>
     </div>
   </div>
@@ -221,7 +221,7 @@ body{
       </div>
 
       <div class="start-trip-section">
-        <button class="btn btn-primary" id="startBtn" onclick="startTrip()">Start Trip</button>
+        <button class="btn btn-primary" id="startBtn" onclick="startTrip(this)">Start Trip</button>
       </div>
     </div>
   </div>
@@ -229,7 +229,7 @@ body{
   <!-- SCREEN 4: ANNOUNCE -->
   <div class="screen" id="screen4">
     <div class="screen-inner">
-      <button class="screen-back" onclick="endTrip()"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>End Trip</button>
+      <button class="screen-back" onclick="endTrip(this)"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>End Trip</button>
       <div class="trip-banner">
         <div class="trip-company" id="tripCompany"></div>
         <div class="trip-route" id="tripRoute"></div>
@@ -247,7 +247,7 @@ body{
           <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Custom Announcement</div>
           <div class="custom-announce-row">
             <input type="text" id="customMsg" placeholder="Type a message to announce..." onkeydown="if(event.key==='Enter')sendCustomAnnouncement()">
-            <button onclick="sendCustomAnnouncement()">📢 Send</button>
+            <button onclick="sendCustomAnnouncement(this)">📢 Send</button>
           </div>
         </div>
       </div>
@@ -263,7 +263,7 @@ body{
       <div class="screen-title" style="font-size:12px;color:#9ca3af;text-transform:none;letter-spacing:0;margin-bottom:8px">These images show on the TV screen when no trip is active.</div>
       <div id="adGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
       <div style="margin-top:12px">
-        <input type="file" id="adFileInput" accept="image/*" style="display:none" onchange="uploadAd()">
+        <input type="file" id="adFileInput" accept="image/*" style="display:none" onchange="uploadAd(this)">
         <button class="btn btn-primary" onclick="document.getElementById('adFileInput').click()">+ Upload Ad Image</button>
       </div>
     </div>
@@ -285,6 +285,18 @@ function showToast(msg, err) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.className = 'toast show' + (err ? ' error' : '');
   setTimeout(() => t.className = 'toast', 2500);
+}
+
+function setLoading(btn, loading) {
+  if (!btn) return;
+  if (loading) {
+    btn._origText = btn.textContent;
+    btn.textContent = 'Processing...';
+    btn.disabled = true;
+  } else {
+    btn.textContent = btn._origText || btn.textContent;
+    btn.disabled = false;
+  }
 }
 
 function showScreen(id) {
@@ -336,12 +348,13 @@ async function loadRoutes() {
   } catch(e) {}
 }
 
-async function addRoute() {
+async function addRoute(btn) {
   if (!selectedCompanyId) return;
   const name = document.getElementById('newRouteName').value.trim();
   const origin = document.getElementById('newRouteOrigin').value.trim();
   const dest = document.getElementById('newRouteDest').value.trim();
   if (!name) { showToast('Enter a route name', true); return; }
+  setLoading(btn, true);
   try {
     const r = await fetch(API+'/api/bus/route', { method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({company_id:selectedCompanyId, route_name:name, origin:origin, destination:dest}) });
@@ -355,6 +368,7 @@ async function addRoute() {
       showToast('Route added');
     } else showToast(d.message, true);
   } catch(e) { showToast('Network error', true); }
+  finally { setLoading(btn, false); }
 }
 
 function renderRoutes() {
@@ -375,7 +389,7 @@ function renderRoutes() {
     '</div>'+
     '<div class="route-card-actions">'+
     '<button class="route-btn route-btn-edit" onclick="event.stopPropagation();startEditRoute('+r.id+')">Edit</button>'+
-    '<button class="route-btn route-btn-delete" onclick="event.stopPropagation();deleteRoute('+r.id+',\''+r.route_name.replace(/'/g,"\\'")+'\')">Delete</button>'+
+    '<button class="route-btn route-btn-delete" onclick="event.stopPropagation();deleteRoute('+r.id+',\''+r.route_name.replace(/'/g,"\\'")+'\', this)">Delete</button>'+
     '</div>'+
     '</div>';
   }).join('');
@@ -399,18 +413,19 @@ function startEditRoute(id) {
     '<input type="text" id="editRouteOrigin-'+id+'" value="'+(r.origin||'').replace(/"/g,'&quot;')+'" placeholder="Origin (optional)">'+
     '<input type="text" id="editRouteDest-'+id+'" value="'+(r.destination||'').replace(/"/g,'&quot;')+'" placeholder="Destination (optional)">'+
     '<div class="route-edit-actions">'+
-    '<button class="route-btn" style="background:#155c30;color:#fff;border-color:#155c30" onclick="saveEditRoute('+id+')">Save</button>'+
+    '<button class="route-btn" style="background:#155c30;color:#fff;border-color:#155c30" onclick="saveEditRoute('+id+', this)">Save</button>'+
     '<button class="route-btn" style="background:#fff;color:#6b7280;border-color:#d1d5db" onclick="renderRoutes()">Cancel</button>'+
     '</div>'+
     '</div>';
   document.getElementById('editRouteName-'+id).focus();
 }
 
-async function saveEditRoute(id) {
+async function saveEditRoute(id, btn) {
   const name = document.getElementById('editRouteName-'+id).value.trim();
   const origin = document.getElementById('editRouteOrigin-'+id).value.trim();
   const dest = document.getElementById('editRouteDest-'+id).value.trim();
   if (!name) { showToast('Route name required', true); return; }
+  setLoading(btn, true);
   try {
     const r = await fetch(API+'/api/bus/route/'+id, { method:'PUT', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({route_name:name, origin:origin, destination:dest}) });
@@ -422,10 +437,12 @@ async function saveEditRoute(id) {
       showToast('Route updated');
     } else showToast(d.message, true);
   } catch(e) { showToast('Network error', true); }
+  finally { setLoading(btn, false); }
 }
 
-async function deleteRoute(id, name) {
+async function deleteRoute(id, name, btn) {
   if (!confirm('Delete route "'+name+'"? All stops will also be removed.')) return;
+  setLoading(btn, true);
   try {
     const r = await fetch(API+'/api/bus/route/'+id, { method:'DELETE' });
     const d = await r.json();
@@ -435,6 +452,7 @@ async function deleteRoute(id, name) {
       showToast('Route deleted');
     } else showToast(d.message, true);
   } catch(e) { showToast('Network error', true); }
+  finally { setLoading(btn, false); }
 }
 
 // ── SCREEN 3: STOPS ──
@@ -484,7 +502,7 @@ function renderStops() {
     '<div class="stop-num">'+(i+1)+'</div>'+
     '<div class="stop-name">'+s.stop_name+'</div>'+
     (s.is_break_point?'<span class="stop-badge">Break</span>':'')+
-    '<button class="delete-btn" onclick="deleteStop('+s.id+')">&times;</button></div>'
+    '<button class="delete-btn" onclick="deleteStop('+s.id+', this)">&times;</button></div>'
   ).join('');
 }
 
@@ -516,24 +534,27 @@ async function addStop() {
   finally { btn.disabled = false; }
 }
 
-async function deleteStop(id) {
+async function deleteStop(id, btn) {
+  setLoading(btn, true);
   try {
     await fetch(API + '/api/bus/stop/' + id, { method:'DELETE' });
     stops = stops.filter(s => s.id !== id);
     renderStops();
     refreshStartTripAvailability();
   } catch(e) {}
+  finally { setLoading(btn, false); }
 }
 
 // ── SCREEN 4: ANNOUNCE / PROCEED ──
 
-async function startTrip() {
+async function startTrip(btn) {
   const c = companies.find(x => x.id == selectedCompanyId);
   const r = routes.find(x => x.id == selectedRouteId);
   const companyName = c ? c.company_name : 'Bus';
   const routeName = r ? r.route_name : '';
   const origin = r ? (r.origin || '') : '';
   const dest = r ? (r.destination || '') : '';
+  setLoading(btn, true);
   try {
     // Stops are now read from the DB by route_id on the server; we only send metadata.
     const resp = await fetch(API + '/api/bus/start-trip', { method:'POST', headers:{'Content-Type':'application/json'},
@@ -558,6 +579,7 @@ async function startTrip() {
       showToast(d.message || 'Could not start trip', true);
     }
   } catch(e) { showToast('Network error', true); }
+  finally { setLoading(btn, false); }
 }
 
 function renderAnnounceCards() {
@@ -584,12 +606,12 @@ function renderAnnounceCards() {
       cls = 'pending' + (isBreak ? ' is-break' : '');
       num = '!';
       status = isBreak ? 'Announced — awaiting departure (break point)' : 'Announced — awaiting departure';
-      action = '<button class="announce-action proceed" onclick="proceedTrip()">Proceed ▶</button>';
+      action = '<button class="announce-action proceed" onclick="proceedTrip(this)">Proceed ▶</button>';
     } else {
       cls = isBreak ? 'is-break' : '';
       num = o.index;
       status = isBreak ? 'Break Point — Tap to Announce' : 'Tap to Announce';
-      action = '<button class="announce-action" onclick="event.stopPropagation();announceStop('+s.id+',\''+String(s.stop_name).replace(/'/g,"\\'")+'\','+s.stop_order+','+(isBreak?1:0)+')">Announce</button>';
+      action = '<button class="announce-action" onclick="event.stopPropagation();announceStop('+s.id+',\''+String(s.stop_name).replace(/'/g,"\\'")+'\','+s.stop_order+','+(isBreak?1:0)+', this)">Announce</button>';
     }
 
     return '<div class="announce-card '+cls+'">'+
@@ -603,13 +625,14 @@ function renderAnnounceCards() {
   }).join('');
 }
 
-async function announceStop(id, name, order, isBreak) {
+async function announceStop(id, name, order, isBreak, btn) {
   // Block if a previous stop is still pending Proceed
   if (pendingAnnounceId !== null) {
     const pendingStop = stops.find(s => s.id === pendingAnnounceId);
     showToast('Proceed from "' + (pendingStop ? pendingStop.stop_name : 'current stop') + '" first.', true);
     return;
   }
+  setLoading(btn, true);
   try {
     const r = await fetch(API + '/api/bus/announce', { method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({stop_id:id,stop_name:name,stop_order:order,is_break_point:!!isBreak}) });
@@ -622,11 +645,13 @@ async function announceStop(id, name, order, isBreak) {
       showToast(d.message || 'Could not announce', true);
     }
   } catch(e) { showToast('Network error', true); }
+  finally { setLoading(btn, false); }
 }
 
-async function proceedTrip() {
+async function proceedTrip(btn) {
   if (pendingAnnounceId === null) return;
   const stopId = pendingAnnounceId;
+  setLoading(btn, true);
   try {
     const r = await fetch(API + '/api/bus/stop-done', { method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({stop_id: stopId}) });
@@ -640,9 +665,11 @@ async function proceedTrip() {
       showToast(d.message || 'Could not proceed', true);
     }
   } catch(e) { showToast('Network error', true); }
+  finally { setLoading(btn, false); }
 }
 
-async function endTrip() {
+async function endTrip(btn) {
+  setLoading(btn, true);
   try {
     await fetch(API + '/api/bus/reset', { method:'POST' });
     announcedIds = new Set();
@@ -650,6 +677,7 @@ async function endTrip() {
     showScreen('screen1');
     showToast('Trip ended');
   } catch(e) {}
+  finally { setLoading(btn, false); }
 }
 
 // ── SCREEN 5: MANAGE ADS ──
@@ -668,16 +696,17 @@ function renderAds(ads) {
   el.innerHTML = ads.map(a =>
     '<div class="ad-card">'+
     '<img src="/ads/'+a.filename+'" alt="ad">'+
-    '<button class="ad-card-delete" onclick="deleteAd('+a.id+')">&times;</button>'+
+    '<button class="ad-card-delete" onclick="deleteAd('+a.id+', this)">&times;</button>'+
     '<div class="ad-card-name">'+(a.original_name||'Ad')+'</div>'+
     '</div>'
   ).join('');
 }
 
-async function uploadAd() {
+async function uploadAd(btn) {
   const input = document.getElementById('adFileInput');
   const file = input.files[0];
   if (!file) return;
+  setLoading(btn, true);
   const fd = new FormData();
   fd.append('file', file);
   try {
@@ -687,16 +716,19 @@ async function uploadAd() {
     else showToast(d.message, true);
   } catch(e) { showToast('Upload failed', true); }
   input.value = '';
+  setLoading(btn, false);
 }
 
-async function deleteAd(id) {
+async function deleteAd(id, btn) {
   if (!confirm('Delete this ad?')) return;
+  setLoading(btn, true);
   try {
     const r = await fetch(API + '/api/bus/ads/' + id, { method:'DELETE' });
     const d = await r.json();
     if (d.success) { showToast('Ad deleted'); loadAds(); }
     else showToast(d.message, true);
   } catch(e) { showToast('Delete failed', true); }
+  finally { setLoading(btn, false); }
 }
 
 // ── LANGUAGE SELECTION ──
@@ -715,10 +747,11 @@ async function setLanguage(voice, label, btn) {
 
 // ── CUSTOM ANNOUNCEMENT ──
 
-async function sendCustomAnnouncement() {
+async function sendCustomAnnouncement(btn) {
   const input = document.getElementById('customMsg');
   const text = input.value.trim();
   if (!text) { showToast('Type a message first', true); return; }
+  setLoading(btn, true);
   try {
     const r = await fetch(API + '/api/bus/custom-announcement', { method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({text: text}) });
@@ -728,6 +761,7 @@ async function sendCustomAnnouncement() {
       showToast('Announcement sent');
     } else showToast(d.message || 'Could not send', true);
   } catch(e) { showToast('Network error', true); }
+  finally { setLoading(btn, false); }
 }
 
 async function init() {

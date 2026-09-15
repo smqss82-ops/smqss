@@ -278,6 +278,9 @@ async function lookupToken(){
   const token = document.getElementById('tokenInput').value.trim().toUpperCase();
   if(!token){ showError('Please enter your token number'); return; }
 
+  var btn = document.getElementById('lookupBtn');
+  btn.disabled = true;
+  btn.textContent = 'Looking up...';
   showStep('stepLoading');
   clearError();
 
@@ -385,10 +388,11 @@ async function lookupToken(){
   } catch(err){
     showStep('step0');
     showError('Network error. Please check your connection.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Look Up My Token →';
   }
 }
-
-function setRating(val){
   selectedRating = val;
   const btns = document.querySelectorAll('.star-btn');
   btns.forEach(function(b){
@@ -550,6 +554,9 @@ async function submitGeneralComplaint(){
 
   document.getElementById('gcErrorBar').style.display = 'none';
 
+  var submitBtns = document.querySelectorAll('#step3 .btn');
+  submitBtns.forEach(function(b) { b.disabled = true; b.textContent = 'Submitting...'; });
+
   try{
     var res = await fetch(API_BASE + '/api/student/general-complaint', {
       method: 'POST',
@@ -564,8 +571,9 @@ async function submitGeneralComplaint(){
     }
   } catch(err){
     showGcError('Network error. Please try again.');
+  } finally {
+    submitBtns.forEach(function(b) { b.disabled = false; b.textContent = 'Submit Request'; });
   }
 }
-</script>
 </body>
 </html>

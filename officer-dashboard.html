@@ -1910,12 +1910,14 @@
 
   async function submitSystemRating() {
     var errEl = document.getElementById('ratingError');
+    var btn = document.getElementById('ratingSubmitBtn');
     if (!selectedRating) {
       errEl.textContent = 'Please select a star rating.';
       errEl.style.display = 'block';
       return;
     }
     errEl.style.display = 'none';
+    setLoading(btn, true);
     try {
       var res = await fetch(API_BASE_URL + '/api/officer/system-rating', {
         method: 'POST',
@@ -1942,6 +1944,8 @@
     } catch(e) {
       errEl.textContent = 'Network error. Please try again.';
       errEl.style.display = 'block';
+    } finally {
+      setLoading(btn, false);
     }
   }
 
@@ -2018,10 +2022,10 @@
     loadDeskStatus();
     startAudioKeepAlive();
     await Promise.all([
-      generateWelcomeVoice(currentOfficer.officer_name, currentOfficer.office_name),
       loadOfficeStatus(),
       loadQueue()
     ]);
+    generateWelcomeVoice(currentOfficer.officer_name, currentOfficer.office_name);
     refreshInterval = setInterval(loadQueue, 2000);
     setInterval(loadOfficeStatus, 30000);
     document.getElementById('messageIconBtn').addEventListener('click', openMessageModal);

@@ -34,10 +34,18 @@ SMTP_USER = os.environ.get('BREVO_SMTP_USER', 'b69419001@smtp-brevo.com')
 SMTP_PASS = os.environ.get('BREVO_SMTP_KEY', '')
 SMTP_FROM = EMAIL_FROM
 
+# ── GeoIP cache (avoids blocking HTTP call on every login) ──
+_geoip_cache = {}
+_geoip_cache_ttl = 3600  # 1 hour
+
 def geoip(ip):
     """Resolve an IP address to a location string using ip-api.com (free, no key)."""
     if ip.startswith(('127.', '192.168.', '10.', '172.')):
         return 'Local Network'
+    now = time.time()
+    cached = _geoip_cache.get(ip)
+    if cached and now - cached['time'] < _geoip_cache_ttl:
+        return cached['loc']
     try:
         url = f'http://ip-api.com/json/{ip}?fields=status,city,regionName,country,lat,lon,zip,isp,org&lang=en'
         with urllib.request.urlopen(url, timeout=3) as r:
@@ -47,9 +55,11 @@ def geoip(ip):
                 loc = ', '.join(p for p in parts if p)
                 if d.get('lat') and d.get('lon'):
                     loc += f' ({d["lat"]}, {d["lon"]})'
+                _geoip_cache[ip] = {'loc': loc, 'time': now}
                 return loc
     except:
         pass
+    _geoip_cache[ip] = {'loc': ip, 'time': now}
     return ip
 
 app = Flask(__name__, static_folder='static')
@@ -856,11 +866,11 @@ def serve_static(filename):
 # ============================================
 def get_db_connection():
     last_error = None
-    for attempt in range(1, 4):
+    for attempt in range(1, 3):
         try:
             conn = mysql.connector.connect(**DB_CONFIG)
             # test the connection is alive
-            conn.ping(reconnect=True, attempts=2, delay=2)
+            conn.ping(reconnect=True, attempts=1, delay=0)
             try:
                 _cur = conn.cursor()
                 _cur.execute("SET time_zone = '+03:00'")
@@ -870,10 +880,10 @@ def get_db_connection():
             return conn
         except Exception as e:
             last_error = e
-            logger.warning(f"[DB] Connection attempt {attempt}/3 failed: {e}")
-            if attempt < 3:
-                time.sleep(1)
-    logger.error(f"[ERROR] Database connection error after 3 attempts: {last_error}")
+            logger.warning(f"[DB] Connection attempt {attempt}/2 failed: {e}")
+            if attempt < 2:
+                time.sleep(0.3)
+    logger.error(f"[ERROR] Database connection error after 2 attempts: {last_error}")
     raise last_error
 
 
@@ -936,12 +946,15 @@ def calc_daily_attendance(sessions):
     }
 
 
-def auto_expire_sessions():
+def auto_expire_sessions(conn=None):
     """Close active sessions at the end of the working day (5 PM) so that daily
     hours reflect real in-office time instead of an 8-hour cap. After-hours
     logins and stale sessions fall back to an 8h cap / 24h safety net."""
+    own_conn = False
     try:
-        conn = get_db_connection()
+        if conn is None:
+            conn = get_db_connection()
+            own_conn = True
         cursor = conn.cursor()
         cursor.execute("""
             UPDATE officer_sessions
@@ -969,11 +982,13 @@ def auto_expire_sessions():
                 WHERE sl.ended_at IS NULL AND s.status = 'completed'
             """)
             conn.commit()
+        cursor.close()
     except Exception as e:
         logger.warning(f"[SESSION] Auto-expire error: {e}")
     finally:
-        try: cursor.close(); conn.close()
-        except: pass
+        if own_conn:
+            try: conn.close()
+            except: pass
 
 
 def close_active_status_log(cursor, session_id, officer_id, ended_at):
@@ -2551,8 +2566,8 @@ def officer_login():
 
         role = 'admin' if officer.get('is_admin') else 'officer'
 
-        # auto-expire stale sessions first
-        auto_expire_sessions()
+        # auto-expire stale sessions first (reuse existing connection)
+        auto_expire_sessions(conn)
 
         # create a new session
         try:
