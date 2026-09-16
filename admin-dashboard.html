@@ -1558,8 +1558,8 @@
                             <thead>
                                 <tr>
                                     <th>Token</th>
-                                    <th>Student</th>
-                                    <th>Student No.</th>
+                                    <th>Person</th>
+                                    <th>Person No.</th>
                                     <th>Office</th>
                                     <th>Officer</th>
                                     <th>Rating</th>
@@ -1833,7 +1833,7 @@
                 </div>
                 <div class="form-group" id="officeUnavailNoticeGroup">
                     <label for="officeUnavailNotice">Unavailability notice</label>
-                    <textarea id="officeUnavailNotice" rows="2" maxlength="500" placeholder="e.g., Counter closed until 14:00 for staff meeting. Students may check back later."></textarea>
+                    <textarea id="officeUnavailNotice" rows="2" maxlength="500" placeholder="e.g., Counter closed until 14:00 for staff meeting. Citizens may check back later."></textarea>
                     <small style="display:block;margin-top:4px;color:var(--text-muted);font-size:10.5px;">Shown in Working Status next to each officer row and on public queue displays.</small>
                 </div>
                 <div class="form-group">
@@ -2187,8 +2187,8 @@
                 attendance: { title: 'Officer Attendance', sub: 'Weekly officer attendance and availability analysis' },
                 performance: { title: 'Working Status', sub: 'Users served per officer and desk activity for the selected day' },
                 queue: { title: 'Live Queue', sub: 'Real-time queue monitoring' },
-                feedback: { title: 'Feedback & Complaints', sub: 'Student ratings and complaints from completed and non-completed tokens' },
-                'general-complaints': { title: 'General Complaints', sub: 'Non-token complaints from students, staff, and others' },
+                feedback: { title: 'Feedback & Complaints', sub: 'Citizen ratings and complaints from completed and non-completed tokens' },
+                'general-complaints': { title: 'General Complaints', sub: 'Non-token complaints from people, staff, and others' },
                 'system-rating': { title: 'System Rating', sub: 'Enable officer system rating and view submitted ratings' },
                 changepin: { title: 'Change PIN', sub: 'Update your login PIN code' },
                 'display-ads': { title: 'Display Ads', sub: 'Manage public screen advertisements' }
@@ -2462,7 +2462,7 @@
         }
 
         async function resetOfficeQueue(officeId, btn) {
-            if (!confirm('Reset all waiting students for this office? Numbering continues from the first free number for today.')) return;
+            if (!confirm('Reset all waiting people for this office? Numbering continues from the first free number for today.')) return;
             if (!currentAdmin || !currentAdmin.id) {
                 showToast('Session expired. Sign in again.', 'error');
                 window.location.href = '/';
@@ -2689,7 +2689,7 @@
                             </div>
                             <div class="office-location">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                                ${escapeHtml(office.location || 'Main Campus')}
+                                ${escapeHtml(office.location || 'Main Office')}
                             </div>
                             ${officeAvailBadgesMarkup({ availability_status: office.availability_status, unavailability_notice: office.unavailability_notice })}
                             <div class="stats-mini">
@@ -2832,7 +2832,7 @@
                             </div>
                             <div class="office-location">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:11px;height:11px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                                ${escapeHtml(o.location || 'Main Campus')}
+                                ${escapeHtml(o.location || 'Main Office')}
                             </div>
                             ${officeAvailBadgesMarkup(o)}
                             <div class="stats-mini">
@@ -2887,7 +2887,7 @@
                     </div>
                     <div class="office-location">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                                ${escapeHtml(office.location || 'Main Campus')}
+                                ${escapeHtml(office.location || 'Main Office')}
                     </div>
                     <div class="services-container">
                         <div class="services-title">

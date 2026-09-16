@@ -1154,7 +1154,7 @@ def admin_update_office(office_id):
             row = cursor.fetchone()
             waiting_count = row['cnt'] if row else 0
             if waiting_count > 0:
-                return jsonify({'success': False, 'message': f'Cannot close office — {waiting_count} student(s) still waiting. Serve them first.'}), 400
+                return jsonify({'success': False, 'message': f'Cannot close office — {waiting_count} person(s) still waiting. Serve them first.'}), 400
 
         cursor.execute("""
             UPDATE offices 
@@ -1900,7 +1900,7 @@ def generate_student_token():
             'token_number': token_number,
             'office_name': office['office_name'],
             'service_name': service['service_name'],
-            'location': office.get('location', 'Main Campus'),
+            'location': office.get('location', 'Main Office'),
             'queue_position': queue_position,
             'ahead_count': ahead_count,
             'estimated_wait': estimated_wait
@@ -2249,7 +2249,7 @@ def polish_reply_with_groq(complaint_text, current_text, tone):
         return None, 'Complaint text is required to generate a reply'
     tones = {
         'professional': 'Professional and courteous',
-        'empathetic': 'Warm and empathetic, acknowledging the student\'s feelings',
+        'empathetic': 'Warm and empathetic, acknowledging the person\'s feelings',
         'formal': 'Formal and official',
         'friendly': 'Friendly and approachable'
     }
@@ -2262,7 +2262,7 @@ def polish_reply_with_groq(complaint_text, current_text, tone):
         )
     else:
         instruction = (
-            "Write a complete reply to the student's complaint from scratch. Address their concern directly, "
+            "Write a complete reply to the person's complaint from scratch. Address their concern directly, "
             "be helpful and courteous, and end with a warm closing."
         )
     prompt = (
@@ -2271,7 +2271,7 @@ def polish_reply_with_groq(complaint_text, current_text, tone):
         "Rules: Do not use markdown or bullet symbols. Keep it concise (under 200 words). "
         "Do not invent facts, promises, or resolutions not implied by the complaint. "
         "Sign off as the SMQSS support team.\n\n"
-        f"ORIGINAL COMPLAINT FROM STUDENT:\n{complaint_text}\n\n"
+        f"ORIGINAL COMPLAINT FROM PERSON:\n{complaint_text}\n\n"
         f"{instruction}"
     )
     return call_groq_ai(prompt, max_tokens=500, temperature=0.7)
@@ -2347,12 +2347,12 @@ def analyze_feedback_with_groq(feedback_data, officer_stats, complaint_data):
 
     prompt = (
         "You are a feedback analyst for SMQSS Queue Management System (SMQSS).\n"
-        "Analyze student feedback and correlate it with officer performance.\n"
+        "Analyze feedback and correlate it with officer performance.\n"
         "Provide:\n"
         "1. Overall feedback summary (1-2 sentences)\n"
         "2. Per-officer analysis (rating trends, complaint patterns, strengths)\n"
         "3. Correlation between officers and feedback themes\n"
-        "4. Top concerns from students\n"
+        "4. Top concerns from people\n"
         "5. Actionable recommendations for improvement\n\n"
         "RULES:\n"
         "- Be concise (under 600 words)\n"
@@ -2989,7 +2989,7 @@ def officer_call_next():
         
         token = cursor.fetchone()
         if not token:
-            return jsonify({'success': False, 'message': 'No students waiting'})
+            return jsonify({'success': False, 'message': 'No people waiting'})
 
         cursor.execute("""
             UPDATE university_tokens
@@ -3005,7 +3005,7 @@ def officer_call_next():
 
         cursor.execute("""
             INSERT INTO queue_logs (token_number, officer_id, action, action_details, created_at)
-            VALUES (%s, %s, 'called', CONCAT('Called from officer dashboard - Student: ', IFNULL(%s, '')), NOW())
+            VALUES (%s, %s, 'called', CONCAT('Called from officer dashboard - Person: ', IFNULL(%s, '')), NOW())
         """, (token['token_number'], officer_id, token['student_name']))
 
         conn.commit()
@@ -3074,7 +3074,7 @@ def officer_call_batch():
 
         batch = cursor.fetchall()
         if not batch:
-            return jsonify({'success': False, 'message': 'No students waiting'})
+            return jsonify({'success': False, 'message': 'No people waiting'})
 
         tokens = []
         for idx, token in enumerate(batch):
@@ -3086,7 +3086,7 @@ def officer_call_batch():
             """, (officer_id, officer_number, token['id']))
             cursor.execute("""
                 INSERT INTO queue_logs (token_number, officer_id, action, action_details, created_at)
-                VALUES (%s, %s, 'called', CONCAT('Batch called from officer dashboard - Student: ', IFNULL(%s, '')), NOW())
+                VALUES (%s, %s, 'called', CONCAT('Batch called from officer dashboard - Person: ', IFNULL(%s, '')), NOW())
             """, (token['token_number'], officer_id, token['student_name']))
             tokens.append({
                 'token_number': token['token_number'],
@@ -3149,7 +3149,7 @@ def officer_call_specific():
 
         cursor.execute("""
             INSERT INTO queue_logs (token_number, officer_id, action, action_details, created_at)
-            VALUES (%s, %s, 'called', CONCAT('Called from officer dashboard - Student: ', IFNULL(%s, '')), NOW())
+            VALUES (%s, %s, 'called', CONCAT('Called from officer dashboard - Person: ', IFNULL(%s, '')), NOW())
         """, (token_number, officer_id, token['student_name'] if token else ''))
 
         conn.commit()
@@ -3203,7 +3203,7 @@ def officer_serve():
         cursor.execute("""
             INSERT INTO queue_logs (token_number, officer_id, action, action_details, created_at)
             VALUES (%s, %s, 'serving', 
-                    CONCAT('Started serving - Student: ', IFNULL(%s, '')),
+                    CONCAT('Started serving - Person: ', IFNULL(%s, '')),
                     NOW())
         """, (token_number, officer_id, token_info.get('student_name', '')))
         
@@ -3259,7 +3259,7 @@ def officer_serve_batch():
             cursor.execute("""
                 INSERT INTO queue_logs (token_number, officer_id, action, action_details, created_at)
                 VALUES (%s, %s, 'serving',
-                        CONCAT('Started serving (batch serve all) - Student: ', IFNULL(%s, '')),
+                        CONCAT('Started serving (batch serve all) - Person: ', IFNULL(%s, '')),
                         NOW())
             """, (token['token_number'], officer_id, token.get('student_name') or ''))
 
@@ -3318,7 +3318,7 @@ def officer_complete_batch():
             cursor.execute("""
                 INSERT INTO queue_logs (token_number, officer_id, action, action_details, created_at)
                 VALUES (%s, %s, 'completed',
-                        CONCAT('Completed (batch complete all) - Student: ', IFNULL(%s, '')),
+                        CONCAT('Completed (batch complete all) - Person: ', IFNULL(%s, '')),
                         NOW())
             """, (token['token_number'], officer_id, token.get('student_name') or ''))
 
@@ -3438,7 +3438,7 @@ def officer_recall():
         
         cursor.execute("""
             INSERT INTO queue_logs (token_number, officer_id, action, action_details, created_at)
-            VALUES (%s, %s, 'recall', CONCAT('Manual recall announcement - Student: ', IFNULL(%s, '')), NOW())
+            VALUES (%s, %s, 'recall', CONCAT('Manual recall announcement - Person: ', IFNULL(%s, '')), NOW())
         """, (token_number, officer_id, token['student_name'] if token else ''))
         conn.commit()
         

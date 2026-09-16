@@ -524,10 +524,10 @@
     <div class="search-modal-body" id="searchResultsBody">
       <div class="search-input-row">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="searchInput" placeholder="Enter token number or student name..." oninput="onSearchInput(this.value)" autofocus>
+        <input type="text" id="searchInput" placeholder="Enter token number or person name..." oninput="onSearchInput(this.value)" autofocus>
         <button class="search-clear" id="searchClearBtn" onclick="clearSearch()" style="display:none">&times;</button>
       </div>
-      <div id="searchResultsList"><div class="search-empty">Type a token number or student name to search tokens that came to your office.</div></div>
+      <div id="searchResultsList"><div class="search-empty">Type a token number or person name to search tokens that came to your office.</div></div>
     </div>
   </div>
 </div>
@@ -541,7 +541,7 @@
     <div class="msg-modal-body">
       <div class="msg-input-row">
         <div style="flex:1;position:relative;">
-          <input class="msg-input" type="text" id="newMessage" name="newMessage" autocomplete="off" placeholder="Enter message for students…" maxlength="172" oninput="updateCharCount()" />
+          <input class="msg-input" type="text" id="newMessage" name="newMessage" autocomplete="off" placeholder="Enter message for people…" maxlength="172" oninput="updateCharCount()" />
           <span id="charCount" style="position:absolute;right:8px;bottom:4px;font-size:10px;font-family:monospace;color:rgba(255,255,255,0.35);">0/172</span>
         </div>
         <button class="post-btn" onclick="postOfficeMessage()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Post</button>
@@ -567,7 +567,7 @@
   <div class="modal-box">
     <div class="modal-icon" style="background:var(--red-soft);color:var(--red);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg></div>
     <div class="modal-title">Reset Queue</div>
-    <div class="modal-body">This will expire all waiting students. Only use at the start of the day. Numbering continues from the first free number for today.</div>
+    <div class="modal-body">This will expire all waiting people. Only use at the start of the day. Numbering continues from the first free number for today.</div>
     <div class="modal-footer">
       <button class="mbtn mbtn-confirm" onclick="confirmReset()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Yes, Reset</button>
       <button class="mbtn mbtn-cancel" onclick="closeResetModal()">Cancel</button>
@@ -580,7 +580,7 @@
     <div class="modal-icon" id="availReasonIcon" style="background:var(--amber-soft);color:var(--amber);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
     <div class="modal-title" id="availReasonTitle">Mark Office Unavailable</div>
     <div class="modal-body" id="availReasonBody">
-      <p style="margin-bottom:12px;font-size:13px;color:var(--text-secondary);" id="availReasonDesc">Please provide a reason so students see it on the kiosk and public display.</p>
+      <p style="margin-bottom:12px;font-size:13px;color:var(--text-secondary);" id="availReasonDesc">Please provide a reason so people see it on the kiosk and public display.</p>
       <textarea id="availReasonInput" rows="3" placeholder="Enter reason for closing..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border-mid);border-radius:10px;font-size:13px;font-family:var(--font);outline:none;resize:vertical;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--green-accent)'" onblur="this.style.borderColor='var(--border-mid)'"></textarea>
     </div>
     <div class="modal-footer">
@@ -623,7 +623,7 @@
 
     <div class="card">
       <div class="card-header"><div class="card-title"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green-accent)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Currently Serving</div></div>
-      <div class="card-body"><div id="servingContainer"><div class="empty"><div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="empty-text">No student being served</div></div></div></div>
+      <div class="card-body"><div id="servingContainer"><div class="empty"><div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="empty-text">No person being served</div></div></div></div>
     </div>
   </div>
 
@@ -969,7 +969,7 @@
     if (!soundEnabled) return;
     if (notificationStatus !== 'granted') return;
     new Notification('🎫 New Token Arrived', {
-      body: `${studentName || 'A student'} has taken token ${tokenNumber}`,
+      body: `${studentName || 'A person'} has taken token ${tokenNumber}`,
       icon: '/favicon.ico', silent: false, tag: 'new-token'
     });
   }
@@ -984,7 +984,7 @@
           playTokenVoice(newest.token_number, newest.student_name);
         }, 270);
         showBrowserNotification(newest.token_number, newest.student_name);
-        showToast(`🎫 New token: ${newest.token_number} - ${newest.student_name || 'Student'}`, 'info');
+        showToast(`🎫 New token: ${newest.token_number} - ${newest.student_name || 'Person'}`, 'info');
         addLog(`🔔 New token arrived: ${newest.token_number}`, 'info');
       }
     }
@@ -996,8 +996,8 @@
     const tokens = waitingList.map(s => s.token_number.split('').join(' ')).join(', and ');
     const count = waitingList.length;
     const text = count === 1
-      ? `Reminder. 1 student still waiting. Token ${tokens}. Please attend.`
-      : `Reminder. ${count} students still waiting. Tokens ${tokens}. Please attend.`;
+      ? `Reminder. 1 person still waiting. Token ${tokens}. Please attend.`
+      : `Reminder. ${count} people still waiting. Tokens ${tokens}. Please attend.`;
     try {
       const res = await fetch('/api/tts', {
         method: 'POST',
@@ -1022,8 +1022,8 @@
     if (now - lastReminderTime >= REMINDER_INTERVAL) {
       lastReminderTime = now;
       playReminderVoice(waitingList);
-      showToast(`⏰ Reminder: ${waitingList.length} student(s) still waiting`, 'info');
-      addLog(`⏰ Reminder: ${waitingList.length} student(s) still waiting`, 'info');
+      showToast(`⏰ Reminder: ${waitingList.length} person(s) still waiting`, 'info');
+      addLog(`⏰ Reminder: ${waitingList.length} person(s) still waiting`, 'info');
     }
   }
 
@@ -1038,7 +1038,7 @@
   currentOfficer = checkLogin();
   document.getElementById('officerName').textContent = currentOfficer.officer_name;
   document.getElementById('officeName').textContent = currentOfficer.office_name;
-  document.getElementById('officeLocation').textContent = currentOfficer.location || 'Main Campus';
+  document.getElementById('officeLocation').textContent = currentOfficer.location || 'Main Office';
 
   function logout() { cancelOfficeLogoutCountdown(); sessionStorage.removeItem('loggedInUser'); window.location.href = '/'; }
 
@@ -1147,7 +1147,7 @@
   function closeMessageModal() { document.getElementById('messageOverlay').classList.remove('open'); }
 
   async function generateWelcomeVoice(officerName, officeName) {
-    const text = `Welcome ${officerName}, you are now logged into ${officeName} digital space. You can now start serving students.`;
+    const text = `Welcome ${officerName}, you are now logged into ${officeName} digital space. You can now start serving people.`;
     try {
       const res = await fetch('/api/tts', {
         method: 'POST',
@@ -1166,7 +1166,7 @@
 
   async function autoCompleteCurrentServing() {
     if (currentServing) {
-      addLog(`Auto-completing previous student ${currentServing}...`, 'info');
+      addLog(`Auto-completing previous person ${currentServing}...`, 'info');
       const result = await apiCall('/api/officer/complete', 'POST', { officer_id: currentOfficer.id, token_number: currentServing });
       if (result.success) {
         addLog(`Auto-completed ${currentServing}`, 'success');
@@ -1190,13 +1190,13 @@
     checkWaitingReminder(waiting);
     const qEl = document.getElementById('queueContainer');
     if (!waiting.length) {
-      qEl.innerHTML = `<div class="empty"><div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div class="empty-text">No students waiting</div></div>`;
+      qEl.innerHTML = `<div class="empty"><div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div class="empty-text">No people waiting</div></div>`;
     } else {
       qEl.innerHTML = waiting.map(s => {
         var idOrPhone = (s.service_code && s.service_code.toUpperCase() === 'PS')
           ? (s.parent_phone || 'No phone')
           : (s.student_id || 'No ID');
-        return `<div class="queue-item"><div class="q-token">${s.token_number}</div><div class="q-info"><div class="q-service">${ic.tag} ${s.service_name || s.service_code}</div><div class="q-student">${ic.user} ${s.student_name || 'Student'} · ${idOrPhone}</div><div class="q-wait">${ic.clock} ${s.waiting_minutes || 0} min waiting</div></div><button class="call-btn" onclick="callStudent('${s.token_number}', this)">${ic.phone} Call</button></div>`;
+        return `<div class="queue-item"><div class="q-token">${s.token_number}</div><div class="q-info"><div class="q-service">${ic.tag} ${s.service_name || s.service_code}</div><div class="q-student">${ic.user} ${s.student_name || 'Person'} · ${idOrPhone}</div><div class="q-wait">${ic.clock} ${s.waiting_minutes || 0} min waiting</div></div><button class="call-btn" onclick="callStudent('${s.token_number}', this)">${ic.phone} Call</button></div>`;
       }).join('');
     }
     const servEl = document.getElementById('servingContainer');
@@ -1218,7 +1218,7 @@
             : `<button class="action-btn btn-serve" onclick="serveToken('${t.token_number}', this)">${ic.play} Start Serving</button>`;
           return `<div class="batch-row">
             <div class="batch-row-token">${t.token_number}</div>
-            <div class="batch-row-info"><div class="batch-row-name">${t.student_name || 'Student'}</div><div class="batch-row-service">${t.service_name || t.service_code || ''}</div></div>
+            <div class="batch-row-info"><div class="batch-row-name">${t.student_name || 'Person'}</div><div class="batch-row-service">${t.service_name || t.service_code || ''}</div></div>
             <div class="batch-row-actions">${actionBtn}<button class="action-btn btn-skip" onclick="skipToken('${t.token_number}', this)">${ic.skip} Skip</button><button class="action-btn btn-recall" onclick="recallToken('${t.token_number}', this)">${ic.repeat} Recall</button></div>
           </div>`;
         }).join('');
@@ -1240,7 +1240,7 @@
       }
     } else {
       currentServing = null;
-      servEl.innerHTML = `<div class="empty" style="margin-bottom:14px;"><div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="empty-text">No student being served</div></div><div class="action-grid"><button class="action-btn btn-next" onclick="callNext()">${ic.callnext} Call Next Student</button><button class="action-btn btn-reset" onclick="resetQueue()">${ic.reset} Reset Queue</button></div><div style="display:flex;gap:8px;align-items:center;margin-top:10px;justify-content:center;"><select class="batch-select" id="batchSizeSelect" onchange="batchSize=parseInt(this.value)"><option value="2" selected>2</option><option value="3">3</option><option value="5">5</option><option value="10">10</option></select><button class="action-btn btn-next" style="grid-column:auto;flex:1;max-width:220px" onclick="callBatch()">${ic.callnext} Call Batch</button></div>`;
+      servEl.innerHTML = `<div class="empty" style="margin-bottom:14px;"><div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="empty-text">No person being served</div></div><div class="action-grid"><button class="action-btn btn-next" onclick="callNext()">${ic.callnext} Call Next Person</button><button class="action-btn btn-reset" onclick="resetQueue()">${ic.reset} Reset Queue</button></div><div style="display:flex;gap:8px;align-items:center;margin-top:10px;justify-content:center;"><select class="batch-select" id="batchSizeSelect" onchange="batchSize=parseInt(this.value)"><option value="2" selected>2</option><option value="3">3</option><option value="5">5</option><option value="10">10</option></select><button class="action-btn btn-next" style="grid-column:auto;flex:1;max-width:220px" onclick="callBatch()">${ic.callnext} Call Batch</button></div>`;
       statusDot.className = 'status-dot dot-green';
       statusText.textContent = 'Available';
       tokenBadge.style.display = 'none';
@@ -1255,7 +1255,7 @@
     const btn = document.querySelector('.btn-next');
     setLoading(btn, true);
     isProcessingCall = true;
-    addLog('Calling next student…');
+    addLog('Calling next person…');
     try {
       await autoCompleteCurrentServing();
       const result = await apiCall('/api/officer/call-next', 'POST', { officer_id: currentOfficer.id, officer_number: currentOfficer.officer_number });
@@ -1264,8 +1264,8 @@
         showToast(`Called ${result.token_number}`, 'success');
         await loadQueue();
       } else {
-        addLog(result.message || 'No students waiting', 'error');
-        showToast(result.message || 'No students waiting', 'error');
+        addLog(result.message || 'No people waiting', 'error');
+        showToast(result.message || 'No people waiting', 'error');
       }
     } finally { isProcessingCall = false; setLoading(btn, false); }
   }
@@ -1283,7 +1283,7 @@
         showToast(`Called ${tokenNumber}`, 'success');
         await loadQueue();
       } else {
-        showToast(result.message || 'Failed to call student', 'error');
+        showToast(result.message || 'Failed to call person', 'error');
       }
     } finally { isProcessingCall = false; setLoading(btn, false); }
   }
@@ -1305,8 +1305,8 @@
         showToast(`Called ${called}`, 'success');
         await loadQueue();
       } else {
-        addLog(result.message || 'No students waiting', 'error');
-        showToast(result.message || 'No students waiting', 'error');
+        addLog(result.message || 'No people waiting', 'error');
+        showToast(result.message || 'No people waiting', 'error');
       }
     } finally { isProcessingCall = false; if (btnEl) setLoading(btnEl, false); }
   }
@@ -1382,7 +1382,7 @@
       }
       if (ok > 0) {
         addLog(`Recalled batch of ${ok}`, 'success');
-        showToast(`Recalled ${ok} students`, 'info');
+        showToast(`Recalled ${ok} people`, 'info');
       } else {
         addLog('No tokens were recalled', 'error');
         showToast('No tokens were recalled', 'error');
@@ -1399,7 +1399,7 @@
       const result = await apiCall('/api/officer/complete-batch', 'POST', { officer_id: currentOfficer.id });
       if (result.success) {
         addLog(`Batch of ${result.count} completed`, 'success');
-        showToast(`Completed ${result.count} students`, 'success');
+        showToast(`Completed ${result.count} people`, 'success');
         const completedEl = document.getElementById('completedToday');
         completedEl.textContent = (parseInt(completedEl.textContent) || 0) + (result.count || 0);
         await loadQueue();
@@ -1418,7 +1418,7 @@
       const result = await apiCall('/api/officer/serve-batch', 'POST', { officer_id: currentOfficer.id });
       if (result.success) {
         addLog(`Batch of ${result.count} served and completed`, 'success');
-        showToast(`Served and completed ${result.count} students`, 'success');
+        showToast(`Served and completed ${result.count} people`, 'success');
         const completedEl = document.getElementById('completedToday');
         completedEl.textContent = (parseInt(completedEl.textContent) || 0) + (result.count || 0);
         await loadQueue();
@@ -1578,7 +1578,7 @@
       icon.style.color = 'var(--green-accent)';
       icon.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
       title.textContent = 'Reopen Office?';
-      desc.innerHTML = 'This will make the office available for students to take tokens again. Any closure notice will be removed.';
+      desc.innerHTML = 'This will make the office available for people to take tokens again. Any closure notice will be removed.';
       confirmText.textContent = 'Reopen Office';
       confirmBtn.style.background = 'var(--green-accent, #22C55E)';
       confirmBtn.style.color = '#fff';
@@ -1588,7 +1588,7 @@
       icon.style.color = 'var(--red)';
       icon.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
       title.textContent = 'Mark Office Unavailable';
-      desc.innerHTML = '⚠️ <strong>Important:</strong> Perform this action only if you share this office alone, or ensure all other officers that work with you are aware the office will be off service. If you intend to make only your desk unavailable, use the <strong>Desk Status</strong> toggle instead (right next to this button). Students will not be able to take new tokens when the office is closed.';
+      desc.innerHTML = '⚠️ <strong>Important:</strong> Perform this action only if you share this office alone, or ensure all other officers that work with you are aware the office will be off service. If you intend to make only your desk unavailable, use the <strong>Desk Status</strong> toggle instead (right next to this button). People will not be able to take new tokens when the office is closed.';
       confirmText.textContent = 'Mark Unavailable';
       confirmBtn.style.background = '';
       confirmBtn.style.color = '';
@@ -1850,7 +1850,7 @@
     document.getElementById('searchOverlay').classList.add('open');
     document.getElementById('searchInput').value = '';
     document.getElementById('searchClearBtn').style.display = 'none';
-    document.getElementById('searchResultsList').innerHTML = '<div class="search-empty">Type a token number or student name to search tokens that came to your office.</div>';
+    document.getElementById('searchResultsList').innerHTML = '<div class="search-empty">Type a token number or person name to search tokens that came to your office.</div>';
     setTimeout(function(){ document.getElementById('searchInput').focus(); }, 200);
   }
 
@@ -1861,7 +1861,7 @@
   function clearSearch() {
     document.getElementById('searchInput').value = '';
     document.getElementById('searchClearBtn').style.display = 'none';
-    document.getElementById('searchResultsList').innerHTML = '<div class="search-empty">Type a token number or student name to search tokens that came to your office.</div>';
+    document.getElementById('searchResultsList').innerHTML = '<div class="search-empty">Type a token number or person name to search tokens that came to your office.</div>';
   }
 
   // ============================================

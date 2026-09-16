@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Student Token — SMQSS</title>
+<title>Person Token — SMQSS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -550,7 +550,7 @@ body.keyboard-open .header,body.input-mode .header{display:none!important;}
           <input type="text" class="form-input" id="studentName" placeholder="e.g. Nakato Sarah" autocomplete="off">
         </div>
         <div class="form-group" id="studentNumFieldWrap" style="display:none;">
-          <label class="form-label" id="studentNumLabel">Student Number *</label>
+          <label class="form-label" id="studentNumLabel">ID Number *</label>
           <input type="text" class="form-input" id="studentNumber" placeholder="e.g. 2300716574" autocomplete="off" maxlength="10" inputmode="numeric" pattern="[0-9]*" oninput="validateStudentNumber(this)">
           <div class="num-hint" id="numHint"></div>
         </div>
@@ -630,7 +630,7 @@ function buildHeaderTicker(){
  var h=now().getHours();
  var open=h>=8&&h<17;
  var items=open
-  ? ['👉 To get started, click "Get My Token"','◆ Select your preferred office and service','◆ Enter your name and student number and click get my token','◆ 🖥️ Watch the public display for your turn','◆ 🙏 Thank you for using our service']
+  ? ['👉 To get started, click "Get My Token"','◆ Select your preferred office and service','◆ Enter your name and ID number and click get my token','◆ 🖥️ Watch the public display for your turn','◆ 🙏 Thank you for using our service']
   : ['🕒 Offices are currently closed','◆ Operating hours: 8:00 AM – 5:00 PM','◆ You can only rate service for now','◆ 🙏 Thank you for your understanding'];
  var sep=' <span style="padding:0 14px;opacity:0.5">◆</span> ';
  var content=items.join(sep);
@@ -669,7 +669,7 @@ function validateStudentNumber(el){
   el.classList.remove('valid','invalid');
   hint.classList.remove('show','error');
   if(v.length===0) return;
-  if(v.length===10){ el.classList.add('valid'); hint.textContent='\u2713 Valid student number'; hint.className='num-hint show'; }
+  if(v.length===10){ el.classList.add('valid'); hint.textContent='\u2713 Valid ID number'; hint.className='num-hint show'; }
   else{ el.classList.add('invalid'); hint.textContent='Exactly 10 digits required ('+v.length+'/10)'; hint.className='num-hint show error'; }
 }
 
@@ -734,7 +734,7 @@ function renderOffices(){
     return '<div class="'+cls+'" data-id="'+o.id+'" data-code="'+o.office_code+'" data-name="'+o.office_name+'" data-loc="'+(o.location||'')+'" data-avail="'+(isAvail?'1':'0')+'" style="animation-delay:'+(idx*0.06)+'s">'+
       '<div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zm-2 12H4v-2h6v2zm0-4H4v-2h6v2zm0-4H4V9h6v2zm0-4H4V5h6v2zm8 12h-6v-2h6v2zm0-4h-6v-2h6v2zm0-4h-6V9h6v2z"/></svg></div>'+
       '<div class="card-label">'+o.office_name+'</div>'+
-      '<div class="card-sub">'+(o.location||'Main Campus')+'</div>'+
+      '<div class="card-sub">'+(o.location||'Main Office')+'</div>'+
       (!isAvail ? '<div class="unavail-badge">UNAVAILABLE</div>' : '')+
     '</div>';
   }).join('')+'</div>';
@@ -846,7 +846,7 @@ function goToStep(step){
     const isPs = selectedService.code && selectedService.code.toUpperCase() === 'PS';
     var msg = isPs
       ? "Almost there! You've chosen "+selectedService.name+" at "+selectedOffice.name+". Since you're a parent, please enter your full name and phone number."
-      : "Almost there! You've chosen "+selectedService.name+" at "+selectedOffice.name+". Just one last thing what's your full name and student number?";
+      : "Almost there! You've chosen "+selectedService.name+" at "+selectedOffice.name+". Just one last thing what's your full name and ID number?";
 
     typeMessage('aiBubble3', msg, function(){
       document.getElementById('step3DisplayBtns').style.display='flex';
@@ -871,7 +871,7 @@ function showStep3Inputs(){
   if (isPs) {
     document.getElementById('parentPhoneFieldWrap').style.display='block';
   } else {
-    document.getElementById('studentNumLabel').textContent = 'Student Number *';
+    document.getElementById('studentNumLabel').textContent = 'ID Number *';
     document.getElementById('studentNumFieldWrap').style.display='block';
   }
 
@@ -918,8 +918,8 @@ async function generateToken(){
     studentNumber = '';
   } else {
     studentNumber = document.getElementById('studentNumber').value.trim();
-    if(!studentNumber){ showError('Please enter your student number.'); document.getElementById('studentNumber').focus(); return; }
-    if(studentNumber.length !== 10){ showError('Student number must be exactly 10 digits.'); document.getElementById('studentNumber').focus(); return; }
+    if(!studentNumber){ showError('Please enter your ID number.'); document.getElementById('studentNumber').focus(); return; }
+    if(studentNumber.length !== 10){ showError('ID number must be exactly 10 digits.'); document.getElementById('studentNumber').focus(); return; }
     parentPhone = '';
   }
 

@@ -91,7 +91,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink)
 </button>
 <a class="back-top" href="/"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back to Home</a>
 <h1 class="page-title">SMQSS Workflow &amp; System Guide</h1>
-<p class="page-sub">How the Smart Queue Management System works for officers, administrators, and the entire university community.</p>
+<p class="page-sub">How the Smart Queue Management System works for officers, administrators, and the entire ministry.</p>
 
 <section class="section">
 <h2 class="section-title">For Officers</h2>
@@ -159,7 +159,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink)
 <div class="benefit-icon"><svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/></svg></div>
 <div>
 <div class="benefit-title">Real-Time Visibility</div>
-<p class="benefit-desc">Know exactly what is happening at every desk across campus — waiting counts, service times, and officer availability.</p>
+<p class="benefit-desc">Know exactly what is happening at every desk across offices — waiting counts, service times, and officer availability.</p>
 </div>
 </div>
 <div class="benefit-item">
@@ -173,7 +173,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink)
 <div class="benefit-icon"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg></div>
 <div>
 <div class="benefit-title">Data-Driven Decisions</div>
-<p class="benefit-desc">Reports on wait times, service volumes, student feedback, and peak hours help leadership optimise resource allocation.</p>
+<p class="benefit-desc">Reports on wait times, service volumes, feedback, and peak hours help leadership optimise resource allocation.</p>
 </div>
 </div>
 </div>
@@ -254,7 +254,7 @@ function toggleListen() {
 }
 function buildPageSummary() {
     var parts = [];
-    parts.push('Hello and welcome. Let us walk you through the Smart Queue Management System — how it helps officers serve students, and how administrators keep everything running smoothly.');
+    parts.push('Hello and welcome. Let us walk you through the Smart Queue Management System — how it helps officers serve people, and how administrators keep everything running smoothly.');
     var sections = document.querySelectorAll('.section-title');
     for (var i = 0; i < sections.length; i++) {
         var secTitle = sections[i].textContent.trim();
@@ -271,7 +271,7 @@ function buildPageSummary() {
         else parts.push(secTitle);
     }
     if (!parts.length) parts.push('No content available on this page.');
-    return parts.join('. ') + '. Thank you for using the Smart Queue Management System. We are making your work easier and delivering effective service to students and everyone else.';
+    return parts.join('. ') + '. Thank you for using the Smart Queue Management System. We are making your work easier and delivering effective service to people and everyone else.';
 }
 </script>
 </body>

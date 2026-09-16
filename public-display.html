@@ -905,7 +905,7 @@
         </div>
         <div class="header-center">
             <div class="hc-title">SMQSS</div>
-            <div class="hc-sub">Student Service Board</div>
+            <div class="hc-sub">Citizen Service Board</div>
         </div>
         <div class="datetime">
             <div class="datetime-time" id="dtTime">00:00:00</div>
@@ -992,7 +992,7 @@
         <div class="footer-dot"></div>
         <div class="footer-text">Watch the screen for your turn</div>
         <div class="footer-dot"></div>
-        <div class="footer-text">SMQSS &mdash; Enhancing Student Service Experience and Service Delivery</div>
+        <div class="footer-text">SMQSS &mdash; Enhancing Citizen Service Experience and Service Delivery</div>
     </div>
 
     <div class="voice-indicator" id="voiceIndicator">
@@ -1636,7 +1636,7 @@
                             return `<div class="on-duty-card available">
                                 <div class="on-duty-code"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/><path d="M12 14h.01"/></svg></div>
                                 <div class="on-duty-name">${escapeHtml(o.office_name)}</div>
-                                <div class="on-duty-location">${escapeHtml(o.location || 'Main Campus')}</div>
+                                <div class="on-duty-location">${escapeHtml(o.location || 'Main Office')}</div>
                                 <div class="on-duty-waiting"><strong>${o.waiting_count || 0}</strong> waiting</div>
                                 <div class="avail-badge">&#10003; Available</div>
                             </div>`;
@@ -1644,7 +1644,7 @@
                             return `<div class="on-duty-card unavailable">
                                 <div class="on-duty-code"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/><path d="M12 14h.01"/></svg></div>
                                 <div class="on-duty-name">${escapeHtml(o.office_name)}</div>
-                                <div class="on-duty-location">${escapeHtml(o.location || 'Main Campus')}</div>
+                                <div class="on-duty-location">${escapeHtml(o.location || 'Main Office')}</div>
                                 <div class="on-duty-waiting"><strong>${o.waiting_count || 0}</strong> waiting</div>
                                 <div class="unavail-badge">&#10005; CLOSED</div>
                             </div>`;
