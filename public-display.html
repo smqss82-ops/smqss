@@ -438,6 +438,61 @@
         .on-duty-card .avail-badge { display: none; }
         .on-duty-card.available .avail-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #69ff9c; margin-top: 8px; }
 
+        /* ── STUDENT WAITING LIST ── */
+        .student-waiting-section {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .student-waiting-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        .student-waiting-card {
+            background: rgba(0,230,118,0.06);
+            border: 1px solid rgba(0,230,118,0.2);
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: border-color 0.3s, background 0.3s;
+        }
+        .student-waiting-card:hover {
+            border-color: rgba(0,230,118,0.4);
+            background: rgba(0,230,118,0.1);
+        }
+        .swc-token {
+            font-family: 'DM Mono', monospace;
+            font-size: 22px;
+            font-weight: 600;
+            color: #e8c547;
+            letter-spacing: 2px;
+            min-width: 50px;
+            text-align: center;
+        }
+        .swc-info { flex: 1; min-width: 0; }
+        .swc-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.92);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .swc-office {
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+            margin-top: 2px;
+        }
+        .swc-waiting {
+            font-family: 'DM Mono', monospace;
+            font-size: 12px;
+            color: #69ff9c;
+            font-weight: 500;
+        }
+
         /* ── DISPLAY ADS: IDLE TWO-COLUMN LAYOUT ── */
         .no-active.has-ads {
             flex-direction: row;
@@ -447,6 +502,7 @@
             padding: 0 24px;
         }
         .no-active.has-ads .on-duty-section { flex: 1 1 0; max-width: 440px; text-align: left; overflow-y: auto; min-height: 0; }
+        .no-active.has-ads .student-waiting-section { flex: 1 1 0; max-width: 440px; text-align: left; overflow-y: auto; min-height: 0; }
         .no-active.has-ads .on-duty-header { justify-content: flex-start; }
         .no-active.has-ads .on-duty-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
         .no-active.has-ads #noActiveDefault { display: none !important; }
@@ -946,6 +1002,13 @@
                 </div>
                 <div class="on-duty-grid" id="onDutyGrid"></div>
                 <div class="on-duty-closed" id="onDutyClosed" style="display:none;">All offices are currently closed.</div>
+            </div>
+            <div class="student-waiting-section" id="studentWaitingSection" style="display:none;">
+                <div class="on-duty-header">
+                    <div class="on-duty-header-dot"></div>
+                    <h1 class="on-duty-title">Waiting Now</h1>
+                </div>
+                <div class="student-waiting-grid" id="studentWaitingGrid"></div>
             </div>
             <div class="ad-panel" id="adPanel">
                 <div id="adCarousel"></div>
@@ -1633,40 +1696,63 @@
                 const onDutyGrid = document.getElementById('onDutyGrid');
                 const onDutyClosed = document.getElementById('onDutyClosed');
                 const noActiveDefault = document.getElementById('noActiveDefault');
+                const studentWaitingSection = document.getElementById('studentWaitingSection');
+                const studentWaitingGrid = document.getElementById('studentWaitingGrid');
 
                 const anyOpen = queues.some(o =>
                     (o.availability_status || '').toLowerCase() === 'available'
                 );
 
+                const hasAds = noActive.classList.contains('has-ads');
+                const hasWaiting = totalWaiting > 0;
+
                 if (queues.length > 0) {
                     noActiveDefault.style.display = 'none';
-                    onDutySection.style.display = 'block';
-                    onDutyClosed.style.display = anyOpen ? 'none' : 'block';
-                    onDutyGrid.innerHTML = queues.map(o => {
-                        const isAvail = (o.availability_status || '').toLowerCase() === 'available';
-                        const availClass = isAvail ? '' : 'unavailable';
-                        if (isAvail) {
-                            return `<div class="on-duty-card available">
-                                <div class="on-duty-code"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/><path d="M12 14h.01"/></svg></div>
-                                <div class="on-duty-name">${escapeHtml(o.office_name)}</div>
-                                <div class="on-duty-location">${escapeHtml(o.location || 'Main Office')}</div>
-                                <div class="on-duty-waiting"><strong>${o.waiting_count || 0}</strong> waiting</div>
-                                <div class="avail-badge">&#10003; Available</div>
-                            </div>`;
-                        } else {
-                            return `<div class="on-duty-card unavailable">
-                                <div class="on-duty-code"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/><path d="M12 14h.01"/></svg></div>
-                                <div class="on-duty-name">${escapeHtml(o.office_name)}</div>
-                                <div class="on-duty-location">${escapeHtml(o.location || 'Main Office')}</div>
-                                <div class="on-duty-waiting"><strong>${o.waiting_count || 0}</strong> waiting</div>
-                                <div class="unavail-badge">&#10005; CLOSED</div>
-                            </div>`;
-                        }
-                    }).join('');
+
+                    if (hasAds && hasWaiting) {
+                        onDutySection.style.display = 'none';
+                        onDutyClosed.style.display = 'none';
+                        studentWaitingSection.style.display = 'block';
+                        studentWaitingGrid.innerHTML = currentUpNextItems.slice(0, 12).map(function(t) {
+                            return '<div class="student-waiting-card">' +
+                                '<div class="swc-token">' + escapeHtml(t.token) + '</div>' +
+                                '<div class="swc-info">' +
+                                    (t.name ? '<div class="swc-name">' + escapeHtml(t.name) + '</div>' : '') +
+                                    '<div class="swc-office">' + escapeHtml(t.office) + '</div>' +
+                                '</div>' +
+                            '</div>';
+                        }).join('');
+                    } else {
+                        studentWaitingSection.style.display = 'none';
+                        onDutySection.style.display = 'block';
+                        onDutyClosed.style.display = anyOpen ? 'none' : 'block';
+                        onDutyGrid.innerHTML = queues.map(o => {
+                            const isAvail = (o.availability_status || '').toLowerCase() === 'available';
+                            const availClass = isAvail ? '' : 'unavailable';
+                            if (isAvail) {
+                                return `<div class="on-duty-card available">
+                                    <div class="on-duty-code"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/><path d="M12 14h.01"/></svg></div>
+                                    <div class="on-duty-name">${escapeHtml(o.office_name)}</div>
+                                    <div class="on-duty-location">${escapeHtml(o.location || 'Main Office')}</div>
+                                    <div class="on-duty-waiting"><strong>${o.waiting_count || 0}</strong> waiting</div>
+                                    <div class="avail-badge">&#10003; Available</div>
+                                </div>`;
+                            } else {
+                                return `<div class="on-duty-card unavailable">
+                                    <div class="on-duty-code"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/><path d="M12 14h.01"/></svg></div>
+                                    <div class="on-duty-name">${escapeHtml(o.office_name)}</div>
+                                    <div class="on-duty-location">${escapeHtml(o.location || 'Main Office')}</div>
+                                    <div class="on-duty-waiting"><strong>${o.waiting_count || 0}</strong> waiting</div>
+                                    <div class="unavail-badge">&#10005; CLOSED</div>
+                                </div>`;
+                            }
+                        }).join('');
+                    }
                 } else {
                     noActiveDefault.style.display = 'block';
                     onDutySection.style.display = 'none';
                     onDutyClosed.style.display = 'none';
+                    studentWaitingSection.style.display = 'none';
                 }
             }
         }
