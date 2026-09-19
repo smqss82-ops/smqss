@@ -1060,6 +1060,12 @@
             </div>
             <span>System Rating</span>
         </div>
+        <div class="nav-item" onclick="showPage('settings', this)">
+            <div class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </div>
+            <span>Settings</span>
+        </div>
         <div class="nav-item" onclick="showPage('display-ads', this)">
             <div class="nav-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1763,6 +1769,31 @@
 
         </div>
 
+        <!-- SETTINGS PAGE -->
+        <div class="page" id="page-settings">
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;margin-right:8px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                        Language Settings
+                    </h2>
+                </div>
+                <div style="padding:24px;max-width:480px">
+                    <label style="display:block;font-size:14px;font-weight:600;color:#555;margin-bottom:8px">Display Language</label>
+                    <p style="font-size:13px;color:#888;margin-bottom:16px">Set the language for all public displays, kiosks, and TV screens. Changes apply immediately across all devices.</p>
+                    <div style="display:flex;gap:12px;align-items:center">
+                        <select id="languageSelect" style="flex:1;padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;background:#fff;cursor:pointer">
+                            <option value="en">English</option>
+                            <option value="lg">Luganda</option>
+                            <option value="sw">Swahili</option>
+                        </select>
+                        <button class="btn-save" onclick="saveLanguage()" id="langSaveBtn">Save</button>
+                    </div>
+                    <div id="langToast" style="margin-top:12px;font-size:13px;display:none"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- DISPLAY ADS PAGE -->
         <div class="page" id="page-display-ads">
             <div class="section">
@@ -2190,6 +2221,7 @@
                 feedback: { title: 'Feedback & Complaints', sub: 'Citizen ratings and complaints from completed and non-completed tokens' },
                 'general-complaints': { title: 'General Complaints', sub: 'Non-token complaints from people, staff, and others' },
                 'system-rating': { title: 'System Rating', sub: 'Enable officer system rating and view submitted ratings' },
+                'settings': { title: 'System Settings', sub: 'Configure display language and system preferences' },
                 changepin: { title: 'Change PIN', sub: 'Update your login PIN code' },
                 'display-ads': { title: 'Display Ads', sub: 'Manage public screen advertisements' }
             };
@@ -2225,6 +2257,9 @@
             } else if (id === 'system-rating') {
                 document.getElementById('topbarActions').innerHTML = '';
                 loadSystemRating();
+            } else if (id === 'settings') {
+                document.getElementById('topbarActions').innerHTML = '';
+                loadLanguageSettings();
             } else if (id === 'performance') {
                 document.getElementById('topbarActions').innerHTML = '';
             } else {
@@ -3296,6 +3331,52 @@
             } catch (e) {
                 showToast('Network error', 'error');
                 loadSystemRating();
+            }
+        }
+
+        async function loadLanguageSettings() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/language`);
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('languageSelect').value = data.language;
+                }
+            } catch (e) {}
+        }
+
+        async function saveLanguage() {
+            var lang = document.getElementById('languageSelect').value;
+            var btn = document.getElementById('langSaveBtn');
+            var toast = document.getElementById('langToast');
+            btn.textContent = 'Saving...';
+            btn.disabled = true;
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/language`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ language: lang })
+                });
+                const data = await res.json();
+                btn.textContent = 'Save';
+                btn.disabled = false;
+                if (data.success) {
+                    toast.style.display = 'block';
+                    toast.style.color = '#16a34a';
+                    toast.textContent = data.message || 'Language updated successfully';
+                    setTimeout(function() { toast.style.display = 'none'; }, 3000);
+                } else {
+                    toast.style.display = 'block';
+                    toast.style.color = '#dc2626';
+                    toast.textContent = data.message || 'Failed to update language';
+                    setTimeout(function() { toast.style.display = 'none'; }, 3000);
+                }
+            } catch (e) {
+                btn.textContent = 'Save';
+                btn.disabled = false;
+                toast.style.display = 'block';
+                toast.style.color = '#dc2626';
+                toast.textContent = 'Network error';
+                setTimeout(function() { toast.style.display = 'none'; }, 3000);
             }
         }
 

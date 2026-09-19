@@ -619,6 +619,8 @@ try:
             print("[OK] Seeded queue counters")
         cursor.execute("INSERT IGNORE INTO system_settings (setting_key, setting_value) VALUES (%s, %s)",
                        ('officer_rating_enabled', '0'))
+        cursor.execute("INSERT IGNORE INTO system_settings (setting_key, setting_value) VALUES (%s, %s)",
+                       ('display_language', 'en'))
         connection.commit()
         print("[OK] Ensured system_settings seeded")
 
@@ -3760,7 +3762,61 @@ def admin_set_system_rating_settings():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
-@app.route('/api/officer/system-rating/status/<int:officer_id>', methods=['GET'])
+# ── LANGUAGE SETTINGS ──
+VALID_LANGUAGES = ('en', 'lg', 'sw')
+LANGUAGE_NAMES = {'en': 'English', 'lg': 'Luganda', 'sw': 'Swahili'}
+
+@app.route('/api/admin/language', methods=['GET'])
+def admin_get_language():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT setting_value FROM system_settings WHERE setting_key = 'display_language'")
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        lang = row['setting_value'] if row else 'en'
+        return jsonify({'success': True, 'language': lang, 'name': LANGUAGE_NAMES.get(lang, 'English')})
+    except Exception as e:
+        logger.error(f"Get language error: {e}")
+        return jsonify({'success': True, 'language': 'en', 'name': 'English'})
+
+@app.route('/api/admin/language', methods=['POST'])
+def admin_set_language():
+    data = request.get_json()
+    lang = (data.get('language') or 'en').lower()
+    if lang not in VALID_LANGUAGES:
+        return jsonify({'success': False, 'message': f'Invalid language. Use: {", ".join(VALID_LANGUAGES)}'}), 400
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            INSERT INTO system_settings (setting_key, setting_value)
+            VALUES ('display_language', %s)
+            ON DUPLICATE KEY UPDATE setting_value = %s
+        """, (lang, lang))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({'success': True, 'language': lang, 'name': LANGUAGE_NAMES.get(lang, 'English'),
+                        'message': f'Language set to {LANGUAGE_NAMES.get(lang, lang)}'})
+    except Exception as e:
+        logger.error(f"Set language error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/public/language', methods=['GET'])
+def public_get_language():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT setting_value FROM system_settings WHERE setting_key = 'display_language'")
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        lang = row['setting_value'] if row else 'en'
+        return jsonify({'success': True, 'language': lang})
+    except Exception as e:
+        return jsonify({'success': True, 'language': 'en'})
 def officer_get_system_rating_status(officer_id):
     try:
         conn = get_db_connection()

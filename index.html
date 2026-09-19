@@ -83,36 +83,39 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink)
 </header>
 <main id="main" class="main">
 <div class="login-card">
-<h1 class="app-title">Smart Queue Management System</h1>
-<p class="app-sub">SMQSS — Enhancing Citizen Service Experience and Service Delivery. Log in to manage queues across all offices.</p>
-<div class="btn-row"><a class="btn-login" href="javascript:void(0)" onclick="goToLogin()"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>Staff Login</a>
-<a class="btn-outline-home" href="javascript:void(0)" onclick="goToWorkflow()"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>View Workflow</a>
-<a class="btn-download-home" href="/api/download/queue-kiosk-index-setup.exe" download><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download Desktop App</a>
+<h1 class="app-title" data-i18n="index_title">Smart Queue Management System</h1>
+<p class="app-sub" data-i18n="index_subtitle">SMQSS — Enhancing Citizen Service Experience and Service Delivery. Log in to manage queues across all offices.</p>
+<div class="btn-row"><a class="btn-login" href="javascript:void(0)" onclick="goToLogin()"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg><span data-i18n="index_staff_login">Staff Login</span></a>
+<a class="btn-outline-home" href="javascript:void(0)" onclick="goToWorkflow()"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><span data-i18n="index_view_workflow">View Workflow</span></a>
+<a class="btn-download-home" href="/api/download/queue-kiosk-index-setup.exe" download><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span data-i18n="index_download_app">Download Desktop App</span></a>
 <a class="btn-electron-web" id="webBtn" href="https://web-production-6fcc0.up.railway.app/" target="_blank"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15l-5-5 1.41-1.41L11 14.17l7.59-7.59L20 8l-9 9z"/></svg>Use Web Interface</a></div>
 </div>
 </main>
 <footer class="footer">
 <div class="footer-inner">
 <p>&copy; 2026 Ogwal Richard. Developed under the supervision of Odongo Steven Eyobu (PhD)</p>
-<button class="admin-link" onclick="openAdminModal()">Admin</button>
+<button class="admin-link" onclick="openAdminModal()" data-i18n="index_admin_panel">Admin</button>
 </div>
 </footer>
 <div class="modal-backdrop" id="adminModal">
 <div class="modal">
 <button class="modal-close" onclick="closeAdminModal()" aria-label="Close">&times;</button>
 <div class="modal-icon"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>
-<h3>Administrator Access</h3>
-<p class="modal-sub">Authorised personnel only. All access attempts are logged.</p>
+<h3 data-i18n="index_admin_sign_in">Administrator Access</h3>
+<p class="modal-sub" data-i18n="index_admin_authorised">Authorised personnel only. All access attempts are logged.</p>
 <div class="modal-err" id="adminError"></div>
 <form id="adminLoginForm" novalidate onsubmit="submitAdminLogin(event)">
-<div class="field"><label for="adminEmail">Email Address</label><input type="email" id="adminEmail" autocomplete="email" placeholder="admin@mia.go.ug" required></div>
-<div class="field"><label for="adminPin">PIN / Password</label><input type="password" id="adminPin" autocomplete="current-password" placeholder="Enter your PIN or password" required></div>
-<button type="submit" class="modal-btn" id="adminSubmitBtn">Sign In to Admin Panel</button>
+<div class="field"><label for="adminEmail" data-i18n="index_admin_email">Email Address</label><input type="email" id="adminEmail" autocomplete="email" placeholder="admin@mia.go.ug" data-i18n-placeholder="index_admin_email_placeholder" required></div>
+<div class="field"><label for="adminPin" data-i18n="index_admin_pin">PIN / Password</label><input type="password" id="adminPin" autocomplete="current-password" placeholder="Enter your PIN or password" data-i18n-placeholder="index_admin_pin_placeholder" required></div>
+<button type="submit" class="modal-btn" id="adminSubmitBtn" data-i18n="index_admin_sign_in_btn">Sign In to Admin Panel</button>
 </form>
 </div>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
+<script src="/static/i18n/i18n.js"></script>
 <script>
+var _t = window.SMSS_i18n && window.SMSS_i18n.t ? window.SMSS_i18n.t : function(k){ return k; };
+if (window.SMSS_i18n && window.SMSS_i18n.initI18n) { window.SMSS_i18n.initI18n({ pollInterval: 30000 }); }
 (function(){try{var _0x2d=500;var _0x4=Function;try{var _0x5=_0x4('return this')()}catch(_){}try{_0x5['console']=undefined}catch(_){}
 var _0x6=[String['fromCharCode'](100,101,98,117,103,103,101,114),'DevTools check'];if(!_0x5||!_0x6[0]||_0x5[_0x6[0]]!==undefined){var _0x9=['log','warn','error','info','debug','dir','table','group','groupCollapsed','groupEnd','time','timeEnd','trace','profile','profileEnd'];for(var _0xa=0;_0xa<_0x9['length'];_0xa++){var _0xb=_0x9[_0xa];if(!_0x5||!_0x5['console']||!_0x5['console'][_0xb]){try{if(!_0x5){var _0x5=window||{};_0x5['console']=_0x5['console']||{}}_0x5['console'][_0xb]=function(){}}catch(_){}}}}
 var _0xc=document;var _0xd=_0xc['createElement']('div');_0xd['id']='__dev__';_0xd['style']['display']='none';try{_0xc['body']['appendChild'](_0xd)}catch(_){}

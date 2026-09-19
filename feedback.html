@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rate Your Service — SMQSS</title>
+<title data-i18n="feedback_title">Rate Your Service — SMQSS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -132,23 +132,23 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink)
 
     <div class="step-content active" id="step0">
       <svg viewBox="0 0 24 24" style="width:48px;height:48px;fill:var(--mak-gold-bright);display:block;margin:0 auto 12px"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-      <h2 style="font-family:'DM Serif Display',serif;font-size:22px;text-align:center;color:var(--mak-green);margin-bottom:4px">Rate Your Service</h2>
-      <p style="text-align:center;font-size:12.5px;color:var(--muted);margin-bottom:28px">Enter the token number from your receipt to share your experience</p>
+      <h2 style="font-family:'DM Serif Display',serif;font-size:22px;text-align:center;color:var(--mak-green);margin-bottom:4px" data-i18n="feedback_rate_your_service">Rate Your Service</h2>
+      <p style="text-align:center;font-size:12.5px;color:var(--muted);margin-bottom:28px" data-i18n="feedback_enter_token">Enter the token number from your receipt to share your experience</p>
       <div class="error-bar" id="errorBar"></div>
       <div class="field">
-        <label for="tokenInput">Your Token Number</label>
-        <input type="text" id="tokenInput" placeholder="e.g. AR15 or REC05" autocomplete="off" style="text-transform:uppercase;letter-spacing:1.5px;font-weight:600;font-family:'JetBrains Mono',monospace">
+        <label for="tokenInput" data-i18n="feedback_your_token">Your Token Number</label>
+        <input type="text" id="tokenInput" placeholder="e.g. AR15 or REC05" autocomplete="off" style="text-transform:uppercase;letter-spacing:1.5px;font-weight:600;font-family:'JetBrains Mono',monospace" data-i18n-placeholder="feedback_token_placeholder">
       </div>
       <div class="btn-row">
-        <button class="btn" id="lookupBtn" onclick="lookupToken()">Look Up My Token →</button>
+        <button class="btn" id="lookupBtn" onclick="lookupToken()" data-i18n="feedback_lookup_btn">Look Up My Token →</button>
       </div>
       <div style="display:flex;align-items:center;gap:12px;margin:18px 0 14px">
         <div style="flex:1;height:1px;background:var(--border)"></div>
-        <span style="font-size:11px;color:var(--muted);font-weight:500;letter-spacing:1px;text-transform:uppercase">or</span>
+        <span style="font-size:11px;color:var(--muted);font-weight:500;letter-spacing:1px;text-transform:uppercase" data-i18n="feedback_or">or</span>
         <div style="flex:1;height:1px;background:var(--border)"></div>
       </div>
       <div class="btn-row">
-        <button class="btn" onclick="openGeneralComplaint()" style="background:var(--white);color:var(--mak-green);border:2px solid var(--mak-green);box-shadow:none;font-weight:600">Submit a Request</button>
+        <button class="btn" onclick="openGeneralComplaint()" style="background:var(--white);color:var(--mak-green);border:2px solid var(--mak-green);box-shadow:none;font-weight:600" data-i18n="feedback_submit_request">Submit a Request</button>
       </div>
     </div>
 
@@ -157,16 +157,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink)
       <div id="ratingSection"></div>
       <div class="btn-row">
         <a class="btn-back" href="/student-token.html">← Back</a>
-        <button class="btn" id="submitBtn" onclick="submitRating()" disabled>Submit Your Ratings</button>
+        <button class="btn" id="submitBtn" onclick="submitRating()" disabled data-i18n="feedback_submit_your_ratings">Submit Your Ratings</button>
       </div>
     </div>
 
     <div class="step-content" id="step2">
       <div class="confirm-icon"><svg viewBox="0 0 24 24"><polyline points="2,12 8,18 22,4" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      <div class="confirm-title">Thank You!</div>
-      <p class="confirm-desc" id="confirmText">Your feedback has been recorded. It helps us improve our service delivery for everyone at SMQSS.</p>
+      <div class="confirm-title" data-i18n="feedback_thank_you">Thank You!</div>
+      <p class="confirm-desc" id="confirmText" data-i18n="feedback_confirm_desc">Your feedback has been recorded. It helps us improve our service delivery for everyone at SMQSS.</p>
       <div class="btn-row" style="margin-top:20px;">
-        <a class="btn-back" href="/student-token.html">← Back to Kiosk</a>
+        <a class="btn-back" href="/student-token.html" data-i18n="feedback_back_to_kiosk">← Back to Kiosk</a>
       </div>
     </div>
 
@@ -176,67 +176,67 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink)
         <div class="ai-avatar">
           <div class="ai-dot"></div>
           <div>
-            <div class="ai-name">Queue Assistant <span>SMQSS</span></div>
+            <div class="ai-name">Queue Assistant <span data-i18n="common_smqss">SMQSS</span></div>
           </div>
         </div>
-        <div class="ai-bubble" id="gcBubble">We value your feedback. Please share your concern and we'll look into it.</div>
+        <div class="ai-bubble" id="gcBubble" data-i18n="feedback_gc_bubble">We value your feedback. Please share your concern and we'll look into it.</div>
       </div>
       <div class="field">
-        <label for="gcCategory">Category</label>
+        <label for="gcCategory" data-i18n="feedback_category">Category</label>
         <select id="gcCategory" onchange="onCategoryChange()" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--surface)">
-          <option value="">— Select —</option>
-          <option value="Student">Person</option>
-          <option value="Staff">Staff</option>
-          <option value="Other">Other</option>
+          <option value="" data-i18n="feedback_select">— Select —</option>
+          <option value="Student" data-i18n="feedback_person">Person</option>
+          <option value="Staff" data-i18n="feedback_staff">Staff</option>
+          <option value="Other" data-i18n="feedback_other">Other</option>
         </select>
       </div>
       <div class="field" id="gcFieldName" style="display:none">
-        <label for="gcName">Full Name</label>
-        <input type="text" id="gcName" placeholder="Your full name">
+        <label for="gcName" data-i18n="feedback_full_name">Full Name</label>
+        <input type="text" id="gcName" placeholder="Your full name" data-i18n-placeholder="feedback_full_name_placeholder">
       </div>
       <div class="field" id="gcFieldStudentNo" style="display:none">
-        <label for="gcStudentNo">ID Number</label>
-        <input type="text" id="gcStudentNo" placeholder="e.g. 2300716574" maxlength="10" inputmode="numeric" pattern="[0-9]*" oninput="validateStudentNumber(this)">
+        <label for="gcStudentNo" data-i18n="feedback_id_number">ID Number</label>
+        <input type="text" id="gcStudentNo" placeholder="e.g. 2300716574" maxlength="10" inputmode="numeric" pattern="[0-9]*" oninput="validateStudentNumber(this)" data-i18n-placeholder="feedback_id_placeholder">
         <div class="num-hint" id="gcNumHint"></div>
       </div>
       <div class="field" id="gcFieldEmpId" style="display:none">
-        <label for="gcEmpId">Employee ID</label>
-        <input type="text" id="gcEmpId" placeholder="e.g. MU/EMP/01234">
+        <label for="gcEmpId" data-i18n="feedback_employee_id">Employee ID</label>
+        <input type="text" id="gcEmpId" placeholder="e.g. MU/EMP/01234" data-i18n-placeholder="feedback_employee_placeholder">
       </div>
       <div class="field" id="gcFieldDept" style="display:none">
-        <label for="gcDept">Department</label>
-        <input type="text" id="gcDept" placeholder="Your department">
+        <label for="gcDept" data-i18n="feedback_department">Department</label>
+        <input type="text" id="gcDept" placeholder="Your department" data-i18n-placeholder="feedback_department_placeholder">
       </div>
       <div class="field" id="gcFieldContact" style="display:none">
-        <label for="gcContact">Contact</label>
-        <input type="text" id="gcContact" placeholder="Email or phone number">
+        <label for="gcContact" data-i18n="feedback_contact">Contact</label>
+        <input type="text" id="gcContact" placeholder="Email or phone number" data-i18n-placeholder="feedback_contact_placeholder">
       </div>
       <div class="field">
-        <label for="gcEmail">Email Address *</label>
-        <input type="email" id="gcEmail" placeholder="e.g. you@example.com">
+        <label for="gcEmail" data-i18n="feedback_email_address">Email Address *</label>
+        <input type="email" id="gcEmail" placeholder="e.g. you@example.com" data-i18n-placeholder="feedback_email_placeholder">
       </div>
       <div class="field">
-        <label for="gcText">Your Request</label>
-        <textarea id="gcText" rows="4" placeholder="Describe your request in detail..."></textarea>
+        <label for="gcText" data-i18n="feedback_your_request">Your Request</label>
+        <textarea id="gcText" rows="4" placeholder="Describe your request in detail..." data-i18n-placeholder="feedback_request_placeholder"></textarea>
       </div>
       <div class="btn-row" style="display:flex;gap:10px;justify-content:center">
         <button class="btn-back" onclick="goToStep('step0', true)">← Back</button>
-        <button class="btn" onclick="submitGeneralComplaint()">Submit Request</button>
+        <button class="btn" onclick="submitGeneralComplaint()" data-i18n="feedback_submit_request_btn">Submit Request</button>
       </div>
     </div>
 
     <div class="step-content" id="step4">
       <div class="confirm-icon"><svg viewBox="0 0 24 24"><polyline points="2,12 8,18 22,4" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      <div class="confirm-title">Request Received</div>
-      <p class="confirm-desc">Your request has been submitted. Our team will review it and follow up. Thank you for helping us improve.</p>
+      <div class="confirm-title" data-i18n="feedback_request_received">Request Received</div>
+      <p class="confirm-desc" data-i18n="feedback_request_received_desc">Your request has been submitted. Our team will review it and follow up. Thank you for helping us improve.</p>
       <div class="btn-row">
-        <button class="btn-back" onclick="window.location.href='/student-token'">← Back to Home</button>
+        <button class="btn-back" onclick="window.location.href='/student-token'" data-i18n="feedback_back_to_home">← Back to Home</button>
       </div>
     </div>
 
     <div class="step-content" id="stepLoading">
       <div class="spinner"></div>
-      <div class="loading-text">Please wait...</div>
+      <div class="loading-text" data-i18n="feedback_please_wait">Please wait...</div>
     </div>
 
   </div>
@@ -245,6 +245,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink)
 <div style="text-align:center;padding:18px 16px;font-size:11.5px;color:var(--muted)">SMQSS &nbsp;&middot;&nbsp; &copy; 2026 Ogwal Richard. Developed under the supervision of Odongo Steven Eyobu (PhD)</div>
 
 <script>
+var _t = window.SMSS_i18n && window.SMSS_i18n.t ? window.SMSS_i18n.t : function(k){ return k; };
+if (window.SMSS_i18n && window.SMSS_i18n.initI18n) { window.SMSS_i18n.initI18n({ pollInterval: 30000 }); }
 const isElectron = navigator.userAgent.toLowerCase().includes('electron');
 const urlParams = new URLSearchParams(window.location.search);
 const fromKiosk = urlParams.get('from');
@@ -575,5 +577,6 @@ async function submitGeneralComplaint(){
     submitBtns.forEach(function(b) { b.disabled = false; b.textContent = 'Submit Request'; });
   }
 }
+<script src="/static/i18n/i18n.js"></script>
 </body>
 </html>

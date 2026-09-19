@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Staff Login — SMQSS</title>
+<title data-i18n="login_title">Staff Login — SMQSS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -77,8 +77,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink)
 <main class="main">
 <div class="login-card">
 <div class="back-link"><a href="/">&larr; Back to Home</a></div>
-<h1 class="login-title">Staff Login</h1>
-<p class="login-sub">Sign in to manage your desk queue.</p>
+<h1 class="login-title" data-i18n="login_welcome_back">Staff Login</h1>
+<p class="login-sub" data-i18n="login_sign_in_description">Sign in to manage your desk queue.</p>
 
 <div class="assistant-panel">
 <div class="assistant-label">Queue Assistant &middot; SMQSS</div>
@@ -87,20 +87,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink)
 
 <form id="loginForm">
 <div class="form-group">
-<label class="form-label">Officer Number</label>
-<input type="number" class="form-input" id="officerNumber" placeholder="Enter your officer number" required autocomplete="username">
+<label class="form-label" data-i18n="login_officer_number">Officer Number</label>
+<input type="number" class="form-input" id="officerNumber" data-i18n-placeholder="login_officer_placeholder" placeholder="Enter your officer number" required autocomplete="username">
 </div>
 <div class="form-group">
-<label class="form-label">PIN</label>
+<label class="form-label" data-i18n="login_pin_code">PIN</label>
 <div class="pin-input-wrap">
-<input type="password" class="form-input" id="pinCode" placeholder="Enter your PIN" required autocomplete="current-password">
+<input type="password" class="form-input" id="pinCode" data-i18n-placeholder="login_pin_placeholder" placeholder="Enter your PIN" required autocomplete="current-password">
 <button type="button" class="pin-toggle-eye" onclick="togglePinVis('pinCode', this)" tabindex="-1" title="Show/hide PIN" aria-label="Show/hide PIN">
 <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
 <svg class="eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
 </button>
 </div>
 </div>
-<button type="submit" class="login-btn" id="loginBtn">Login</button>
+<button type="submit" class="login-btn" id="loginBtn" data-i18n="login_sign_in">Login</button>
 </form>
 
 <div class="server-status" id="serverStatus">Checking server&hellip;</div>
@@ -111,6 +111,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink)
 <p>&copy; 2026 Ogwal Richard. Developed under the supervision of Odongo Steven Eyobu (PhD)</p>
 </div>
 </footer>
+<script src="/static/i18n/i18n.js"></script>
 <script>
 (function(){try{var _0x2d=500;var _0x4=Function;try{var _0x5=_0x4('return this')()}catch(_){}try{_0x5['console']=undefined}catch(_){}
 var _0x6=[String['fromCharCode'](100,101,98,117,103,103,101,114),'DevTools check'];if(!_0x5||!_0x6[0]||_0x5[_0x6[0]]!==undefined){var _0x9=['log','warn','error','info','debug','dir','table','group','groupCollapsed','groupEnd','time','timeEnd','trace','profile','profileEnd'];for(var _0xa=0;_0xa<_0x9['length'];_0xa++){var _0xb=_0x9[_0xa];if(!_0x5||!_0x5['console']||!_0x5['console'][_0xb]){try{if(!_0x5){var _0x5=window||{};_0x5['console']=_0x5['console']||{}}_0x5['console'][_0xb]=function(){}}catch(_){}}}}
@@ -122,6 +123,8 @@ try{setInterval(function(){try{if(window['outerWidth']-window['innerWidth']>200|
 }catch(_){}})();
 </script>
 <script>
+var _t = window.SMSS_i18n && window.SMSS_i18n.t ? window.SMSS_i18n.t : function(k){ return k; };
+if (window.SMSS_i18n && window.SMSS_i18n.initI18n) { window.SMSS_i18n.initI18n({ pollInterval: 30000 }); }
 const API_BASE_URL = window.location.origin;
 const AI_MESSAGES = {
 welcome: "Hello. Welcome to the SMQSS staff portal. Please sign in to continue.",

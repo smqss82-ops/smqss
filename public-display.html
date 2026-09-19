@@ -989,12 +989,12 @@
             </div>
             <div>
                 <div class="uni-name"><span>★</span> SMQSS</div>
-                <div class="uni-sub">Queue Management System</div>
+                <div class="uni-sub" data-i18n="common_queue_management">Queue Management System</div>
             </div>
         </div>
         <div class="header-center">
-            <div class="hc-title">SMQSS</div>
-            <div class="hc-sub">Citizen Service Board</div>
+            <div class="hc-title" data-i18n="common_smqss">SMQSS</div>
+            <div class="hc-sub" data-i18n="common_citizen_service_board">Citizen Service Board</div>
         </div>
         <div class="datetime">
             <div class="datetime-time" id="dtTime">00:00:00</div>
@@ -1007,8 +1007,8 @@
         <div class="active-grid" id="activeGrid" style="display:none;"></div>
         <div class="no-active" id="noActive">
             <div id="noActiveDefault">
-                <div class="no-active-title">No Active Services</div>
-                <div class="no-active-sub">Please take a token from the kiosk</div>
+                <div class="no-active-title" data-i18n="pd_no_active_services">No Active Services</div>
+                <div class="no-active-sub" data-i18n="pd_please_take_token">Please take a token from the kiosk</div>
 
                 <div class="no-active-kiosk">
                     <div class="kiosk-dot"></div>
@@ -1018,15 +1018,15 @@
             <div class="on-duty-section" id="onDutySection" style="display:none;">
                 <div class="on-duty-header">
                     <div class="on-duty-header-dot"></div>
-                    <h1 class="on-duty-title">Service Offices</h1>
+                    <h1 class="on-duty-title" data-i18n="pd_service_offices">Service Offices</h1>
                 </div>
                 <div class="on-duty-grid" id="onDutyGrid"></div>
-                <div class="on-duty-closed" id="onDutyClosed" style="display:none;">All offices are currently closed.</div>
+                <div class="on-duty-closed" id="onDutyClosed" style="display:none;" data-i18n="pd_all_offices_closed">All offices are currently closed.</div>
             </div>
             <div class="student-waiting-section" id="studentWaitingSection" style="display:none;">
                 <div class="on-duty-header">
                     <div class="on-duty-header-dot"></div>
-                    <h1 class="on-duty-title">Waiting Now</h1>
+                    <h1 class="on-duty-title" data-i18n="pd_waiting_now">Waiting Now</h1>
                 </div>
                 <div class="student-waiting-grid" id="studentWaitingGrid"></div>
             </div>
@@ -1097,6 +1097,10 @@
     </div>
 
     <script>
+        var _t = window.SMSS_i18n && window.SMSS_i18n.t ? window.SMSS_i18n.t : function(k){ return k; };
+        if (window.SMSS_i18n && window.SMSS_i18n.initI18n) {
+            window.SMSS_i18n.initI18n({ pollInterval: 30000 });
+        }
         const API_BASE_URL = window.location.origin;
         const queryParams = new URLSearchParams(window.location.search);
         const selectedOfficeId = queryParams.get('office_id');
@@ -1456,10 +1460,11 @@
             }
 
             var html = '';
+            var _t = window.SMSS_i18n && window.SMSS_i18n.t ? window.SMSS_i18n.t : function(k){ return k; };
             if (hasNotices) {
                 var msg = noticesList[idleMessageIndex % noticesList.length];
                 html += '<div class="notice-card">' +
-                    '<div class="notice-label">Notice From: <span class="notice-office-name">' + escapeHtml(msg.office_name || 'Office Notice') + '</span></div>' +
+                    '<div class="notice-label">' + _t('pd_notice_from') + ' <span class="notice-office-name">' + escapeHtml(msg.office_name || _t('pd_office_notice')) + '</span></div>' +
                     '<div class="notice-text">' + escapeHtml(msg.message || '') + '</div>' +
                 '</div>';
             }
@@ -1645,6 +1650,7 @@
                 stopDisplayAdCarousel();
 
                 var html = activeTokens.map(t => {
+                    var _t = window.SMSS_i18n && window.SMSS_i18n.t ? window.SMSS_i18n.t : function(k){ return k; };
                     if (t.type === 'called' && t.tokens && t.tokens.length > 1) {
                         const tokenHtml = t.tokens.map(tk => `<span class="token-number">${escapeHtml(tk.token_number)}</span>`).join('<span class="token-sep">·</span>');
                         const nameHtml = t.tokens.map(tk => tk.student_name).filter(n => n && n.trim()).map(n => escapeHtml(truncateName(n)));
@@ -1653,7 +1659,7 @@
                             <div class="called-card">
                                 <div class="status-badge badge-called">
                                     <span class="badge-dot"></span>
-                                    CALLED — PLEASE PROCEED
+                                    ${_t('pd_called_please_proceed')}
                                 </div>
                                 <div class="batch-token-row">${tokenHtml}</div>
                                 ${namesStr ? `<div class="batch-names">${namesStr}</div>` : ''}
@@ -1669,7 +1675,7 @@
                             <div class="serving-card">
                                 <div class="status-badge badge-serving">
                                     <span class="badge-dot"></span>
-                                    BEING SERVED NOW
+                                    ${_t('pd_being_served_now')}
                                 </div>
                                 <div class="batch-token-row">${tokenHtml}</div>
                                 ${namesStr ? `<div class="batch-names">${namesStr}</div>` : ''}
@@ -1681,7 +1687,7 @@
                         <div class="${t.type}-card">
                             <div class="status-badge badge-${t.type}">
                                 <span class="badge-dot"></span>
-                                ${t.type === 'called' ? 'CALLED — PLEASE PROCEED' : 'BEING SERVED NOW'}
+                                ${t.type === 'called' ? _t('pd_called_please_proceed') : _t('pd_being_served_now')}
                             </div>
                             <div class="token-number">${t.token}</div>
                             ${t.studentName ? `<div class="student-name">${escapeHtml(truncateName(t.studentName))}</div>` : ''}
@@ -1749,23 +1755,24 @@
                         onDutySection.style.display = 'block';
                         onDutyClosed.style.display = anyOpen ? 'none' : 'block';
                         onDutyGrid.innerHTML = queues.map(o => {
+                            var _t = window.SMSS_i18n && window.SMSS_i18n.t ? window.SMSS_i18n.t : function(k){ return k; };
                             const isAvail = (o.availability_status || '').toLowerCase() === 'available';
                             const availClass = isAvail ? '' : 'unavailable';
                             if (isAvail) {
                                 return `<div class="on-duty-card available">
                                     <div class="on-duty-code"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/><path d="M12 14h.01"/></svg></div>
                                     <div class="on-duty-name">${escapeHtml(o.office_name)}</div>
-                                    <div class="on-duty-location">${escapeHtml(o.location || 'Main Office')}</div>
-                                    <div class="on-duty-waiting"><strong>${o.waiting_count || 0}</strong> waiting</div>
-                                    <div class="avail-badge">&#10003; Available</div>
+                                    <div class="on-duty-location">${escapeHtml(o.location || _t('pd_main_office'))}</div>
+                                    <div class="on-duty-waiting"><strong>${o.waiting_count || 0}</strong> ${_t('pd_waiting')}</div>
+                                    <div class="avail-badge">&#10003; ${_t('pd_available')}</div>
                                 </div>`;
                             } else {
                                 return `<div class="on-duty-card unavailable">
                                     <div class="on-duty-code"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/><path d="M12 14h.01"/></svg></div>
                                     <div class="on-duty-name">${escapeHtml(o.office_name)}</div>
-                                    <div class="on-duty-location">${escapeHtml(o.location || 'Main Office')}</div>
-                                    <div class="on-duty-waiting"><strong>${o.waiting_count || 0}</strong> waiting</div>
-                                    <div class="unavail-badge">&#10005; CLOSED</div>
+                                    <div class="on-duty-location">${escapeHtml(o.location || _t('pd_main_office'))}</div>
+                                    <div class="on-duty-waiting"><strong>${o.waiting_count || 0}</strong> ${_t('pd_waiting')}</div>
+                                    <div class="unavail-badge">&#10005; ${_t('pd_closed')}</div>
                                 </div>`;
                             }
                         }).join('');
@@ -1970,5 +1977,6 @@
         </svg>
         <span>SMQSS Back Online<span class="online-dot"></span><span class="online-dot"></span><span class="online-dot"></span></span>
     </div>
+    <script src="/static/i18n/i18n.js"></script>
 </body>
 </html>

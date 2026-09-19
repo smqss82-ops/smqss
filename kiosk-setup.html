@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Kiosk Setup Guide — SMQSS</title>
+<title data-i18n="setup_title">Kiosk Setup Guide — SMQSS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -85,62 +85,62 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink)
 </div>
 </header>
 <main class="main">
-<a class="back-top" href="/"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back to Home</a>
-<h1 class="page-title">Kiosk Display Setup</h1>
-<p class="page-sub">Configure any device to act as an automatic announcement display</p>
+<a class="back-top" href="/"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg><span data-i18n="setup_back_to_home">Back to Home</span></a>
+<h1 class="page-title" data-i18n="setup_page_title">Kiosk Display Setup</h1>
+<p class="page-sub" data-i18n="setup_page_sub">Configure any device to act as an automatic announcement display</p>
 
 <div class="detect-card" id="detectCard">
-<div class="label">Detected Platform</div>
-<div class="value" id="detectedPlatform">Detecting...</div>
+<div class="label" data-i18n="setup_detected_platform">Detected Platform</div>
+<div class="value" id="detectedPlatform" data-i18n="setup_detecting">Detecting...</div>
 </div>
 
 <div class="tabs" id="tabs">
-<button class="tab active" data-tab="windows">Windows</button>
-<button class="tab" data-tab="android">Android</button>
-<button class="tab" data-tab="ios">iPad / iPhone</button>
-<button class="tab" data-tab="linux">Linux / Raspberry Pi</button>
-<button class="tab" data-tab="mac">macOS</button>
+<button class="tab active" data-tab="windows" data-i18n="setup_tab_windows">Windows</button>
+<button class="tab" data-tab="android" data-i18n="setup_tab_android">Android</button>
+<button class="tab" data-tab="ios" data-i18n="setup_tab_ios">iPad / iPhone</button>
+<button class="tab" data-tab="linux" data-i18n="setup_tab_linux">Linux / Raspberry Pi</button>
+<button class="tab" data-tab="mac" data-i18n="setup_tab_mac">macOS</button>
 </div>
 
 <!-- WINDOWS -->
 <div class="tab-content active" id="tab-windows">
 <div class="step step-highlight">
-<div class="step-header"><span class="step-num">&#9733;</span><h3>Electron Kiosk App <span class="badge badge-win">Windows</span></h3></div>
-<p>No Chrome, no flags, no configuration needed. A dedicated kiosk app that runs fullscreen with autoplay built-in. Double-click and it works.</p>
+<div class="step-header"><span class="step-num">&#9733;</span><h3 data-i18n="setup_electron_kiosk">Electron Kiosk App</h3> <span class="badge badge-win">Windows</span></div>
+<p data-i18n="setup_electron_desc">No Chrome, no flags, no configuration needed. A dedicated kiosk app that runs fullscreen with autoplay built-in. Double-click and it works.</p>
 <ol>
-<li><a class="dl-link" href="/download"><svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>Download Installer (78 MB)</a></li>
-<li>Run the downloaded <strong>QueueKiosk-Setup-2.1.0.exe</strong> as Administrator.</li>
-<li>Done! A "Queue Kiosk Display" shortcut appears on the Desktop and auto-starts on next boot.</li>
+<li><a class="dl-link" href="/download"><svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg><span data-i18n="setup_download_installer">Download Installer (78 MB)</span></a></li>
+<li data-i18n="setup_run_admin">Run the downloaded QueueKiosk-Setup-2.1.0.exe as Administrator.</li>
+<li data-i18n="setup_done_shortcut">Done! A "Queue Kiosk Display" shortcut appears on the Desktop and auto-starts on next boot.</li>
 </ol>
-<div class="tip"><strong>Tip:</strong> After setup, configure the kiosk URL by setting the <code>KIOSK_URL</code> environment variable (e.g., <code>http://localhost:5000/public-display.html</code> for local, <code>https://web-production-6fcc0.up.railway.app/public-display.html</code> for production).</div>
+<div class="tip" data-i18n="setup_tip_kiosk_url"><strong>Tip:</strong> After setup, configure the kiosk URL by setting the KIOSK_URL environment variable.</div>
 </div>
 
 <div class="step step-highlight">
-<div class="step-header"><span class="step-num">&#9733;</span><h3>Person Token Kiosk <span class="badge badge-win">Windows</span></h3></div>
-<p>Self-service touchscreen kiosk for generating queue tokens. People select an office, choose a service, and enter their details — no staff assistance needed.</p>
+<div class="step-header"><span class="step-num">&#9733;</span><h3 data-i18n="setup_person_kiosk">Person Token Kiosk</h3> <span class="badge badge-win">Windows</span></div>
+<p data-i18n="setup_person_kiosk_desc">Self-service touchscreen kiosk for generating queue tokens. People select an office, choose a service, and enter their details — no staff assistance needed.</p>
 <ol>
-<li><a class="dl-link dl-link-alt" href="/download"><svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>Download Student Kiosk (78 MB)</a></li>
-<li>Run the downloaded <strong>QueueKiosk-Student-Setup-2.1.0.exe</strong> as Administrator.</li>
-<li>Done! The person token kiosk appears fullscreen on the touchscreen and auto-starts on next boot.</li>
+<li><a class="dl-link dl-link-alt" href="/download"><svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg><span data-i18n="setup_download_student_kiosk">Download Student Kiosk (78 MB)</span></a></li>
+<li data-i18n="setup_run_student_admin">Run the downloaded QueueKiosk-Student-Setup-2.1.0.exe as Administrator.</li>
+<li data-i18n="setup_done_student">Done! The person token kiosk appears fullscreen on the touchscreen and auto-starts on next boot.</li>
 </ol>
-<div class="tip"><strong>Tip:</strong> On a touchscreen device, the OS virtual keyboard appears automatically when people tap the input fields. No additional setup needed.</div>
+<div class="tip" data-i18n="setup_tip_touchscreen"><strong>Tip:</strong> On a touchscreen device, the OS virtual keyboard appears automatically when people tap the input fields.</div>
 </div>
 
 <div class="step">
-<div class="step-header"><span class="step-num">1</span><h3>Install Chrome <span class="badge badge-win">Windows</span></h3></div>
-<p>If using the web version, install Chrome from <a href="https://google.com/chrome" target="_blank">google.com/chrome</a>.</p>
+<div class="step-header"><span class="step-num">1</span><h3 data-i18n="setup_install_chrome">Install Chrome</h3> <span class="badge badge-win">Windows</span></div>
+<p data-i18n="setup_install_chrome_desc">If using the web version, install Chrome from google.com/chrome.</p>
 </div>
 
 <div class="step">
-<div class="step-header"><span class="step-num">2</span><h3>Run the Setup Script</h3></div>
-<p>Run the automated setup script to register Chrome autoplay policy and create a kiosk shortcut:</p>
+<div class="step-header"><span class="step-num">2</span><h3 data-i18n="setup_run_script">Run the Setup Script</h3></div>
+<p data-i18n="setup_run_script_desc">Run the automated setup script to register Chrome autoplay policy and create a kiosk shortcut:</p>
 <div class="cmd" id="winScriptCmd">powershell -Command "iwr -Uri https://YOUR-RAILWAY-URL/setup-kiosk.ps1 -OutFile setup-kiosk.ps1; .\setup-kiosk.ps1"</div>
-<button class="btn-copy" data-copy="winScriptCmd">Copy Command</button>
+<button class="btn-copy" data-copy="winScriptCmd" data-i18n="setup_copy_command">Copy Command</button>
 </div>
 
 <div class="step">
-<div class="step-header"><span class="step-num">3</span><h3>Manual Chrome Setup</h3></div>
-<p>Create a Chrome shortcut with these flags:</p>
+<div class="step-header"><span class="step-num">3</span><h3 data-i18n="setup_manual_chrome">Manual Chrome Setup</h3></div>
+<p data-i18n="setup_manual_chrome_desc">Create a Chrome shortcut with these flags:</p>
 <div class="cmd" id="winCmdManual">
 "C:\Program Files\Google\Chrome\Application\chrome.exe"
   --autoplay-policy=no-user-gesture-required
@@ -148,68 +148,68 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink)
   --no-first-run
   --disable-features=TranslateUI
   https://YOUR-RAILWAY-URL/public-display.html</div>
-<button class="btn-copy" data-copy="winCmdManual">Copy</button>
-<div class="tip">Place this shortcut in <code>shell:startup</code> for auto-launch.</div>
+<button class="btn-copy" data-copy="winCmdManual" data-i18n="setup_copy">Copy</button>
+<div class="tip" data-i18n="setup_tip_startup">Place this shortcut in shell:startup for auto-launch.</div>
 </div>
 </div>
 
 <!-- ANDROID -->
 <div class="tab-content" id="tab-android">
 <div class="step">
-<div class="step-header"><span class="step-num">1</span><h3>Open in Chrome <span class="badge badge-android">Android</span></h3></div>
-<p>Open the display URL in Chrome on your Android device or tablet.</p>
+<div class="step-header"><span class="step-num">1</span><h3 data-i18n="setup_android_step1">Open in Chrome</h3> <span class="badge badge-android">Android</span></div>
+<p data-i18n="setup_android_step1_desc">Open the display URL in Chrome on your Android device or tablet.</p>
 <div class="cmd" id="androidUrl">https://YOUR-RAILWAY-URL/public-display.html</div>
-<button class="btn-copy" data-copy="androidUrl">Copy URL</button>
+<button class="btn-copy" data-copy="androidUrl" data-i18n="setup_copy_url">Copy URL</button>
 </div>
 <div class="step">
-<div class="step-header"><span class="step-num">2</span><h3>Enable Autoplay in Chrome Flags</h3></div>
-<p>In the Chrome address bar, go to:</p>
+<div class="step-header"><span class="step-num">2</span><h3 data-i18n="setup_android_step2">Enable Autoplay in Chrome Flags</h3></div>
+<p data-i18n="setup_android_step2_desc">In the Chrome address bar, go to:</p>
 <div class="cmd">chrome://flags/#autoplay-policy</div>
-<p>Set <strong>"Autoplay policy"</strong> to <strong>"No user gesture is required"</strong>, then tap <strong>Relaunch</strong>.</p>
+<p data-i18n="setup_autoplay_policy">Set "Autoplay policy" to "No user gesture is required", then tap Relaunch.</p>
 </div>
 <div class="step">
-<div class="step-header"><span class="step-num">3</span><h3>Add to Home Screen</h3></div>
-<p>Tap the menu (three dots) &rarr; <strong>Add to Home screen</strong>. This creates a fullscreen app-like icon. Open it and the display will fill the whole screen.</p>
+<div class="step-header"><span class="step-num">3</span><h3 data-i18n="setup_android_step3">Add to Home Screen</h3></div>
+<p data-i18n="setup_android_step3_desc">Tap the menu (three dots) → Add to Home screen. This creates a fullscreen app-like icon.</p>
 </div>
 <div class="step">
-<div class="step-header"><span class="step-num">4</span><h3>Lock Screen Rotation &amp; Stay Awake</h3></div>
-<p>Use any "Stay Awake" or "Kiosk" app from the Play Store to prevent screen timeout. Or enable <strong>Developer options</strong> &rarr; <strong>Stay awake</strong> while charging.</p>
+<div class="step-header"><span class="step-num">4</span><h3 data-i18n="setup_android_step4">Lock Screen Rotation & Stay Awake</h3></div>
+<p data-i18n="setup_android_step4_desc">Use any "Stay Awake" or "Kiosk" app from the Play Store to prevent screen timeout.</p>
 </div>
 </div>
 
 <!-- iOS / iPad -->
 <div class="tab-content" id="tab-ios">
 <div class="step">
-<div class="step-header"><span class="step-num">1</span><h3>Open in Safari <span class="badge badge-ios">iPad / iPhone</span></h3></div>
-<p>Open the display URL in Safari.</p>
+<div class="step-header"><span class="step-num">1</span><h3 data-i18n="setup_ios_step1">Open in Safari</h3> <span class="badge badge-ios">iPad / iPhone</span></div>
+<p data-i18n="setup_ios_step1_desc">Open the display URL in Safari.</p>
 <div class="cmd" id="iosUrl">https://YOUR-RAILWAY-URL/public-display.html</div>
-<button class="btn-copy" data-copy="iosUrl">Copy URL</button>
+<button class="btn-copy" data-copy="iosUrl" data-i18n="setup_copy_url">Copy URL</button>
 </div>
 <div class="step">
-<div class="step-header"><span class="step-num">2</span><h3>Add to Home Screen</h3></div>
-<p>Tap the <strong>Share</strong> button &rarr; <strong>Add to Home Screen</strong>. Name it "Queue Display". This creates a fullscreen web app icon.</p>
+<div class="step-header"><span class="step-num">2</span><h3 data-i18n="setup_ios_step2">Add to Home Screen</h3></div>
+<p data-i18n="setup_ios_step2_desc">Tap the Share button → Add to Home Screen. Name it "Queue Display".</p>
 </div>
 <div class="step">
-<div class="step-header"><span class="step-num">3</span><h3>Enable Guided Access</h3></div>
-<p>Go to <strong>Settings</strong> &rarr; <strong>Accessibility</strong> &rarr; <strong>Guided Access</strong> &rarr; turn it on. Set a passcode. Then triple-click the side button to lock the iPad to one app and prevent accidental exit.</p>
+<div class="step-header"><span class="step-num">3</span><h3 data-i18n="setup_ios_step3">Enable Guided Access</h3></div>
+<p data-i18n="setup_ios_step3_desc">Go to Settings → Accessibility → Guided Access → turn it on.</p>
 </div>
 <div class="step">
-<div class="step-header"><span class="step-num">4</span><h3>Disable Auto-Lock</h3></div>
-<p>Go to <strong>Settings</strong> &rarr; <strong>Display & Brightness</strong> &rarr; <strong>Auto-Lock</strong> &rarr; <strong>Never</strong>.</p>
+<div class="step-header"><span class="step-num">4</span><h3 data-i18n="setup_ios_step4">Disable Auto-Lock</h3></div>
+<p data-i18n="setup_ios_step4_desc">Go to Settings → Display & Brightness → Auto-Lock → Never.</p>
 </div>
 </div>
 
 <!-- LINUX / RASPBERRY PI -->
 <div class="tab-content" id="tab-linux">
 <div class="step">
-<div class="step-header"><span class="step-num">1</span><h3>Install Chromium <span class="badge badge-linux">Linux</span></h3></div>
-<p>Install Chromium browser if not already installed:</p>
+<div class="step-header"><span class="step-num">1</span><h3 data-i18n="setup_linux_step1">Install Chromium</h3> <span class="badge badge-linux">Linux</span></div>
+<p data-i18n="setup_linux_step1_desc">Install Chromium browser if not already installed:</p>
 <div class="cmd" id="linuxInstall">sudo apt update && sudo apt install -y chromium-browser unclutter</div>
-<button class="btn-copy" data-copy="linuxInstall">Copy</button>
+<button class="btn-copy" data-copy="linuxInstall" data-i18n="setup_copy">Copy</button>
 </div>
 <div class="step">
-<div class="step-header"><span class="step-num">2</span><h3>Create Autostart Entry</h3></div>
-<p>Create a desktop autostart file that launches Chromium in kiosk mode:</p>
+<div class="step-header"><span class="step-num">2</span><h3 data-i18n="setup_linux_step2">Create Autostart Entry</h3></div>
+<p data-i18n="setup_linux_step2_desc">Create a desktop autostart file that launches Chromium in kiosk mode:</p>
 <div class="cmd" id="linuxCmd">
 mkdir -p ~/.config/autostart
 cat > ~/.config/autostart/queue-display.desktop << 'EOF'
@@ -219,31 +219,31 @@ Name=Queue Display
 Exec=chromium-browser --noerrdialogs --disable-infobars --kiosk --autoplay-policy=no-user-gesture-required https://YOUR-RAILWAY-URL/public-display.html
 X-GNOME-Autostart-enabled=true
 EOF</div>
-<button class="btn-copy" data-copy="linuxCmd">Copy</button>
-<div class="tip">On Raspberry Pi OS, the display will launch automatically on next boot. <code>unclutter</code> hides the mouse cursor.</div>
+<button class="btn-copy" data-copy="linuxCmd" data-i18n="setup_copy">Copy</button>
+<div class="tip" data-i18n="setup_tip_raspberry">On Raspberry Pi OS, the display will launch automatically on next boot.</div>
 </div>
 </div>
 
 <!-- macOS -->
 <div class="tab-content" id="tab-mac">
 <div class="step">
-<div class="step-header"><span class="step-num">1</span><h3>Install Chrome <span class="badge badge-mac">macOS</span></h3></div>
-<p>Ensure Chrome is installed. Download from <a href="https://google.com/chrome" target="_blank">google.com/chrome</a>.</p>
+<div class="step-header"><span class="step-num">1</span><h3 data-i18n="setup_mac_step1">Install Chrome</h3> <span class="badge badge-mac">macOS</span></div>
+<p data-i18n="setup_mac_step1_desc">Ensure Chrome is installed. Download from google.com/chrome.</p>
 </div>
 <div class="step">
-<div class="step-header"><span class="step-num">2</span><h3>Create Kiosk App with Automator</h3></div>
-<p>Open <strong>Automator</strong> &rarr; New &rarr; Application. Add "Run Shell Script" and paste:</p>
+<div class="step-header"><span class="step-num">2</span><h3 data-i18n="setup_mac_step2">Create Kiosk App with Automator</h3></div>
+<p data-i18n="setup_mac_step2_desc">Open Automator → New → Application. Add "Run Shell Script" and paste:</p>
 <div class="cmd" id="macCmd">
 open -a "Google Chrome" \
   --args --autoplay-policy=no-user-gesture-required \
   --kiosk --disable-features=TranslateUI \
   https://YOUR-RAILWAY-URL/public-display.html</div>
-<button class="btn-copy" data-copy="macCmd">Copy</button>
-<div class="tip">Save the Automator app, then add it to <strong>System Settings &rarr; General &rarr; Login Items</strong>.</div>
+<button class="btn-copy" data-copy="macCmd" data-i18n="setup_copy">Copy</button>
+<div class="tip" data-i18n="setup_tip_login_items">Save the Automator app, then add it to System Settings → General → Login Items.</div>
 </div>
 <div class="step">
-<div class="step-header"><span class="step-num">3</span><h3>Prevent Sleep</h3></div>
-<p>Go to <strong>System Settings &rarr; Energy Saver</strong> and set the display to never sleep.</p>
+<div class="step-header"><span class="step-num">3</span><h3 data-i18n="setup_mac_step3">Prevent Sleep</h3></div>
+<p data-i18n="setup_mac_step3_desc">Go to System Settings → Energy Saver and set the display to never sleep.</p>
 </div>
 </div>
 
@@ -254,6 +254,8 @@ open -a "Google Chrome" \
 </main>
 
 <script>
+var _t = window.SMSS_i18n && window.SMSS_i18n.t ? window.SMSS_i18n.t : function(k){ return k; };
+if (window.SMSS_i18n && window.SMSS_i18n.initI18n) { window.SMSS_i18n.initI18n({ pollInterval: 30000 }); }
 function liveClock() {
 try { var d = new Date(); var t = d.toLocaleTimeString('en-UG', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).replace(/^0/, ''); var dt = d.toLocaleDateString('en-UG', { year: 'numeric', month: 'long', day: 'numeric' }); document.getElementById('liveDateTime').textContent = dt + ' | ' + t + ' EAT'; } catch(e) {}
 }
@@ -310,5 +312,6 @@ document.getElementById('winScriptCmd').textContent.replace(/https:\/\/YOUR-RAIL
 try { liveClock(); setInterval(liveClock, 1000); } catch(e) {}
 detectPlatform();
 </script>
+<script src="/static/i18n/i18n.js"></script>
 </body>
 </html>

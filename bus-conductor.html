@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Bus Conductor — SMQSS</title>
+<title data-i18n="buscon_title">Bus Conductor — SMQSS</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -167,9 +167,9 @@ body{
   <div class="header-inner">
     <div class="header-brand">
       <svg viewBox="0 0 24 24"><path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/></svg>
-      <div class="header-title">SMQSS <span>Bus</span></div>
+      <div class="header-title" data-i18n="common_smqss">SMQSS <span data-i18n="buscon_header_bus">Bus</span></div>
     </div>
-    <div class="header-status">Connected</div>
+    <div class="header-status" data-i18n="buscon_connected">Connected</div>
   </div>
 </header>
 
@@ -178,26 +178,26 @@ body{
   <!-- SCREEN 1: PICK COMPANY -->
   <div class="screen active" id="screen1">
     <div class="screen-inner">
-      <div class="screen-title">Your Companies</div>
+      <div class="screen-title" data-i18n="buscon_your_companies">Your Companies</div>
       <div class="card-grid" id="companyGrid"></div>
-      <button class="btn btn-primary" onclick="loadAds();showScreen('screen5')" style="margin-top:12px;background:#d4aa00">Manage TV Ads</button>
+      <button class="btn btn-primary" onclick="loadAds();showScreen('screen5')" style="margin-top:12px;background:#d4aa00" data-i18n="buscon_manage_tv_ads">Manage TV Ads</button>
     </div>
   </div>
 
   <!-- SCREEN 2: PICK ROUTE -->
   <div class="screen" id="screen2">
     <div class="screen-inner">
-      <button class="screen-back" onclick="showScreen('screen1')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back</button>
-      <div class="screen-title" id="screen2Title">Routes</div>
+      <button class="screen-back" onclick="showScreen('screen1')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg><span data-i18n="buscon_back">Back</span></button>
+      <div class="screen-title" id="screen2Title" data-i18n="buscon_routes">Routes</div>
       <div id="routeList" style="display:flex;flex-direction:column;gap:8px"></div>
       <div id="addRouteForm" style="margin-top:12px;display:none">
-        <div class="screen-title">Add New Route</div>
-        <input type="text" id="newRouteName" placeholder="Route name" style="width:100%;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit;margin-bottom:8px">
+        <div class="screen-title" data-i18n="buscon_add_new_route">Add New Route</div>
+        <input type="text" id="newRouteName" data-i18n-placeholder="buscon_route_name_placeholder" placeholder="Route name" style="width:100%;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit;margin-bottom:8px">
         <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-          <input type="text" id="newRouteOrigin" placeholder="Origin (optional)" style="flex:1 1 140px;min-width:0;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit">
-          <input type="text" id="newRouteDest" placeholder="Destination (optional)" style="flex:1 1 140px;min-width:0;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit">
+          <input type="text" id="newRouteOrigin" data-i18n-placeholder="buscon_origin_placeholder" placeholder="Origin (optional)" style="flex:1 1 140px;min-width:0;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit">
+          <input type="text" id="newRouteDest" data-i18n-placeholder="buscon_dest_placeholder" placeholder="Destination (optional)" style="flex:1 1 140px;min-width:0;padding:12px;border:1.5px solid #e2e0da;border-radius:10px;font-size:16px;font-family:inherit">
         </div>
-        <button class="btn btn-primary" onclick="addRoute(this)" style="width:100%">+ Add Route</button>
+        <button class="btn btn-primary" onclick="addRoute(this)" style="width:100%" data-i18n="buscon_add_route">+ Add Route</button>
       </div>
     </div>
   </div>
@@ -205,23 +205,23 @@ body{
   <!-- SCREEN 3: ADD STOPS -->
   <div class="screen" id="screen3">
     <div class="screen-inner">
-      <button class="screen-back" onclick="showScreen('screen2')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back</button>
-      <div class="screen-title" id="screen3Title">Stop Points</div>
+      <button class="screen-back" onclick="showScreen('screen2')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg><span data-i18n="buscon_back">Back</span></button>
+      <div class="screen-title" id="screen3Title" data-i18n="buscon_stop_points">Stop Points</div>
       <div class="stop-list" id="stopList"></div>
 
       <div class="stop-controls">
         <div class="add-stop-row">
-          <input type="text" id="newStopName" placeholder="Type stop name..." onkeydown="if(event.key==='Enter')addStop()">
-          <button class="add-stop-btn" id="addStopBtn" onclick="addStop()">+ Add</button>
+          <input type="text" id="newStopName" data-i18n-placeholder="buscon_stop_placeholder" placeholder="Type stop name..." onkeydown="if(event.key==='Enter')addStop()">
+          <button class="add-stop-btn" id="addStopBtn" onclick="addStop()" data-i18n="buscon_add_stop">+ Add</button>
         </div>
         <div class="toggle-row">
-          <span class="toggle-label">Rest Break Point</span>
+          <span class="toggle-label" data-i18n="buscon_rest_break_point">Rest Break Point</span>
           <label class="toggle"><input type="checkbox" id="newStopBreak"><span class="toggle-slider"></span></label>
         </div>
       </div>
 
       <div class="start-trip-section">
-        <button class="btn btn-primary" id="startBtn" onclick="startTrip(this)">Start Trip</button>
+        <button class="btn btn-primary" id="startBtn" onclick="startTrip(this)" data-i18n="buscon_start_trip">Start Trip</button>
       </div>
     </div>
   </div>
@@ -229,25 +229,25 @@ body{
   <!-- SCREEN 4: ANNOUNCE -->
   <div class="screen" id="screen4">
     <div class="screen-inner">
-      <button class="screen-back" onclick="endTrip(this)"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>End Trip</button>
+      <button class="screen-back" onclick="endTrip(this)"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg><span data-i18n="buscon_end_trip">End Trip</span></button>
       <div class="trip-banner">
         <div class="trip-company" id="tripCompany"></div>
         <div class="trip-route" id="tripRoute"></div>
       </div>
       <div style="padding:10px 14px;background:#fff;border-radius:12px;border:1.5px solid #e2e0da;display:flex;flex-direction:column;gap:10px">
         <div>
-          <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Announcement Language</div>
+          <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px" data-i18n="buscon_announcement_language">Announcement Language</div>
           <div class="lang-row">
-            <button class="lang-btn active" onclick="setLanguage('','English',this)">English</button>
-            <button class="lang-btn" onclick="setLanguage('sw-KE-ZuriNeural','Swahili',this)">Swahili</button>
-            <button class="lang-btn" onclick="setLanguage('en-KE-AsiliaNeural','Luganda',this)">Luganda</button>
+            <button class="lang-btn active" onclick="setLanguage('','English',this)" data-i18n="buscon_english">English</button>
+            <button class="lang-btn" onclick="setLanguage('sw-KE-ZuriNeural','Swahili',this)" data-i18n="buscon_swahili">Swahili</button>
+            <button class="lang-btn" onclick="setLanguage('en-KE-AsiliaNeural','Luganda',this)" data-i18n="buscon_luganda">Luganda</button>
           </div>
         </div>
         <div>
-          <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Custom Announcement</div>
+          <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px" data-i18n="buscon_custom_announcement">Custom Announcement</div>
           <div class="custom-announce-row">
-            <input type="text" id="customMsg" placeholder="Type a message to announce..." onkeydown="if(event.key==='Enter')sendCustomAnnouncement()">
-            <button onclick="sendCustomAnnouncement(this)">📢 Send</button>
+            <input type="text" id="customMsg" data-i18n-placeholder="buscon_custom_placeholder" placeholder="Type a message to announce..." onkeydown="if(event.key==='Enter')sendCustomAnnouncement()">
+            <button onclick="sendCustomAnnouncement(this)" data-i18n="buscon_send">📢 Send</button>
           </div>
         </div>
       </div>
@@ -258,8 +258,8 @@ body{
   <!-- SCREEN 5: MANAGE ADS -->
   <div class="screen" id="screen5">
     <div class="screen-inner">
-      <button class="screen-back" onclick="showScreen('screen1')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back</button>
-      <div class="screen-title">Manage TV Ads</div>
+      <button class="screen-back" onclick="showScreen('screen1')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg><span data-i18n="buscon_back">Back</span></button>
+      <div class="screen-title" data-i18n="buscon_manage_tv_ads">Manage TV Ads</div>
       <div class="screen-title" style="font-size:12px;color:#9ca3af;text-transform:none;letter-spacing:0;margin-bottom:8px">These images show on the TV screen when no trip is active.</div>
       <div id="adGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
       <div style="margin-top:12px">
@@ -273,7 +273,10 @@ body{
 
 <div class="toast" id="toast"></div>
 
+<script src="/static/i18n/i18n.js"></script>
 <script>
+var _t = window.SMSS_i18n && window.SMSS_i18n.t ? window.SMSS_i18n.t : function(k){ return k; };
+if (window.SMSS_i18n && window.SMSS_i18n.initI18n) { window.SMSS_i18n.initI18n({ pollInterval: 30000 }); }
 const API = window.location.origin;
 let companies = [], routes = [], stops = [];
 let selectedCompanyId = null, selectedRouteId = null;
