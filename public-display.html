@@ -850,6 +850,15 @@
                 min-height: 0;
                 max-height: 50vh;
             }
+            .no-active.has-ads .student-waiting-section {
+                flex: 1 1 auto;
+                max-width: none;
+                width: 100%;
+                text-align: center;
+                overflow-y: auto;
+                min-height: 0;
+                max-height: 50vh;
+            }
             .no-active.has-ads .on-duty-header {
                 justify-content: center;
             }
@@ -877,6 +886,12 @@
                 overflow-y: auto;
                 min-height: 0;
             }
+            .no-active.has-ads .student-waiting-section {
+                flex: 1 1 0;
+                max-width: 340px;
+                overflow-y: auto;
+                min-height: 0;
+            }
             .no-active.has-ads .on-duty-grid {
                 grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             }
@@ -890,6 +905,7 @@
         @media (min-width: 1400px) {
             .no-active.has-ads { gap: 32px; padding: 0 32px; }
             .no-active.has-ads .on-duty-section { flex: 0 0 clamp(380px, 28vw, 500px); max-width: 500px; }
+            .no-active.has-ads .student-waiting-section { flex: 0 0 clamp(380px, 28vw, 500px); max-width: 500px; }
             .no-active.has-ads .on-duty-grid { gap: 10px; }
             .no-active.has-ads .on-duty-card { padding: 14px 16px; border-radius: 10px; }
             .no-active.has-ads .on-duty-code { width: 30px; height: 30px; }
@@ -898,6 +914,10 @@
             .no-active.has-ads .on-duty-location { font-size: 11px; margin-bottom: 6px; }
             .no-active.has-ads .on-duty-waiting { font-size: 12px; }
             .no-active.has-ads .on-duty-header { margin-bottom: 14px; }
+            .no-active.has-ads .student-waiting-section .student-waiting-grid { gap: 8px; }
+            .no-active.has-ads .student-waiting-section .student-waiting-card { padding: 10px 12px; }
+            .no-active.has-ads .student-waiting-section .swc-token { font-size: 18px; min-width: 40px; }
+            .no-active.has-ads .student-waiting-section .swc-name { font-size: 13px; }
             .ad-panel { max-width: none; }
             .ad-carousel-dot { width: 12px; height: 12px; }
             .ad-carousel-dots { gap: 12px; bottom: 20px; }
@@ -1518,7 +1538,9 @@
             noActive.classList.add('has-ads');
             panel.style.display = 'block';
             var onDutyEl = document.getElementById('onDutySection');
-            if (!onDutyEl || onDutyEl.style.display === 'none') {
+            var studentEl = document.getElementById('studentWaitingSection');
+            var leftPanelVisible = (onDutyEl && onDutyEl.style.display !== 'none') || (studentEl && studentEl.style.display !== 'none');
+            if (!leftPanelVisible) {
                 panel.style.maxWidth = '100%';
             } else {
                 panel.style.maxWidth = '';
@@ -1747,6 +1769,10 @@
                                 </div>`;
                             }
                         }).join('');
+                    }
+                    var adPanel = document.getElementById('adPanel');
+                    if (adPanel && hasAds) {
+                        adPanel.style.maxWidth = '';
                     }
                 } else {
                     noActiveDefault.style.display = 'block';
