@@ -108,12 +108,22 @@
 
     function initI18n(opts) {
         opts = opts || {};
-        var lang = opts.language || 'en';
-        return setLanguage(lang).then(function() {
-            if (opts.poll !== false) {
-                startPolling(opts.pollInterval || 30000);
-            }
-        });
+        var defaultLang = opts.language || 'en';
+
+        return fetch(_API_BASE + '/api/public/language')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var lang = (data.success && data.language) ? data.language : defaultLang;
+                return setLanguage(lang);
+            })
+            .catch(function() {
+                return setLanguage(defaultLang);
+            })
+            .then(function() {
+                if (opts.poll !== false) {
+                    startPolling(opts.pollInterval || 30000);
+                }
+            });
     }
 
     window.SMSS_i18n = {
