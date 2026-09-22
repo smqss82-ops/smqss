@@ -549,6 +549,11 @@ body.keyboard-open .header,body.input-mode .header{display:none!important;}
           <label class="form-label" id="nameLabel" data-i18n="kiosk_full_name">Full Name *</label>
           <input type="text" class="form-input" id="studentName" placeholder="e.g. Nakato Sarah" autocomplete="off">
         </div>
+        <div class="form-group" id="emailFieldWrap" style="display:none;">
+          <label class="form-label" id="emailLabel">Email Address *</label>
+          <input type="email" class="form-input" id="studentEmail" placeholder="e.g. you@example.com" autocomplete="email">
+          <div class="num-hint">We will email your rating link here.</div>
+        </div>
         <div class="form-group" id="studentNumFieldWrap" style="display:none;">
           <label class="form-label" id="studentNumLabel" data-i18n="kiosk_id_number">ID Number *</label>
           <input type="text" class="form-input" id="studentNumber" placeholder="e.g. 2300716574" autocomplete="off" maxlength="10" inputmode="numeric" pattern="[0-9]*" oninput="validateStudentNumber(this)">
@@ -847,8 +852,8 @@ function goToStep(step){
 
     const isPs = selectedService.code && selectedService.code.toUpperCase() === 'PS';
     var msg = isPs
-      ? "Almost there! You've chosen "+selectedService.name+" at "+selectedOffice.name+". Since you're a parent, please enter your full name and phone number."
-      : "Almost there! You've chosen "+selectedService.name+" at "+selectedOffice.name+". Just one last thing what's your full name and ID number?";
+      ? "Almost there! You've chosen "+selectedService.name+" at "+selectedOffice.name+". Since you're a parent, please enter your full name, phone number and email."
+      : "Almost there! You've chosen "+selectedService.name+" at "+selectedOffice.name+". Just one last thing what's your full name, ID number and email?";
 
     typeMessage('aiBubble3', msg, function(){
       document.getElementById('step3DisplayBtns').style.display='flex';
@@ -867,6 +872,7 @@ function showStep3Inputs(){
   nameTitle.textContent = isPs ? 'Parent Details' : 'Enter Your Details';
   document.getElementById('nameLabel').textContent = isPs ? 'Your Name *' : 'Full Name *';
   document.getElementById('nameFieldWrap').style.display='block';
+  document.getElementById('emailFieldWrap').style.display='block';
   document.getElementById('step3Btns').style.display='flex';
   document.getElementById('getTokenBtn').disabled=false;
 
@@ -910,6 +916,9 @@ function updateStepIndicator(active){
 async function generateToken(){
   const name = document.getElementById('studentName').value.trim();
   if(!name){ showError('Please enter your full name.'); document.getElementById('studentName').focus(); return; }
+
+  const email = document.getElementById('studentEmail').value.trim().toLowerCase();
+  if(!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ showError('Please enter a valid email address. We will send your rating link here.'); document.getElementById('studentEmail').focus(); return; }
 
   const isPs = selectedService.code && selectedService.code.toUpperCase() === 'PS';
   var studentNumber, parentPhone;
@@ -955,14 +964,14 @@ async function generateToken(){
       setTimeout(function(){
         tempPanel.remove();
         loadingOverlay.style.display='block';
-        doApiCall(name, studentNumber, parentPhone);
+        doApiCall(name, studentNumber, parentPhone, email);
       }, 800);
     },
     0
   );
 }
 
-async function doApiCall(name, studentNumber, parentPhone){
+async function doApiCall(name, studentNumber, parentPhone, email){
   const loadingOverlay=document.getElementById('loadingOverlay');
   const isPs = selectedService.code && selectedService.code.toUpperCase() === 'PS';
   const payload = {
@@ -971,7 +980,8 @@ async function doApiCall(name, studentNumber, parentPhone){
     service_code: selectedService.code,
     student_name: name,
     student_id: studentNumber,
-    student_phone: null
+    student_phone: null,
+    student_email: email || document.getElementById('studentEmail').value.trim().toLowerCase()
   };
   if (isPs) {
     payload.parent_name = name;
@@ -1014,7 +1024,7 @@ async function doApiCall(name, studentNumber, parentPhone){
           '</div>'+
           '<div class="mandatory-notice">'+
             '<span class="mandatory-icon">&#9888;</span>'+
-            '<span>Kindly rate this service after your visit. You will not be able to request a new token until this service has been rated.</span>'+
+            '<span>We have emailed your rating link. Kindly rate this service after your visit at the sent link so you can be served faster next time.</span>'+
           '</div>'+
           '<div class="token-notice" data-i18n="token_receipt_footer">Please remain nearby and listen for your token number to be called.</div>'+
           '<div class="token-actions">'+

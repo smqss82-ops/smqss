@@ -9,6 +9,7 @@ import secrets
 import os
 import re
 import smtplib
+import threading
 from email.message import EmailMessage
 import traceback
 import asyncio
@@ -24,6 +25,56 @@ logger = logging.getLogger(__name__)
 # ── EMAIL (Brevo) ──
 BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '')
 EMAIL_FROM = os.environ.get('EMAIL_FROM', 'SMQSS <smqss82@gmail.com>')
+PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', '').rstrip('/')
+
+def _normalize_email(email):
+    return (email or '').strip().lower()
+
+def _valid_email(email):
+    return re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email or '') is not None
+
+def _mask_email(email):
+    """j•••@g•••.com style mask for API responses."""
+    try:
+        local, domain = (email or '').split('@')
+        if not local or not domain:
+            return '•••'
+        dname, _, dext = domain.partition('.')
+        return f"{local[0]}•••@{dname[0]}•••.{dext}" if dext else f"{local[0]}•••@{dname[0]}•••"
+    except Exception:
+        return '•••'
+
+def _send_rating_email_async(to_email, name, token_number, office_name, rating_url):
+    """Fire-and-forget rating email. Never raises; logs only."""
+    def _run():
+        try:
+            subject = f"Your SMQSS token {token_number} — please rate your service"
+            body = (
+                f"Hello {name},\n\n"
+                f"Your queue token {token_number} at {office_name} has been generated.\n\n"
+                f"After your visit, please rate the service here:\n{rating_url}\n\n"
+                f"Please rate your service at this link so you can be served faster next time you visit. Thank you!\n\n"
+                f"— SMQSS"
+            )
+            html_body = (
+                f"<p>Hello {escape(name)},</p>"
+                f"<p>Your queue token <strong>{escape(token_number)}</strong> at {escape(office_name)} has been generated.</p>"
+                f"<p>After your visit, please rate the service here:<br>"
+                f"<a href=\"{escape(rating_url)}\">{escape(rating_url)}</a></p>"
+                f"<p>Please rate your service at this link so you can be served faster next time you visit. Thank you!</p>"
+                f"<p>— SMQSS</p>"
+            )
+            ok, err = send_email_via_brevo(to_email, subject, body, html_body)
+            if ok:
+                logger.info(f"Rating email sent to {to_email} for token {token_number}")
+            else:
+                logger.warning(f"Rating email failed for token {token_number}: {err}")
+        except Exception as e:
+            logger.warning(f"Rating email exception for token {token_number}: {e}")
+    try:
+        threading.Thread(target=_run, daemon=True).start()
+    except Exception as e:
+        logger.warning(f"Could not start rating email thread: {e}")
 # ── AI ──
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
 GROQ_MODEL = os.environ.get('GROQ_MODEL', 'openai/gpt-oss-120b')
@@ -541,6 +592,22 @@ try:
             cursor.execute("ALTER TABLE university_tokens ADD COLUMN served_count_excluded TINYINT(1) DEFAULT 0 AFTER feedback_submitted_at")
             connection.commit()
             print("[OK] served_count_excluded column added to university_tokens")
+
+        cursor.execute("SHOW COLUMNS FROM university_tokens LIKE 'student_email'")
+        if not cursor.fetchone():
+            print("[WARN] university_tokens table missing student_email column! Adding...")
+            cursor.execute("ALTER TABLE university_tokens ADD COLUMN student_email VARCHAR(120) DEFAULT NULL AFTER student_phone")
+            connection.commit()
+            print("[OK] student_email column added to university_tokens")
+
+        cursor.execute("SHOW INDEX FROM university_tokens WHERE Key_name = 'idx_tokens_email'")
+        if not cursor.fetchone():
+            try:
+                cursor.execute("CREATE INDEX idx_tokens_email ON university_tokens(student_email)")
+                connection.commit()
+                print("[OK] Created index idx_tokens_email")
+            except Exception as ie:
+                print(f"[WARN] Could not create idx_tokens_email: {ie}")
 
         # ── BUS TRIP STATE: pending_stop_id for two-stage announce/proceed ──
         cursor.execute("SHOW COLUMNS FROM bus_trip_state LIKE 'pending_stop_id'")
@@ -1771,6 +1838,7 @@ def generate_student_token():
     student_name = data.get('student_name')
     student_id = data.get('student_id')
     student_phone = data.get('student_phone')
+    student_email = _normalize_email(data.get('student_email'))
     parent_name = data.get('parent_name')
     parent_phone = data.get('parent_phone')
 
@@ -1817,6 +1885,13 @@ def generate_student_token():
             return jsonify({
                 'success': False,
                 'message': 'No officers available for this office right now'
+            }), 400
+
+        # ── Email is mandatory for every service (rating identity) ──
+        if not student_email or not _valid_email(student_email):
+            return jsonify({
+                'success': False,
+                'message': 'A valid email address is required so we can send your rating link.'
             }), 400
 
         # ── OLD BEHAVIOR (rollback point): block students with unrated previous token ──
@@ -1874,10 +1949,10 @@ def generate_student_token():
         cursor.execute("""
             INSERT INTO university_tokens
                 (token_number, token_date, office_id, service_id, service_code,
-                 student_name, student_id, student_phone,
+                 student_name, student_id, student_phone, student_email,
                  parent_name, parent_phone, is_priority,
                  status, queue_position, estimated_wait_minutes, source, requested_at)
-            VALUES (%s, CURDATE(), %s, %s, %s, %s, %s, %s,
+            VALUES (%s, CURDATE(), %s, %s, %s, %s, %s, %s, %s,
                     %s, %s, %s,
                     'waiting', %s, %s, 'kiosk', NOW())
         """, (
@@ -1888,6 +1963,7 @@ def generate_student_token():
             student_name,
             student_id,
             student_phone,
+            student_email,
             parent_name,
             parent_phone,
             is_priority,
@@ -1896,6 +1972,15 @@ def generate_student_token():
         ))
 
         conn.commit()
+
+        # ── Auto-email the rating link (never blocks token issuance) ──
+        try:
+            base = PUBLIC_BASE_URL or request.host_url.rstrip('/')
+            rating_url = f"{base}/r/{token_number}"
+            _send_rating_email_async(student_email, student_name or 'there',
+                                     token_number, office['office_name'], rating_url)
+        except Exception as me:
+            logger.warning(f"Rating email trigger failed for {token_number}: {me}")
 
         return jsonify({
             'success': True,
@@ -1939,7 +2024,7 @@ def get_token_info():
     try:
         cursor.execute("""
             SELECT t.token_number, t.student_name, t.status, t.rating,
-                   t.feedback_submitted_at, t.completed_at,
+                   t.feedback_submitted_at, t.completed_at, t.student_email,
                    off.office_name, off.office_code,
                    s.service_name
             FROM university_tokens t
@@ -1965,7 +2050,9 @@ def get_token_info():
                 'service_name': token['service_name'],
                 'completed_at': token['completed_at'].isoformat() if isinstance(token.get('completed_at'), datetime) else token.get('completed_at'),
                 'rating': token.get('rating'),
-                'feedback_submitted': token.get('feedback_submitted_at') is not None
+                'feedback_submitted': token.get('feedback_submitted_at') is not None,
+                'requires_email': True,
+                'email_hint': _mask_email(token.get('student_email'))
             }
         })
 
@@ -1997,16 +2084,20 @@ def submit_feedback():
     token_number = data.get('token_number')
     rating = data.get('rating')
     feedback_text = data.get('feedback_text', '').strip()
+    email = _normalize_email(data.get('email'))
 
     if not token_number:
         return jsonify({'success': False, 'message': 'Token number is required'}), 400
+
+    if not email or not _valid_email(email):
+        return jsonify({'success': False, 'message': 'Email address is required to confirm your rating.'}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
     try:
         cursor.execute("""
-            SELECT id, office_id, status, rating, feedback_submitted_at
+            SELECT id, office_id, status, rating, feedback_submitted_at, student_email
             FROM university_tokens
             WHERE token_number = %s
             ORDER BY requested_at DESC
@@ -2016,6 +2107,11 @@ def submit_feedback():
 
         if not token:
             return jsonify({'success': False, 'message': 'Token not found'}), 404
+
+        # ── Email must match the address captured at token issuance ──
+        stored = _normalize_email(token.get('student_email'))
+        if not stored or stored != email:
+            return jsonify({'success': False, 'message': 'Email does not match the address used for this token.'}), 400
 
         if token.get('feedback_submitted_at') is not None:
             return jsonify({'success': False, 'message': 'Feedback already submitted for this token'}), 400

@@ -139,6 +139,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink)
         <label for="tokenInput" data-i18n="feedback_your_token">Your Token Number</label>
         <input type="text" id="tokenInput" placeholder="e.g. AR15 or REC05" autocomplete="off" style="text-transform:uppercase;letter-spacing:1.5px;font-weight:600;font-family:'JetBrains Mono',monospace" data-i18n-placeholder="feedback_token_placeholder">
       </div>
+      <div class="field">
+        <label for="emailInput">Email used for this token *</label>
+        <input type="email" id="emailInput" placeholder="e.g. you@example.com" autocomplete="email">
+      </div>
       <div class="btn-row">
         <button class="btn" id="lookupBtn" onclick="lookupToken()" data-i18n="feedback_lookup_btn">Look Up My Token →</button>
       </div>
@@ -279,6 +283,9 @@ document.getElementById('tokenInput').addEventListener('keydown', function(e){
 async function lookupToken(){
   const token = document.getElementById('tokenInput').value.trim().toUpperCase();
   if(!token){ showError('Please enter your token number'); return; }
+  const emailEl = document.getElementById('emailInput');
+  const email = emailEl ? emailEl.value.trim().toLowerCase() : '';
+  if(!email){ showError('Please enter the email address used for this token'); if(emailEl) emailEl.focus(); return; }
 
   var btn = document.getElementById('lookupBtn');
   btn.disabled = true;
@@ -408,6 +415,10 @@ async function lookupToken(){
 async function submitRating(){
   if(!selectedRating || !currentToken) return;
 
+  const emailEl = document.getElementById('emailInput');
+  const email = emailEl ? emailEl.value.trim().toLowerCase() : '';
+  if(!email){ showStep('step1'); showError('Please enter the email address used for this token'); return; }
+
   const feedbackText = document.getElementById('feedbackText') ? document.getElementById('feedbackText').value.trim() : '';
 
   var isComplaint = isComplaintMode;
@@ -425,6 +436,7 @@ async function submitRating(){
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         token_number: currentToken,
+        email: email,
         rating: selectedRating > 0 ? selectedRating : 0,
         feedback_text: feedbackText || null
       })
