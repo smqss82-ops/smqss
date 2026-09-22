@@ -300,8 +300,7 @@ async function lookupToken(){
       showError('No tokens found for this email. Please check the address used at the kiosk.');
       return;
     }
-    var html = '<div style="margin-top:18px;text-align:left"><div style="font-size:13px;font-weight:700;color:var(--mak-green);margin-bottom:8px">Hello ' +
-      escapeHtml(data.tokens[0].student_name || 'there') + ' — select the token to rate:</div>';
+    var html = '<div style="margin-top:18px;text-align:left">';
     data.tokens.forEach(function(tk){
       var badge = tk.feedback_submitted
         ? '<span style="font-size:10px;font-weight:700;color:#2e7d32;background:#e8f5e9;padding:2px 8px;border-radius:4px">RATED</span>'
