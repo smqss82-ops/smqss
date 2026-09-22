@@ -1725,12 +1725,7 @@
                     <div class="stat-card blue"><div class="stat-number" id="proofRate">—</div><div class="stat-label">Confirm %</div></div>
                     <div class="stat-card" style="border-left:4px solid var(--red)"><div class="stat-number" id="proofStale">0</div><div class="stat-label">Stale &gt;72h</div></div>
                 </div>
-
-                <div class="section" style="margin-bottom:16px">
-                    <div class="section-title" style="font-size:13px;margin-bottom:8px">Daily trend — claimed vs confirmed</div>
-                    <div id="proofTrend" style="display:flex;align-items:flex-end;gap:4px;min-height:90px;padding:10px 4px 4px;"></div>
-                    <div id="proofTrendLegend" style="font-size:11px;color:var(--text-muted);"></div>
-                </div>
+                <div id="proofUnassigned" style="display:none;font-size:12px;color:var(--text-muted);margin:-8px 0 16px;"></div>
 
                 <div id="proofEmpty" style="display:none;text-align:center;padding:60px 20px">
                     <p style="font-size:15px;color:var(--text-muted);font-weight:600">No completed work in this period</p>
@@ -4031,20 +4026,13 @@
             document.getElementById('proofPending').textContent = o.pending;
             document.getElementById('proofRate').textContent = o.confirm_rate + '%';
             document.getElementById('proofStale').textContent = o.stale;
-
-            var trend = data.trend || [];
-            var maxV = 1;
-            trend.forEach(function(t){ maxV = Math.max(maxV, t.claimed, t.confirmed); });
-            document.getElementById('proofTrend').innerHTML = trend.map(function(t){
-                var h1 = Math.max(4, Math.round(t.claimed / maxV * 80));
-                var h2 = Math.max(4, Math.round(t.confirmed / maxV * 80));
-                return '<div style="flex:1;display:flex;align-items:flex-end;gap:2px;min-width:8px;" title="' + t.day + ': claimed ' + t.claimed + ', confirmed ' + t.confirmed + '">' +
-                    '<div style="flex:1;height:' + h1 + 'px;background:var(--gold);border-radius:2px 2px 0 0;"></div>' +
-                    '<div style="flex:1;height:' + h2 + 'px;background:var(--green-dark);border-radius:2px 2px 0 0;"></div></div>';
-            }).join('') || '<span style="font-size:12px;color:var(--text-muted)">No trend data</span>';
-            document.getElementById('proofTrendLegend').textContent =
-                'Gold = claimed · Green = confirmed · ' + data.from + ' → ' + data.to +
-                (data.unassigned_claims ? ' · ' + data.unassigned_claims + ' completed token(s) with no owning officer' : '');
+            var unNote = document.getElementById('proofUnassigned');
+            if (data.unassigned_claims) {
+                unNote.style.display = 'block';
+                unNote.textContent = data.unassigned_claims + ' completed token(s) with no owning officer in this period.';
+            } else {
+                unNote.style.display = 'none';
+            }
 
             var list = data.officers || [];
             const tbody = document.getElementById('proofTableBody');
