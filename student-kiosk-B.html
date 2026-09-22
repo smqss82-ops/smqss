@@ -802,7 +802,10 @@ body.keyboard-open .header,body.input-mode .header{display:none!important;}
   </div>
 </div>
 
+<script src="/static/i18n/i18n.js"></script>
 <script>
+var _t = window.SMSS_i18n && window.SMSS_i18n.t ? window.SMSS_i18n.t : function(k){ return k; };
+if (window.SMSS_i18n && window.SMSS_i18n.initI18n) { window.SMSS_i18n.initI18n({ pollInterval: 30000 }); }
 const API_BASE_URL = window.location.origin;
 
 let serverTimeMs = Date.now();
