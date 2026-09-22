@@ -2080,11 +2080,12 @@
       const badge = document.getElementById('apptPendingBadge');
       const dbadge = document.getElementById('drawerApptBadge');
       const pending = data.pending_count || 0;
+      const active = (data.active_count != null ? data.active_count : pending) || 0;
       const hpill = document.getElementById('apptHeaderPill');
       if (hpill) {
-        if (pending > 0) {
+        if (active > 0) {
           hpill.style.display = 'flex';
-          document.getElementById('apptHeaderCount').textContent = pending;
+          document.getElementById('apptHeaderCount').textContent = active;
         } else {
           hpill.style.display = 'none';
         }

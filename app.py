@@ -2505,8 +2505,14 @@ def officer_appointments():
             WHERE office_id = %s AND status = 'pending'
         """, (officer['office_id'],))
         pending = cursor.fetchone()['cnt']
+        cursor.execute("""
+            SELECT COUNT(*) AS cnt FROM appointments
+            WHERE office_id = %s AND status IN ('pending', 'confirmed')
+        """, (officer['office_id'],))
+        active = cursor.fetchone()['cnt']
         return jsonify({'success': True, 'office_id': officer['office_id'],
-                        'pending_count': int(pending), 'appointments': rows})
+                        'pending_count': int(pending), 'active_count': int(active),
+                        'appointments': rows})
     except Exception as e:
         logger.error(f"Officer appointments error: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
