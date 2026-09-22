@@ -83,7 +83,7 @@ def _send_rating_email_async(to_email, name, token_number, office_name, rating_u
                 f"<p>please rate here <a href=\"{escape(rating_url)}\">{escape(rating_url)}</a>... "
                 f"so that you can have access again to this office next time</p>"
             )
-            ok, err = send_email_via_brevo(to_email, subject, body, html_body)
+            ok, err = send_email_any(to_email, subject, body, html_body)
             if ok:
                 logger.info(f"Rating email sent to {to_email} for token {token_number}")
             else:
@@ -2395,6 +2395,35 @@ def send_email_via_brevo(to_email, subject, body, html_body=None):
         return False, f'Brevo API returned HTTP {e.code}: {detail}'
     except Exception as e:
         return False, str(e)
+
+
+def send_email_any(to_email, subject, body, html_body=None):
+    """Send email via Brevo API, falling back to SMTP relay. Returns (ok, err)."""
+    if BREVO_API_KEY:
+        sent, err = send_email_via_brevo(to_email, subject, body, html_body)
+        if sent:
+            return True, None
+        logger.warning(f"Brevo API failed for {to_email}: {err}, falling back to SMTP")
+    if not SMTP_USER or not SMTP_PASS:
+        return False, 'No email service configured (BREVO_API_KEY and BREVO_SMTP_KEY both missing)'
+    try:
+        msg = EmailMessage()
+        msg['Subject'] = subject
+        msg['From'] = SMTP_FROM
+        msg['To'] = to_email
+        msg.set_content(body)
+        if html_body:
+            msg.add_alternative(html_body, subtype='html')
+        smtp_ip = _resolve_ipv4(SMTP_HOST, SMTP_PORT)
+        with smtplib.SMTP(smtp_ip, SMTP_PORT, timeout=20) as s:
+            s.ehlo(SMTP_HOST)
+            s.starttls()
+            s.ehlo(SMTP_HOST)
+            s.login(SMTP_USER, SMTP_PASS)
+            s.send_message(msg)
+        return True, None
+    except Exception as smtp_err:
+        return False, f'Both Brevo API and SMTP failed. SMTP error: {smtp_err}'
 
 
 def call_groq_ai(prompt, max_tokens=800, temperature=0.5):
