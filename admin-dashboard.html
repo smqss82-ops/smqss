@@ -1645,6 +1645,7 @@
                             <option value="">All statuses</option>
                             <option value="pending">Pending</option>
                             <option value="confirmed">Confirmed</option>
+                            <option value="history">History (served + cancelled)</option>
                             <option value="served">Served</option>
                             <option value="cancelled">Cancelled</option>
                         </select>
@@ -2112,6 +2113,39 @@
             <div class="modal-actions">
                 <button type="button" class="btn-cancel-modal" onclick="closeModal('replyModal')">Cancel</button>
                 <button type="button" class="btn-save" id="replyModalSend" onclick="sendReply()">Send Reply →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- APPOINTMENT REPLY MODAL -->
+    <div class="modal-overlay" id="apptReplyModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                Reply to Appointment <span id="apptReplyModalId">#—</span>
+            </div>
+            <div class="form-group">
+                <label>To</label>
+                <div id="apptReplyModalTo" style="font-size:14px;font-weight:600;color:var(--text-primary);padding:4px 0">—</div>
+            </div>
+            <div class="form-group">
+                <label>Booking</label>
+                <div id="apptReplyModalBooking" style="background:var(--bg);border-radius:var(--radius-sm);padding:12px;font-size:13px;color:var(--text-secondary);line-height:1.5;max-height:100px;overflow-y:auto">—</div>
+            </div>
+            <div class="form-group">
+                <label>Previous replies</label>
+                <div id="apptReplyModalThread" style="background:var(--bg);border-radius:var(--radius-sm);padding:12px;font-size:13px;color:var(--text-secondary);line-height:1.5;max-height:140px;overflow-y:auto">—</div>
+            </div>
+            <div class="form-group">
+                <label for="apptReplyModalText">Your Reply *</label>
+                <textarea id="apptReplyModalText" rows="5" placeholder="Type your reply to the client..."></textarea>
+            </div>
+            <div id="apptReplyModalError" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:var(--red);padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel-modal" onclick="closeModal('apptReplyModal')">Cancel</button>
+                <button type="button" class="btn-save" id="apptReplyModalSend" onclick="sendApptReplyAdmin()">Send Reply →</button>
             </div>
         </div>
     </div>
@@ -3651,6 +3685,7 @@
         }
 
         // ── APPOINTMENTS ──
+        var _apptData = [];
         function fillApptOfficeFilter() {
             var sel = document.getElementById('apptOfficeFilter');
             if (!sel || sel.options.length > 1) return;
@@ -3680,7 +3715,8 @@
                 const res = await fetch(`${API_BASE_URL}/api/admin/appointments` + (qs.length ? '?' + qs.join('&') : ''));
                 const data = await res.json();
                 if (data.success) {
-                    renderAppointmentsAdmin(data.appointments || []);
+                    _apptData = data.appointments || [];
+                    renderAppointmentsAdmin(_apptData);
                     var pend = (data.appointments || []).filter(function(a){ return a.status === 'pending'; }).length;
                     document.getElementById('sidebarApptBadge').textContent = pend;
                 } else {
@@ -3719,16 +3755,19 @@
             tbody.innerHTML = list.map(function(a){
                 var dateStr = (a.preferred_date || '').slice(0, 10);
                 var actionBtn;
+                var replyBtn = '<button class="btn-sm" onclick="openApptReplyModal(' + a.id + ')" style="color:var(--blue);border-color:var(--blue);font-size:11px;min-height:36px">Reply' + (a.reply_count ? ' (' + a.reply_count + ')' : '') + '</button>';
                 if (a.status === 'pending') {
                     actionBtn = '<div style="display:flex;gap:6px">' +
+                        replyBtn +
                         '<button class="btn-sm" onclick="setApptStatusAdmin(' + a.id + ',\'confirmed\',this)" style="color:var(--success);border-color:var(--success);font-size:11px;min-height:36px">Confirm</button>' +
                         '<button class="btn-sm" onclick="setApptStatusAdmin(' + a.id + ',\'cancelled\',this)" style="color:var(--red);border-color:var(--red);font-size:11px;min-height:36px">Cancel</button></div>';
                 } else if (a.status === 'confirmed') {
                     actionBtn = '<div style="display:flex;gap:6px">' +
+                        replyBtn +
                         '<button class="btn-sm" onclick="setApptStatusAdmin(' + a.id + ',\'served\',this)" style="color:var(--success);border-color:var(--success);font-size:11px;min-height:36px">Mark Served</button>' +
                         '<button class="btn-sm" onclick="setApptStatusAdmin(' + a.id + ',\'cancelled\',this)" style="color:var(--red);border-color:var(--red);font-size:11px;min-height:36px">Cancel</button></div>';
                 } else {
-                    actionBtn = '<span style="font-size:11px;color:var(--text-muted)">—</span>';
+                    actionBtn = '<div style="display:flex;gap:6px">' + replyBtn + '</div>';
                 }
                 return '<tr>' +
                     '<td style="font-family:monospace;font-weight:700;font-size:13px">' + escapeHtml(a.reference || ('#' + a.id)) + '</td>' +
@@ -3762,6 +3801,78 @@
                 }
             } catch (e) {
                 showToast('Network error.', 'error');
+            } finally {
+                setLoading(btn, false);
+            }
+        }
+
+        function openApptReplyModal(id) {
+            var a = (_apptData || []).find(function(x){ return x.id === id; });
+            if (!a) { showToast('Appointment not found.', 'error'); return; }
+            document.getElementById('apptReplyModalId').textContent = a.reference || ('#' + a.id);
+            document.getElementById('apptReplyModalTo').textContent =
+                (a.full_name || 'Client') + ' <' + (a.email || 'no email') + '>';
+            document.getElementById('apptReplyModalBooking').textContent =
+                (a.office_name || '') + ' · ' + (a.service_name || 'General visit') + ' · ' +
+                (a.preferred_date || '').slice(0, 10) + ' — ' + (a.reason || '');
+            document.getElementById('apptReplyModalText').value = '';
+            document.getElementById('apptReplyModalError').style.display = 'none';
+            document.getElementById('apptReplyModal').dataset.apptId = a.id;
+            loadApptThreadAdmin(a.id);
+            openModal('apptReplyModal');
+        }
+
+        async function loadApptThreadAdmin(id) {
+            var box = document.getElementById('apptReplyModalThread');
+            box.textContent = 'Loading...';
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/appointments/${id}/messages`);
+                const data = await res.json();
+                renderApptThreadAdmin((data && data.messages) || []);
+            } catch (e) {
+                box.textContent = 'Could not load replies.';
+            }
+        }
+
+        function renderApptThreadAdmin(msgs) {
+            var box = document.getElementById('apptReplyModalThread');
+            if (!msgs.length) { box.textContent = 'No replies yet.'; return; }
+            box.innerHTML = msgs.map(function(m){
+                var who = m.sender === 'admin' ? ('Admin' + (m.sender_name ? ' (' + m.sender_name + ')' : '')) : ('Officer' + (m.sender_name ? ' (' + m.sender_name + ')' : ''));
+                var when = (m.created_at || '').slice(0, 16).replace('T', ' ');
+                return '<div style="border-left:3px solid var(--green-dark);padding:4px 10px;margin-bottom:8px;background:#fff;border-radius:0 8px 8px 0;">' +
+                    '<div style="font-size:11px;font-weight:700;color:var(--text-secondary);">' + escapeHtml(who) + ' · ' + escapeHtml(when) + '</div>' +
+                    '<div style="white-space:pre-wrap;">' + escapeHtml(m.message) + '</div></div>';
+            }).join('');
+        }
+
+        async function sendApptReplyAdmin() {
+            var id = parseInt(document.getElementById('apptReplyModal').dataset.apptId, 10);
+            var text = document.getElementById('apptReplyModalText').value.trim();
+            var errEl = document.getElementById('apptReplyModalError');
+            if (!text) { errEl.textContent = 'Please type your reply first.'; errEl.style.display = 'block'; return; }
+            var btn = document.getElementById('apptReplyModalSend');
+            setLoading(btn, true);
+            errEl.style.display = 'none';
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/appointments/${id}/reply`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ message: text })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    renderApptThreadAdmin(data.thread || []);
+                    document.getElementById('apptReplyModalText').value = '';
+                    showToast(data.emailed ? 'Reply sent to client by email.' : 'Reply saved but email failed: ' + (data.warning || ''), data.emailed ? 'success' : 'error');
+                    loadAppointmentsAdmin();
+                } else {
+                    errEl.textContent = data.message || 'Failed to send reply.';
+                    errEl.style.display = 'block';
+                }
+            } catch (e) {
+                errEl.textContent = 'Network error.';
+                errEl.style.display = 'block';
             } finally {
                 setLoading(btn, false);
             }

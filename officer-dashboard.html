@@ -699,6 +699,28 @@
       </div>
     </div>
 
+    <!-- APPOINTMENT REPLY MODAL -->
+    <div class="overlay" id="apptReplyOverlay">
+      <div class="msg-modal-box" style="max-width:440px">
+        <div class="msg-modal-header">
+          <h3><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Reply to Client</h3>
+          <button class="close-btn" onclick="closeApptReply()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="msg-modal-body" style="padding:22px 24px">
+          <div id="apptReplyThread" style="max-height:220px;overflow-y:auto;margin-bottom:14px;"></div>
+          <div class="form-group" style="margin-bottom:4px">
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:4px">Your reply (emailed to client) *</label>
+            <textarea id="apptReplyText" rows="4" maxlength="2000" placeholder="Type your reply to the client…" style="width:100%;box-sizing:border-box;padding:10px;border:1.5px solid var(--border-mid);border-radius:8px;font-size:13px;font-family:var(--font);outline:none;resize:vertical"></textarea>
+          </div>
+          <div id="apptReplyError" style="color:var(--red);font-size:12px;margin-top:8px;display:none"></div>
+          <div style="display:flex;gap:10px;margin-top:18px">
+            <button onclick="closeApptReply()" style="flex:1;padding:11px 16px;background:#fff;border:1.5px solid var(--border-mid);border-radius:10px;font-size:14px;font-weight:600;font-family:var(--font);color:var(--text-secondary);cursor:pointer;min-height:48px;">Cancel</button>
+            <button id="apptReplySend" onclick="sendApptReply()" style="flex:2;padding:11px 16px;background:linear-gradient(135deg, var(--green-dark), var(--green-mid));border:none;border-radius:10px;font-size:14px;font-weight:600;font-family:var(--font);color:#fff;cursor:pointer;min-height:48px;">Send Reply</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- SYSTEM RATING MODAL -->
     <div class="overlay" id="ratingOverlay">
       <div class="msg-modal-box" style="max-width:400px">
@@ -2068,7 +2090,7 @@
       }
       apptPrevPending = pending;
       if (!list.length) {
-        box.innerHTML = `<div class="empty"><div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="empty-text">No appointments for your office</div></div>`;
+        box.innerHTML = `<div class="empty"><div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="empty-text">No appointments for your office</div></div>` + apptHistoryToggle();
         return;
       }
       box.innerHTML = list.map(function(a) {
@@ -2083,6 +2105,10 @@
             `<button class="action-btn btn-complete" style="min-height:48px;font-size:14px;" onclick="setAppointmentStatus(${a.id},'served',this)">${ic.check} Mark Served</button>` +
             `<button class="action-btn btn-skip" style="min-height:48px;font-size:14px;" onclick="setAppointmentStatus(${a.id},'cancelled',this)">${ic.skip} Cancel Booking</button></div>`;
         }
+        const rc = a.reply_count || 0;
+        actions += `<button onclick="openApptReply(${a.id})" style="margin-top:10px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1.5px solid var(--border-mid);border-radius:10px;background:#fff;font-size:13.5px;font-weight:600;font-family:var(--font);color:var(--text-secondary);cursor:pointer;">` +
+          `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>` +
+          ` Reply to Client${rc ? ' (' + rc + ')' : ''}</button>`;
         return `<div class="appt-card" style="border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px;background:#fff;">` +
           `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;">` +
             `<span style="font-weight:800;font-size:14px;">${escapeHtml(a.reference || ('#' + a.id))} · ${escapeHtml(when)}</span>${apptStatusPill(a.status)}</div>` +
@@ -2090,8 +2116,94 @@
           `<div style="font-size:12.5px;color:var(--text-secondary);margin-top:2px;">${escapeHtml(a.reason || '')}</div>` +
           `<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">${ic.user} ${escapeHtml(a.email || '')}${a.phone ? ' · ' + escapeHtml(a.phone) : ''}</div>` +
           actions + `</div>`;
-      }).join('');
+      }).join('') + apptHistoryToggle();
     } catch(e) { /* silent: appointments are secondary to the queue */ }
+  }
+
+  function apptHistoryToggle() {
+    return `<div style="text-align:center;margin-top:4px;">` +
+      `<button id="apptHistoryBtn" onclick="toggleApptHistory()" style="background:none;border:none;color:var(--text-secondary);font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;min-height:44px;padding:10px 16px;">Show appointment history ▸</button></div>` +
+      `<div id="apptHistory" style="display:none;"></div>`;
+  }
+
+  let apptHistoryOpen = false;
+  async function toggleApptHistory() {
+    const box = document.getElementById('apptHistory');
+    const btn = document.getElementById('apptHistoryBtn');
+    apptHistoryOpen = !apptHistoryOpen;
+    if (!apptHistoryOpen) { box.style.display = 'none'; btn.innerHTML = 'Show appointment history ▸'; return; }
+    btn.innerHTML = 'Hide appointment history ▾';
+    box.style.display = 'block';
+    box.innerHTML = '<div class="empty"><div class="empty-text">Loading history…</div></div>';
+    try {
+      const data = await apiCall(`/api/officer/appointments?officer_id=${currentOfficer.id}&history=1`);
+      const list = (data && data.success && data.appointments) || [];
+      if (!list.length) { box.innerHTML = '<div class="empty"><div class="empty-text">No past appointments</div></div>'; return; }
+      box.innerHTML = list.map(function(a) {
+        const when = (a.preferred_date || '').slice(0, 10);
+        const rc = a.reply_count || 0;
+        return `<div style="border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:8px;background:#fafbfc;">` +
+          `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">` +
+          `<span style="font-weight:700;font-size:13px;">${escapeHtml(a.reference || ('#' + a.id))} · ${escapeHtml(when)} · ${escapeHtml(a.full_name)}</span>${apptStatusPill(a.status)}</div>` +
+          `<button onclick="openApptReply(${a.id})" style="margin-top:8px;background:none;border:none;color:var(--text-secondary);font-size:12.5px;font-weight:600;font-family:var(--font);cursor:pointer;min-height:36px;">View / Reply${rc ? ' (' + rc + ')' : ''}</button></div>`;
+      }).join('');
+    } catch(e) { box.innerHTML = '<div class="empty"><div class="empty-text">Could not load history</div></div>'; }
+  }
+
+  let apptReplyId = null;
+  async function openApptReply(id) {
+    apptReplyId = id;
+    document.getElementById('apptReplyText').value = '';
+    document.getElementById('apptReplyError').style.display = 'none';
+    document.getElementById('apptReplyThread').innerHTML = '<div style="font-size:12.5px;color:var(--text-muted)">Loading messages…</div>';
+    document.getElementById('apptReplyOverlay').classList.add('open');
+    try {
+      const data = await apiCall(`/api/appointments/${id}/messages?officer_id=${currentOfficer.id}`);
+      renderApptThread((data && data.messages) || []);
+    } catch(e) {
+      document.getElementById('apptReplyThread').innerHTML = '<div style="font-size:12.5px;color:var(--text-muted)">Could not load messages.</div>';
+    }
+  }
+
+  function renderApptThread(msgs) {
+    const box = document.getElementById('apptReplyThread');
+    if (!msgs.length) { box.innerHTML = '<div style="font-size:12.5px;color:var(--text-muted)">No replies yet. Your reply will be emailed to the client.</div>'; return; }
+    box.innerHTML = msgs.map(function(m) {
+      const who = m.sender === 'admin' ? ('Admin' + (m.sender_name ? ' (' + m.sender_name + ')' : '')) : ('Officer' + (m.sender_name ? ' (' + m.sender_name + ')' : ''));
+      const when = (m.created_at || '').slice(0, 16).replace('T', ' ');
+      return `<div style="border-left:3px solid var(--green-mid);padding:6px 10px;margin-bottom:8px;background:#f8fafc;border-radius:0 8px 8px 0;">` +
+        `<div style="font-size:11px;font-weight:700;color:var(--text-secondary);">${escapeHtml(who)} · ${escapeHtml(when)}</div>` +
+        `<div style="font-size:13px;white-space:pre-wrap;">${escapeHtml(m.message)}</div></div>`;
+    }).join('');
+  }
+
+  function closeApptReply() {
+    document.getElementById('apptReplyOverlay').classList.remove('open');
+    apptReplyId = null;
+  }
+
+  async function sendApptReply() {
+    const text = document.getElementById('apptReplyText').value.trim();
+    const errEl = document.getElementById('apptReplyError');
+    if (!text) { errEl.textContent = 'Please type your reply first.'; errEl.style.display = 'block'; return; }
+    const btn = document.getElementById('apptReplySend');
+    setLoading(btn, true);
+    errEl.style.display = 'none';
+    try {
+      const data = await apiCall(`/api/officer/appointments/${apptReplyId}/reply`, 'POST', { officer_id: currentOfficer.id, message: text });
+      if (data.success) {
+        renderApptThread(data.thread || []);
+        document.getElementById('apptReplyText').value = '';
+        showToast(data.emailed ? 'Reply sent to client by email' : 'Reply saved but email failed: ' + (data.warning || ''), data.emailed ? 'success' : 'warning');
+        await loadAppointments(true);
+      } else {
+        errEl.textContent = data.message || 'Failed to send reply.';
+        errEl.style.display = 'block';
+      }
+    } catch(e) {
+      errEl.textContent = 'Network error. Try again.';
+      errEl.style.display = 'block';
+    } finally { setLoading(btn, false); }
   }
 
   async function setAppointmentStatus(id, status, btn) {
@@ -2141,6 +2253,7 @@
   window.callBatch = callBatch; window.serveAllBatch = serveAllBatch; window.recallAllBatch = recallAllBatch; window.completeAllBatch = completeAllBatch;
   window.resetQueue = resetQueue; window.loadQueue = loadQueue; window.clearLog = clearLog;
   window.loadAppointments = loadAppointments; window.setAppointmentStatus = setAppointmentStatus; window.scrollToAppointments = scrollToAppointments;
+  window.toggleApptHistory = toggleApptHistory; window.openApptReply = openApptReply; window.closeApptReply = closeApptReply; window.sendApptReply = sendApptReply;
   window.closeModal = closeModal; window.confirmAction = confirmAction; window.closeResetModal = closeResetModal;
   window.toggleOfficeAvailability = toggleOfficeAvailability; window.loadOfficeStatus = loadOfficeStatus;
   window.confirmAvailabilityChange = confirmAvailabilityChange; window.closeAvailReasonModal = closeAvailReasonModal;
