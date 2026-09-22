@@ -44,25 +44,44 @@ def _mask_email(email):
     except Exception:
         return '•••'
 
+def _normalize_phone(phone):
+    """Normalize UG phone to 256XXXXXXXX. Accepts 9 digits, 07XXXXXXXX, 256XXXXXXXX, +256XXXXXXXX."""
+    if phone is None:
+        return None
+    d = re.sub(r'\D', '', str(phone))
+    if len(d) == 9:
+        d = '256' + d
+    elif len(d) == 10 and d.startswith('0'):
+        d = '256' + d[1:]
+    elif len(d) == 12 and d.startswith('256'):
+        pass
+    elif len(d) == 13 and d.startswith('2560'):
+        d = '256' + d[4:]
+    else:
+        return None
+    return d if re.match(r'^256[0-9]{9}$', d) else None
+
+def _mask_phone(phone):
+    d = re.sub(r'\D', '', str(phone or ''))
+    if len(d) >= 4:
+        return f"+{d[:3]}•••{d[-3:]}"
+    return '•••'
+
 def _send_rating_email_async(to_email, name, token_number, office_name, rating_url):
     """Fire-and-forget rating email. Never raises; logs only."""
     def _run():
         try:
-            subject = f"Your SMQSS token {token_number} — please rate your service"
+            subject = f"Your SMQSS token {token_number} — {office_name}"
             body = (
-                f"Hello {name},\n\n"
-                f"Your queue token {token_number} at {office_name} has been generated.\n\n"
-                f"After your visit, please rate the service here:\n{rating_url}\n\n"
-                f"Please rate your service at this link so you can be served faster next time you visit. Thank you!\n\n"
-                f"— SMQSS"
+                f"Hello {name} your token {token_number} at office {office_name}...., "
+                f"please rate here {rating_url}... "
+                f"so that you can have access again to this office next time"
             )
             html_body = (
-                f"<p>Hello {escape(name)},</p>"
-                f"<p>Your queue token <strong>{escape(token_number)}</strong> at {escape(office_name)} has been generated.</p>"
-                f"<p>After your visit, please rate the service here:<br>"
-                f"<a href=\"{escape(rating_url)}\">{escape(rating_url)}</a></p>"
-                f"<p>Please rate your service at this link so you can be served faster next time you visit. Thank you!</p>"
-                f"<p>— SMQSS</p>"
+                f"<p>Hello {escape(name)} your token <strong>{escape(token_number)}</strong> "
+                f"at office {escape(office_name)}....,</p>"
+                f"<p>please rate here <a href=\"{escape(rating_url)}\">{escape(rating_url)}</a>... "
+                f"so that you can have access again to this office next time</p>"
             )
             ok, err = send_email_via_brevo(to_email, subject, body, html_body)
             if ok:
@@ -1836,8 +1855,10 @@ def generate_student_token():
     service_id = data.get('service_id')
     service_code = data.get('service_code')
     student_name = data.get('student_name')
-    student_id = data.get('student_id')
-    student_phone = data.get('student_phone')
+    student_id = (data.get('student_id') or '').strip() if isinstance(data.get('student_id'), str) else data.get('student_id')
+    student_phone = _normalize_phone(data.get('student_phone'))
+    raw_parent_phone = data.get('parent_phone')
+    parent_phone = _normalize_phone(raw_parent_phone) if raw_parent_phone else None
     student_email = _normalize_email(data.get('student_email'))
     parent_name = data.get('parent_name')
     parent_phone = data.get('parent_phone')
@@ -1894,27 +1915,46 @@ def generate_student_token():
                 'message': 'A valid email address is required so we can send your rating link.'
             }), 400
 
-        # ── OLD BEHAVIOR (rollback point): block students with unrated previous token ──
-        # if student_id and student_id.strip():
-        #     cursor.execute("""
-        #         SELECT token_number
-        #         FROM university_tokens
-        #         WHERE student_id = %s
-        #           AND status IN ('completed', 'waiting')
-        #           AND feedback_submitted_at IS NULL
-        #         ORDER BY requested_at DESC
-        #         LIMIT 1
-        #     """, (student_id.strip(),))
-        #     unrated = cursor.fetchone()
-        #     if unrated:
-        #         return jsonify({
-        #             'success': False,
-        #             'blocked': True,
-        #             'unrated_token': unrated['token_number'],
-        #             'message': f"Please rate your previous service (Token: {unrated['token_number']}) before getting a new token."
-        #         }), 400
+        # ── Phone is mandatory for every service ──
+        # Non-PS: student_phone (+256 + 9 digits from kiosk). PS: parent_phone.
+        if is_priority:
+            if not parent_phone:
+                return jsonify({
+                    'success': False,
+                    'message': 'A valid phone number is required (+256 followed by 9 digits).'
+                }), 400
+            if not student_phone:
+                student_phone = parent_phone
+        else:
+            if not student_phone:
+                return jsonify({
+                    'success': False,
+                    'message': 'A valid phone number is required (+256 followed by 9 digits).'
+                }), 400
 
-        # ── NEW BEHAVIOR: students can get a token even without rating the previous one ──
+        # ── Hard block: email with unrated completed token for this office must rate first ──
+        cursor.execute("""
+            SELECT token_number
+            FROM university_tokens
+            WHERE student_email = %s AND office_id = %s
+              AND status = 'completed' AND feedback_submitted_at IS NULL
+            ORDER BY completed_at DESC
+            LIMIT 1
+        """, (student_email, office_id))
+        unrated = cursor.fetchone()
+        if unrated:
+            try:
+                base = PUBLIC_BASE_URL or request.host_url.rstrip('/')
+                rating_url = f"{base}/r/{unrated['token_number']}"
+            except Exception:
+                rating_url = f"/r/{unrated['token_number']}"
+            return jsonify({
+                'success': False,
+                'blocked': True,
+                'unrated_token': unrated['token_number'],
+                'rating_url': rating_url,
+                'message': f"Hello {student_name or 'there'} your token {unrated['token_number']} at office {office['office_name']} is not rated. Please rate here {rating_url} so that you can have access again to this office next time."
+            }), 400
 
         # Per-day first-free numbering: scan ONLY today's tokens for this office,
         # so yesterday's numbers don't block today's restart at XX01 (no data deleted).
@@ -2003,6 +2043,55 @@ def generate_student_token():
             'message': 'Internal server error'
         }), 500
 
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# ============================================
+# STUDENT TOKENS BY EMAIL (email-only rating lookup)
+# ============================================
+@app.route('/api/student/tokens-by-email', methods=['GET'])
+def get_tokens_by_email():
+    email = _normalize_email(request.args.get('email'))
+    if not email or not _valid_email(email):
+        return jsonify({'success': False, 'message': 'A valid email address is required'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT t.token_number, t.student_name, t.status, t.rating,
+                   t.feedback_submitted_at, t.completed_at, t.requested_at,
+                   off.office_name, off.office_code,
+                   s.service_name
+            FROM university_tokens t
+            JOIN offices off ON t.office_id = off.id
+            LEFT JOIN services s ON t.service_id = s.id
+            WHERE t.student_email = %s
+            ORDER BY (t.status = 'completed' AND t.feedback_submitted_at IS NULL) DESC,
+                     t.requested_at DESC
+            LIMIT 20
+        """, (email,))
+        rows = cursor.fetchall()
+        tokens = []
+        for token in rows:
+            tokens.append({
+                'token_number': token['token_number'],
+                'student_name': token['student_name'],
+                'status': token['status'],
+                'office_name': token['office_name'],
+                'office_code': token['office_code'],
+                'service_name': token['service_name'],
+                'completed_at': token['completed_at'].isoformat() if isinstance(token.get('completed_at'), datetime) else token.get('completed_at'),
+                'requested_at': token['requested_at'].isoformat() if isinstance(token.get('requested_at'), datetime) else token.get('requested_at'),
+                'rating': token.get('rating'),
+                'feedback_submitted': token.get('feedback_submitted_at') is not None
+            })
+        return jsonify({'success': True, 'email_hint': _mask_email(email), 'tokens': tokens})
+    except Exception as e:
+        logger.error(f"Tokens-by-email error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
     finally:
         cursor.close()
         conn.close()

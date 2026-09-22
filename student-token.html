@@ -555,9 +555,12 @@ body.keyboard-open .header,body.input-mode .header{display:none!important;}
           <div class="num-hint">We will email your rating link here.</div>
         </div>
         <div class="form-group" id="studentNumFieldWrap" style="display:none;">
-          <label class="form-label" id="studentNumLabel" data-i18n="kiosk_id_number">ID Number *</label>
-          <input type="text" class="form-input" id="studentNumber" placeholder="e.g. 2300716574" autocomplete="off" maxlength="10" inputmode="numeric" pattern="[0-9]*" oninput="validateStudentNumber(this)">
-          <div class="num-hint" id="numHint"></div>
+          <label class="form-label" id="studentNumLabel">Phone Number *</label>
+          <div style="display:flex;align-items:center;gap:0;">
+            <span style="padding:11px 12px;border:1.5px solid var(--border);border-right:none;border-radius:8px 0 0 8px;background:var(--surface);font-weight:700;font-size:14px;">+256</span>
+            <input type="text" class="form-input" id="studentPhone" placeholder="772123456" autocomplete="tel" maxlength="9" inputmode="numeric" pattern="[0-9]*" oninput="validatePhoneNumber(this)" style="border-radius:0 8px 8px 0;">
+          </div>
+          <div class="num-hint" id="numHint">Enter the 9 remaining digits.</div>
         </div>
         <div class="form-group" id="parentPhoneFieldWrap" style="display:none;">
           <label class="form-label" data-i18n="kiosk_phone_number">Phone Number *</label>
@@ -637,7 +640,7 @@ function buildHeaderTicker(){
  var h=now().getHours();
  var open=h>=8&&h<17;
  var items=open
-  ? ['👉 To get started, click "Get My Token"','◆ Select your preferred office and service','◆ Enter your name and ID number and click get my token','◆ 🖥️ Watch the public display for your turn','◆ 🙏 Thank you for using our service']
+  ? ['👉 To get started, click "Get My Token"','◆ Select your preferred office and service','◆ Enter your name, phone number and email and click get my token','◆ 🖥️ Watch the public display for your turn','◆ 🙏 Thank you for using our service']
   : ['🕒 Offices are currently closed','◆ Operating hours: 8:00 AM – 5:00 PM','◆ You can only rate service for now','◆ 🙏 Thank you for your understanding'];
  var sep=' <span style="padding:0 14px;opacity:0.5">◆</span> ';
  var content=items.join(sep);
@@ -669,15 +672,15 @@ function typeMessage(bubbleId, text, onDone, delay){
   }, delay);
 }
 
-/* ── STUDENT NUMBER VALIDATION ── */
-function validateStudentNumber(el){
-  el.value = el.value.replace(/\D/g,'').slice(0,10);
+/* ── PHONE NUMBER VALIDATION (+256 + 9 digits) ── */
+function validatePhoneNumber(el){
+  el.value = el.value.replace(/\D/g,'').slice(0,9);
   var v = el.value, hint = document.getElementById('numHint');
   el.classList.remove('valid','invalid');
   hint.classList.remove('show','error');
-  if(v.length===0) return;
-  if(v.length===10){ el.classList.add('valid'); hint.textContent='\u2713 Valid ID number'; hint.className='num-hint show'; }
-  else{ el.classList.add('invalid'); hint.textContent='Exactly 10 digits required ('+v.length+'/10)'; hint.className='num-hint show error'; }
+  if(v.length===0){ hint.textContent='Enter the 9 remaining digits.'; hint.className='num-hint'; return; }
+  if(v.length===9){ el.classList.add('valid'); hint.textContent='\u2713 Valid phone number (+256 '+v+')'; hint.className='num-hint show'; }
+  else{ el.classList.add('invalid'); hint.textContent='Exactly 9 digits required ('+v.length+'/9)'; hint.className='num-hint show error'; }
 }
 
 /* ── SHOW WELCOME ── */
@@ -701,7 +704,10 @@ function showWelcome(){
 document.getElementById('studentName').addEventListener('keydown', function(e){
   if(e.key==='Enter') generateToken();
 });
-document.getElementById('studentNumber').addEventListener('keydown', function(e){
+document.getElementById('studentPhone').addEventListener('keydown', function(e){
+  if(e.key==='Enter') generateToken();
+});
+document.getElementById('studentEmail').addEventListener('keydown', function(e){
   if(e.key==='Enter') generateToken();
 });
 
@@ -853,7 +859,7 @@ function goToStep(step){
     const isPs = selectedService.code && selectedService.code.toUpperCase() === 'PS';
     var msg = isPs
       ? "Almost there! You've chosen "+selectedService.name+" at "+selectedOffice.name+". Since you're a parent, please enter your full name, phone number and email."
-      : "Almost there! You've chosen "+selectedService.name+" at "+selectedOffice.name+". Just one last thing what's your full name, ID number and email?";
+      : "Almost there! You've chosen "+selectedService.name+" at "+selectedOffice.name+". Just one last thing what's your full name, phone number and email?";
 
     typeMessage('aiBubble3', msg, function(){
       document.getElementById('step3DisplayBtns').style.display='flex';
@@ -879,7 +885,7 @@ function showStep3Inputs(){
   if (isPs) {
     document.getElementById('parentPhoneFieldWrap').style.display='block';
   } else {
-    document.getElementById('studentNumLabel').textContent = 'ID Number *';
+    document.getElementById('studentNumLabel').textContent = 'Phone Number *';
     document.getElementById('studentNumFieldWrap').style.display='block';
   }
 
@@ -921,16 +927,17 @@ async function generateToken(){
   if(!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ showError('Please enter a valid email address. We will send your rating link here.'); document.getElementById('studentEmail').focus(); return; }
 
   const isPs = selectedService.code && selectedService.code.toUpperCase() === 'PS';
-  var studentNumber, parentPhone;
+  var studentPhone, parentPhone;
 
   if (isPs) {
     parentPhone = document.getElementById('parentPhone').value.trim();
     if(!parentPhone){ showError('Please enter your phone number.'); document.getElementById('parentPhone').focus(); return; }
-    studentNumber = '';
+    studentPhone = '';
   } else {
-    studentNumber = document.getElementById('studentNumber').value.trim();
-    if(!studentNumber){ showError('Please enter your ID number.'); document.getElementById('studentNumber').focus(); return; }
-    if(studentNumber.length !== 10){ showError('ID number must be exactly 10 digits.'); document.getElementById('studentNumber').focus(); return; }
+    var digits = document.getElementById('studentPhone').value.replace(/\D/g,'');
+    if(!digits){ showError('Please enter your phone number.'); document.getElementById('studentPhone').focus(); return; }
+    if(digits.length !== 9){ showError('Phone number must be 9 digits after +256.'); document.getElementById('studentPhone').focus(); return; }
+    studentPhone = '256' + digits;
     parentPhone = '';
   }
 
@@ -964,14 +971,14 @@ async function generateToken(){
       setTimeout(function(){
         tempPanel.remove();
         loadingOverlay.style.display='block';
-        doApiCall(name, studentNumber, parentPhone, email);
+        doApiCall(name, studentPhone, parentPhone, email);
       }, 800);
     },
     0
   );
 }
 
-async function doApiCall(name, studentNumber, parentPhone, email){
+async function doApiCall(name, studentPhone, parentPhone, email){
   const loadingOverlay=document.getElementById('loadingOverlay');
   const isPs = selectedService.code && selectedService.code.toUpperCase() === 'PS';
   const payload = {
@@ -979,8 +986,8 @@ async function doApiCall(name, studentNumber, parentPhone, email){
     service_id: selectedService.id,
     service_code: selectedService.code,
     student_name: name,
-    student_id: studentNumber,
-    student_phone: null,
+    student_id: '',
+    student_phone: studentPhone || null,
     student_email: email || document.getElementById('studentEmail').value.trim().toLowerCase()
   };
   if (isPs) {
@@ -1041,7 +1048,7 @@ async function doApiCall(name, studentNumber, parentPhone, email){
       document.getElementById('stepIndicator').style.display='none';
       const fbRes = await fetch('/api/admin/feedback-token');
       const fbData = await fbRes.json();
-      const blkUrl = window.location.origin + fbData.url_prefix + '/' + data.unrated_token;
+      const blkUrl = data.rating_url || (window.location.origin + fbData.url_prefix + '/' + data.unrated_token);
       document.getElementById('tokenDisplay').innerHTML=
         '<div class="token-result" style="padding:20px 0;animation:fadeUp 0.35s ease">'+
           '<div style="background:#fff0f0;border:2px solid #ffc9c9;border-radius:16px;padding:28px 20px;text-align:center">'+

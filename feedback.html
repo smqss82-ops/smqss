@@ -133,19 +133,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink)
     <div class="step-content active" id="step0">
       <svg viewBox="0 0 24 24" style="width:48px;height:48px;fill:var(--mak-gold-bright);display:block;margin:0 auto 12px"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
       <h2 style="font-family:'DM Serif Display',serif;font-size:22px;text-align:center;color:var(--mak-green);margin-bottom:4px" data-i18n="feedback_rate_your_service">Rate Your Service</h2>
-      <p style="text-align:center;font-size:12.5px;color:var(--muted);margin-bottom:28px" data-i18n="feedback_enter_token">Enter the token number from your receipt to share your experience</p>
+      <p style="text-align:center;font-size:12.5px;color:var(--muted);margin-bottom:28px">Enter the email you used to get your token — we will find you and your tokens.</p>
       <div class="error-bar" id="errorBar"></div>
       <div class="field">
-        <label for="tokenInput" data-i18n="feedback_your_token">Your Token Number</label>
-        <input type="text" id="tokenInput" placeholder="e.g. AR15 or REC05" autocomplete="off" style="text-transform:uppercase;letter-spacing:1.5px;font-weight:600;font-family:'JetBrains Mono',monospace" data-i18n-placeholder="feedback_token_placeholder">
-      </div>
-      <div class="field">
-        <label for="emailInput">Email used for this token *</label>
+        <label for="emailInput">Your Email Address *</label>
         <input type="email" id="emailInput" placeholder="e.g. you@example.com" autocomplete="email">
       </div>
       <div class="btn-row">
-        <button class="btn" id="lookupBtn" onclick="lookupToken()" data-i18n="feedback_lookup_btn">Look Up My Token →</button>
+        <button class="btn" id="lookupBtn" onclick="lookupToken()">Find My Tokens →</button>
       </div>
+      <div id="tokenList"></div>
       <div style="display:flex;align-items:center;gap:12px;margin:18px 0 14px">
         <div style="flex:1;height:1px;background:var(--border)"></div>
         <span style="font-size:11px;color:var(--muted);font-weight:500;letter-spacing:1px;text-transform:uppercase" data-i18n="feedback_or">or</span>
@@ -274,22 +271,63 @@ let selectedRating = 0;
 let isComplaintMode = false;
 
 
-document.getElementById('tokenInput').addEventListener('keydown', function(e){
+document.getElementById('emailInput').addEventListener('keydown', function(e){
   if(e.key === 'Enter') lookupToken();
 });
 
 
 
 async function lookupToken(){
-  const token = document.getElementById('tokenInput').value.trim().toUpperCase();
-  if(!token){ showError('Please enter your token number'); return; }
   const emailEl = document.getElementById('emailInput');
   const email = emailEl ? emailEl.value.trim().toLowerCase() : '';
-  if(!email){ showError('Please enter the email address used for this token'); if(emailEl) emailEl.focus(); return; }
+  if(!email){ showError('Please enter the email address you used to get your token'); if(emailEl) emailEl.focus(); return; }
 
   var btn = document.getElementById('lookupBtn');
   btn.disabled = true;
-  btn.textContent = 'Looking up...';
+  btn.textContent = 'Finding...';
+  document.getElementById('tokenList').innerHTML = '';
+  clearError();
+
+  try{
+    const res = await fetch(API_BASE+'/api/student/tokens-by-email?email='+encodeURIComponent(email));
+    const data = await res.json();
+    if(!data.success){
+      showError(data.message || 'Lookup failed');
+      return;
+    }
+    if(!data.tokens || !data.tokens.length){
+      showError('No tokens found for this email. Please check the address used at the kiosk.');
+      return;
+    }
+    var html = '<div style="margin-top:18px;text-align:left"><div style="font-size:13px;font-weight:700;color:var(--mak-green);margin-bottom:8px">Hello ' +
+      escapeHtml(data.tokens[0].student_name || 'there') + ' — select the token to rate:</div>';
+    data.tokens.forEach(function(tk){
+      var badge = tk.feedback_submitted
+        ? '<span style="font-size:10px;font-weight:700;color:#2e7d32;background:#e8f5e9;padding:2px 8px;border-radius:4px">RATED</span>'
+        : (tk.status === 'completed'
+          ? '<span style="font-size:10px;font-weight:700;color:#b8890a;background:#fdf3d8;padding:2px 8px;border-radius:4px">RATE NOW</span>'
+          : '<span style="font-size:10px;font-weight:700;color:#555;background:#eee;padding:2px 8px;border-radius:4px;text-transform:uppercase">' + escapeHtml(tk.status) + '</span>');
+      html += '<button onclick="selectToken(\'' + escapeHtml(tk.token_number) + '\')" ' +
+        'style="display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;border:1.5px solid var(--border);border-radius:10px;background:#fff;cursor:pointer;font-family:inherit">' +
+        '<span><span style="font-weight:800;font-family:\'JetBrains Mono\',monospace;letter-spacing:1px">' + escapeHtml(tk.token_number) + '</span>' +
+        '<br><span style="font-size:12px;color:var(--muted)">' + escapeHtml(tk.office_name || '') + ' · ' + escapeHtml(tk.service_name || 'service') + '</span></span>' + badge + '</button>';
+    });
+    html += '</div>';
+    document.getElementById('tokenList').innerHTML = html;
+  } catch(err){
+    showError('Network error. Please check your connection.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Find My Tokens →';
+  }
+}
+
+async function selectToken(token){
+  const emailEl = document.getElementById('emailInput');
+  const email = emailEl ? emailEl.value.trim().toLowerCase() : '';
+
+  var btn = document.getElementById('lookupBtn');
+  btn.disabled = true;
   showStep('stepLoading');
   clearError();
 
@@ -299,6 +337,7 @@ async function lookupToken(){
     if(!data.success){
       showStep('step0');
       showError(data.message || 'Token not found');
+      btn.disabled = false;
       return;
     }
 
@@ -399,7 +438,7 @@ async function lookupToken(){
     showError('Network error. Please check your connection.');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Look Up My Token →';
+    btn.textContent = 'Find My Tokens →';
   }
 }
   selectedRating = val;
