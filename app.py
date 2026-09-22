@@ -349,6 +349,23 @@ _CREATE_GENERAL_COMPLAINTS_SQL = """
         status VARCHAR(20) DEFAULT 'pending',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )"""
+_CREATE_APPOINTMENTS_SQL = """
+    CREATE TABLE IF NOT EXISTS appointments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        reference VARCHAR(12) DEFAULT NULL UNIQUE,
+        office_id INT NOT NULL,
+        service_id INT DEFAULT NULL,
+        full_name VARCHAR(100) NOT NULL,
+        email VARCHAR(120) NOT NULL,
+        phone VARCHAR(20) DEFAULT NULL,
+        preferred_date DATE NOT NULL,
+        reason TEXT NOT NULL,
+        status ENUM('pending','confirmed','served','cancelled') DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT fk_appt_office FOREIGN KEY (office_id) REFERENCES offices(id) ON DELETE CASCADE,
+        CONSTRAINT fk_appt_service FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE SET NULL
+    )"""
 _CREATE_SYSTEM_SETTINGS_SQL = """
     CREATE TABLE IF NOT EXISTS system_settings (
         setting_key VARCHAR(50) PRIMARY KEY,
@@ -455,6 +472,7 @@ _ALL_TABLES = [
     ('officer_sessions', _CREATE_OFFICER_SESSIONS_SQL),
     ('officer_status_log', _CREATE_OFFICER_STATUS_LOG_SQL),
     ('general_complaints', _CREATE_GENERAL_COMPLAINTS_SQL),
+    ('appointments', _CREATE_APPOINTMENTS_SQL),
     ('system_settings', _CREATE_SYSTEM_SETTINGS_SQL),
     ('officer_system_ratings', _CREATE_OFFICER_SYSTEM_RATINGS_SQL),
     ('bus_companies', _CREATE_BUS_COMPANIES_SQL),
@@ -514,6 +532,7 @@ _ALL_INDEXES = [
     ('idx_statuslog_session', 'officer_status_log', 'session_id'),
     ('idx_statuslog_officer', 'officer_status_log', 'officer_id'),
     ('idx_statuslog_started', 'officer_status_log', 'started_at'),
+    ('idx_appt_office_date', 'appointments', 'office_id, preferred_date, status'),
 ]
 
 # Test connection on startup — create database if it doesn't exist
@@ -2301,6 +2320,250 @@ def admin_get_general_complaints():
     except Exception as e:
         logger.error(f"Fetch general complaints error: {e}")
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# ============================================
+# APPOINTMENTS (office-routed bookings)
+# ============================================
+def _eat_today():
+    from datetime import timezone as _tz
+    return (datetime.now(_tz.utc) + timedelta(hours=3)).date()
+
+
+def _send_appointment_email_async(to_email, name, reference, office_name, service_name, pref_date):
+    def _run():
+        try:
+            subject = f"Appointment {reference} — {office_name}"
+            body = (
+                f"Hello {name},\n\n"
+                f"Your appointment {reference} at office {office_name} "
+                f"({service_name}) on {pref_date} has been received.\n\n"
+                f"Please arrive with this reference on the day. "
+                f"The office will confirm your booking. Thank you!\n\n— SMQSS"
+            )
+            html_body = (
+                f"<p>Hello {escape(name)},</p>"
+                f"<p>Your appointment <strong>{escape(reference)}</strong> at office "
+                f"{escape(office_name)} ({escape(service_name)}) on <strong>{escape(str(pref_date))}</strong> "
+                f"has been received.</p>"
+                f"<p>Please arrive with this reference on the day. The office will confirm your booking. Thank you!</p>"
+                f"<p>— SMQSS</p>"
+            )
+            ok, err = send_email_any(to_email, subject, body, html_body)
+            if ok:
+                logger.info(f"Appointment email sent to {to_email} ref {reference}")
+            else:
+                logger.warning(f"Appointment email failed ref {reference}: {err}")
+        except Exception as e:
+            logger.warning(f"Appointment email exception ref {reference}: {e}")
+    try:
+        threading.Thread(target=_run, daemon=True).start()
+    except Exception as e:
+        logger.warning(f"Could not start appointment email thread: {e}")
+
+
+@app.route('/api/student/appointments', methods=['POST'])
+def book_appointment():
+    data = request.get_json(silent=True) or {}
+    office_id = data.get('office_id')
+    service_id = data.get('service_id')
+    full_name = (data.get('full_name') or '').strip()
+    email = _normalize_email(data.get('email'))
+    phone = _normalize_phone(data.get('phone')) if data.get('phone') else None
+    pref_date_raw = (data.get('preferred_date') or '').strip()
+    reason = (data.get('reason') or '').strip()
+
+    if not office_id:
+        return jsonify({'success': False, 'message': 'Please select an office.'}), 400
+    if not full_name:
+        return jsonify({'success': False, 'message': 'Full name is required.'}), 400
+    if not email or not _valid_email(email):
+        return jsonify({'success': False, 'message': 'A valid email address is required.'}), 400
+    if not reason:
+        return jsonify({'success': False, 'message': 'Please describe the reason for your visit.'}), 400
+    try:
+        pref_date = datetime.strptime(pref_date_raw, '%Y-%m-%d').date()
+    except ValueError:
+        return jsonify({'success': False, 'message': 'Preferred date is invalid.'}), 400
+    if pref_date < _eat_today():
+        return jsonify({'success': False, 'message': 'Preferred date cannot be in the past.'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT id, office_name,
+                COALESCE(NULLIF(TRIM(availability_status), ''), 'available') AS availability_status,
+                unavailability_notice
+            FROM offices WHERE id = %s AND COALESCE(is_active, 1) = 1
+        """, (office_id,))
+        office = cursor.fetchone()
+        if not office:
+            return jsonify({'success': False, 'message': 'Selected office is not available.'}), 400
+        if str(office.get('availability_status') or 'available').strip().lower() != 'available':
+            return jsonify({'success': False,
+                            'message': office.get('unavailability_notice') or 'This office is temporarily unavailable for bookings.'}), 400
+
+        service_name = 'General visit'
+        if service_id:
+            cursor.execute("SELECT id, service_name FROM services WHERE id = %s AND office_id = %s AND is_active = 1",
+                           (service_id, office_id))
+            svc = cursor.fetchone()
+            if not svc:
+                return jsonify({'success': False, 'message': 'Selected service is not offered by this office.'}), 400
+            service_name = svc['service_name']
+        else:
+            service_id = None
+
+        cursor.execute("""
+            INSERT INTO appointments (office_id, service_id, full_name, email, phone, preferred_date, reason, status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, 'pending')
+        """, (office_id, service_id, full_name, email, phone, pref_date.isoformat(), reason))
+        appt_id = cursor.lastrowid
+        reference = f"APT-{appt_id:05d}"
+        cursor.execute("UPDATE appointments SET reference = %s WHERE id = %s", (reference, appt_id))
+        conn.commit()
+
+        try:
+            _send_appointment_email_async(email, full_name, reference, office['office_name'], service_name, pref_date.isoformat())
+        except Exception as me:
+            logger.warning(f"Appointment email trigger failed ref {reference}: {me}")
+
+        return jsonify({'success': True, 'reference': reference,
+                        'office_name': office['office_name'], 'service_name': service_name,
+                        'preferred_date': pref_date.isoformat(),
+                        'message': f"Appointment {reference} booked with {office['office_name']}."})
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"Book appointment error: {e}")
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def _serialize_appt(row):
+    for k in ('preferred_date', 'created_at', 'updated_at'):
+        v = row.get(k)
+        if isinstance(v, (datetime, date)):
+            row[k] = v.isoformat()
+    return row
+
+
+@app.route('/api/officer/appointments', methods=['GET'])
+def officer_appointments():
+    officer_id = request.args.get('officer_id')
+    if not officer_id:
+        return jsonify({'success': False, 'message': 'officer_id is required'}), 400
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT id, office_id FROM officers WHERE id = %s", (officer_id,))
+        officer = cursor.fetchone()
+        if not officer:
+            return jsonify({'success': False, 'message': 'Officer not found'}), 404
+        cursor.execute("""
+            SELECT a.id, a.reference, a.full_name, a.email, a.phone, a.preferred_date,
+                   a.reason, a.status, a.created_at,
+                   off.office_name, off.office_code,
+                   s.service_name
+            FROM appointments a
+            JOIN offices off ON a.office_id = off.id
+            LEFT JOIN services s ON a.service_id = s.id
+            WHERE a.office_id = %s AND a.status IN ('pending', 'confirmed')
+            ORDER BY a.preferred_date ASC, a.created_at ASC
+            LIMIT 100
+        """, (officer['office_id'],))
+        rows = [_serialize_appt(r) for r in cursor.fetchall()]
+        for r in rows:
+            if r.get('email'):
+                r['email'] = _mask_email(r['email'])
+            if r.get('phone'):
+                r['phone'] = _mask_phone(r['phone'])
+        cursor.execute("""
+            SELECT COUNT(*) AS cnt FROM appointments
+            WHERE office_id = %s AND status = 'pending'
+        """, (officer['office_id'],))
+        pending = cursor.fetchone()['cnt']
+        return jsonify({'success': True, 'office_id': officer['office_id'],
+                        'pending_count': int(pending), 'appointments': rows})
+    except Exception as e:
+        logger.error(f"Officer appointments error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route('/api/officer/appointments/<int:appt_id>/status', methods=['POST'])
+def officer_appointment_status(appt_id):
+    data = request.get_json(silent=True) or {}
+    officer_id = data.get('officer_id')
+    new_status = (data.get('status') or '').strip().lower()
+    if new_status not in ('confirmed', 'served', 'cancelled'):
+        return jsonify({'success': False, 'message': 'Invalid status.'}), 400
+    if not officer_id:
+        return jsonify({'success': False, 'message': 'officer_id is required.'}), 400
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT id, office_id FROM officers WHERE id = %s", (officer_id,))
+        officer = cursor.fetchone()
+        if not officer:
+            return jsonify({'success': False, 'message': 'Officer not found'}), 404
+        cursor.execute("SELECT id, office_id, status FROM appointments WHERE id = %s", (appt_id,))
+        appt = cursor.fetchone()
+        if not appt:
+            return jsonify({'success': False, 'message': 'Appointment not found.'}), 404
+        if appt['office_id'] != officer['office_id']:
+            return jsonify({'success': False, 'message': 'This appointment belongs to another office.'}), 403
+        cursor.execute("UPDATE appointments SET status = %s WHERE id = %s", (new_status, appt_id))
+        conn.commit()
+        return jsonify({'success': True, 'status': new_status})
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"Appointment status error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route('/api/admin/appointments', methods=['GET'])
+def admin_appointments():
+    office_id = request.args.get('office_id')
+    status = (request.args.get('status') or '').strip().lower()
+    where = []
+    params = []
+    if office_id:
+        where.append("a.office_id = %s")
+        params.append(office_id)
+    if status in ('pending', 'confirmed', 'served', 'cancelled'):
+        where.append("a.status = %s")
+        params.append(status)
+    where_sql = ("WHERE " + " AND ".join(where)) if where else ""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(f"""
+            SELECT a.id, a.reference, a.full_name, a.email, a.phone, a.preferred_date,
+                   a.reason, a.status, a.created_at,
+                   off.office_name, off.office_code,
+                   s.service_name
+            FROM appointments a
+            JOIN offices off ON a.office_id = off.id
+            LEFT JOIN services s ON a.service_id = s.id
+            {where_sql}
+            ORDER BY a.preferred_date ASC, a.created_at DESC
+            LIMIT 200
+        """, tuple(params))
+        return jsonify({'success': True, 'appointments': [_serialize_appt(r) for r in cursor.fetchall()]})
+    except Exception as e:
+        logger.error(f"Admin appointments error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
     finally:
         cursor.close()
         conn.close()
@@ -4352,6 +4615,29 @@ def admin_feedback_analyze():
     except Exception as e:
         logger.error(f"Error analyzing feedback: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/admin/appointments/<int:appt_id>/status', methods=['POST'])
+def admin_appointment_status(appt_id):
+    data = request.get_json(silent=True) or {}
+    new_status = (data.get('status') or '').strip().lower()
+    if new_status not in ('confirmed', 'served', 'cancelled'):
+        return jsonify({'success': False, 'message': 'Invalid status.'}), 400
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE appointments SET status = %s WHERE id = %s", (new_status, appt_id))
+        if cursor.rowcount == 0:
+            return jsonify({'success': False, 'message': 'Appointment not found.'}), 404
+        conn.commit()
+        return jsonify({'success': True, 'status': new_status})
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"Admin appointment status error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
 
 
 @app.route('/api/admin/feedback', methods=['GET'])

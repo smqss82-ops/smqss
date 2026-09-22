@@ -149,7 +149,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink)
         <div style="flex:1;height:1px;background:var(--border)"></div>
       </div>
       <div class="btn-row">
-        <button class="btn" onclick="openGeneralComplaint()" style="background:var(--white);color:var(--mak-green);border:2px solid var(--mak-green);box-shadow:none;font-weight:600" data-i18n="feedback_submit_request">Submit a Request</button>
+        <button class="btn" onclick="openAppointment()" style="background:var(--white);color:var(--mak-green);border:2px solid var(--mak-green);box-shadow:none;font-weight:600">Book Appointment</button>
       </div>
     </div>
 
@@ -180,58 +180,55 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink)
             <div class="ai-name">Queue Assistant <span data-i18n="common_smqss">SMQSS</span></div>
           </div>
         </div>
-        <div class="ai-bubble" id="gcBubble" data-i18n="feedback_gc_bubble">We value your feedback. Please share your concern and we'll look into it.</div>
+        <div class="ai-bubble" id="gcBubble">Need to visit an office? Pick the office and date — your booking goes straight to them.</div>
       </div>
       <div class="field">
-        <label for="gcCategory" data-i18n="feedback_category">Category</label>
-        <select id="gcCategory" onchange="onCategoryChange()" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--surface)">
-          <option value="" data-i18n="feedback_select">— Select —</option>
-          <option value="Student" data-i18n="feedback_person">Person</option>
-          <option value="Staff" data-i18n="feedback_staff">Staff</option>
-          <option value="Other" data-i18n="feedback_other">Other</option>
+        <label for="apptOffice">Office *</label>
+        <select id="apptOffice" onchange="onApptOfficeChange()" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--surface)">
+          <option value="">— Select office —</option>
         </select>
       </div>
-      <div class="field" id="gcFieldName" style="display:none">
-        <label for="gcName" data-i18n="feedback_full_name">Full Name</label>
-        <input type="text" id="gcName" placeholder="Your full name" data-i18n-placeholder="feedback_full_name_placeholder">
-      </div>
-      <div class="field" id="gcFieldStudentNo" style="display:none">
-        <label for="gcStudentNo" data-i18n="feedback_id_number">ID Number</label>
-        <input type="text" id="gcStudentNo" placeholder="e.g. 2300716574" maxlength="10" inputmode="numeric" pattern="[0-9]*" oninput="validateStudentNumber(this)" data-i18n-placeholder="feedback_id_placeholder">
-        <div class="num-hint" id="gcNumHint"></div>
-      </div>
-      <div class="field" id="gcFieldEmpId" style="display:none">
-        <label for="gcEmpId" data-i18n="feedback_employee_id">Employee ID</label>
-        <input type="text" id="gcEmpId" placeholder="e.g. MU/EMP/01234" data-i18n-placeholder="feedback_employee_placeholder">
-      </div>
-      <div class="field" id="gcFieldDept" style="display:none">
-        <label for="gcDept" data-i18n="feedback_department">Department</label>
-        <input type="text" id="gcDept" placeholder="Your department" data-i18n-placeholder="feedback_department_placeholder">
-      </div>
-      <div class="field" id="gcFieldContact" style="display:none">
-        <label for="gcContact" data-i18n="feedback_contact">Contact</label>
-        <input type="text" id="gcContact" placeholder="Email or phone number" data-i18n-placeholder="feedback_contact_placeholder">
+      <div class="field">
+        <label for="apptService">Service</label>
+        <select id="apptService" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--surface)">
+          <option value="">General visit</option>
+        </select>
       </div>
       <div class="field">
-        <label for="gcEmail" data-i18n="feedback_email_address">Email Address *</label>
-        <input type="email" id="gcEmail" placeholder="e.g. you@example.com" data-i18n-placeholder="feedback_email_placeholder">
+        <label for="apptDate">Preferred date *</label>
+        <input type="date" id="apptDate" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--surface)">
       </div>
       <div class="field">
-        <label for="gcText" data-i18n="feedback_your_request">Your Request</label>
-        <textarea id="gcText" rows="4" placeholder="Describe your request in detail..." data-i18n-placeholder="feedback_request_placeholder"></textarea>
+        <label for="apptName">Full Name *</label>
+        <input type="text" id="apptName" placeholder="Your full name" autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="apptEmail">Email Address *</label>
+        <input type="email" id="apptEmail" placeholder="e.g. you@example.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="apptPhone">Phone</label>
+        <div style="display:flex;align-items:center;gap:0;">
+          <span style="padding:11px 12px;border:1.5px solid var(--border);border-right:none;border-radius:8px 0 0 8px;background:var(--surface);font-weight:700;font-size:14px;">+256</span>
+          <input type="text" id="apptPhone" placeholder="772123456" autocomplete="tel" maxlength="9" inputmode="numeric" pattern="[0-9]*" style="border-radius:0 8px 8px 0;">
+        </div>
+      </div>
+      <div class="field">
+        <label for="apptReason">Reason for visit *</label>
+        <textarea id="apptReason" rows="4" placeholder="e.g. Collect transcript..."></textarea>
       </div>
       <div class="btn-row" style="display:flex;gap:10px;justify-content:center">
-        <button class="btn-back" onclick="goToStep('step0', true)">← Back</button>
-        <button class="btn" onclick="submitGeneralComplaint()" data-i18n="feedback_submit_request_btn">Submit Request</button>
+        <button class="btn-back" onclick="goToStep('step0', true)" style="min-height:48px;font-size:14px;">← Back</button>
+        <button class="btn" id="apptSubmitBtn" onclick="submitAppointment()" style="min-height:48px;font-size:15px;">📅 Book Appointment</button>
       </div>
     </div>
 
     <div class="step-content" id="step4">
       <div class="confirm-icon"><svg viewBox="0 0 24 24"><polyline points="2,12 8,18 22,4" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      <div class="confirm-title" data-i18n="feedback_request_received">Request Received</div>
-      <p class="confirm-desc" data-i18n="feedback_request_received_desc">Your request has been submitted. Our team will review it and follow up. Thank you for helping us improve.</p>
+      <div class="confirm-title">Appointment Booked!</div>
+      <p class="confirm-desc" id="apptConfirmText">Your appointment has been received.</p>
       <div class="btn-row">
-        <button class="btn-back" onclick="window.location.href='/student-token'" data-i18n="feedback_back_to_home">← Back to Home</button>
+        <button class="btn-back" onclick="window.location.href='/student-token'">← Back to Home</button>
       </div>
     </div>
 
@@ -532,41 +529,59 @@ function goToStep(id, reset){
   document.getElementById(id).classList.add('active');
   if(reset){
     document.getElementById('gcErrorBar').style.display = 'none';
-    document.getElementById('gcCategory').value = '';
-    onCategoryChange();
-    document.getElementById('gcName').value = '';
-    document.getElementById('gcStudentNo').value = '';
-    document.getElementById('gcEmpId').value = '';
-    document.getElementById('gcDept').value = '';
-    document.getElementById('gcContact').value = '';
-    document.getElementById('gcEmail').value = '';
-    document.getElementById('gcText').value = '';
+    document.getElementById('apptOffice').value = '';
+    document.getElementById('apptService').innerHTML = '<option value="">General visit</option>';
+    document.getElementById('apptDate').value = '';
+    document.getElementById('apptName').value = '';
+    document.getElementById('apptPhone').value = '';
+    document.getElementById('apptReason').value = '';
+    var ae = document.getElementById('emailInput');
+    document.getElementById('apptEmail').value = ae ? ae.value.trim() : '';
   }
 }
 
-function openGeneralComplaint(){
-  document.getElementById('gcBubble').innerHTML = "We value your feedback. Please share your concern and we'll look into it.";
+function openAppointment(){
   document.getElementById('gcErrorBar').style.display = 'none';
   goToStep('step3', true);
+  try {
+    document.getElementById('apptDate').min = new Date().toISOString().slice(0, 10);
+  } catch(e) {}
+  loadApptOffices();
 }
 
-function onCategoryChange(){
-  var cat = document.getElementById('gcCategory').value;
-  document.getElementById('gcFieldName').style.display = cat ? 'block' : 'none';
-  document.getElementById('gcFieldStudentNo').style.display = cat === 'Student' ? 'block' : 'none';
-  document.getElementById('gcFieldEmpId').style.display = cat === 'Staff' ? 'block' : 'none';
-  document.getElementById('gcFieldDept').style.display = cat === 'Staff' ? 'block' : 'none';
-  document.getElementById('gcFieldContact').style.display = cat === 'Other' ? 'block' : 'none';
+async function loadApptOffices(){
+  var sel = document.getElementById('apptOffice');
+  sel.innerHTML = '<option value="">Loading offices...</option>';
+  try{
+    const res = await fetch(API_BASE + '/api/offices?public_only=1');
+    const data = await res.json();
+    if(data.success && data.offices && data.offices.length){
+      sel.innerHTML = '<option value="">— Select office —</option>' + data.offices.map(function(o){
+        return '<option value="' + o.id + '">' + escapeHtml(o.office_name) +
+          (o.location ? ' — ' + escapeHtml(o.location) : '') + '</option>';
+      }).join('');
+    } else {
+      sel.innerHTML = '<option value="">No offices available</option>';
+    }
+  } catch(err){
+    sel.innerHTML = '<option value="">Could not load offices</option>';
+  }
 }
 
-function validateStudentNumber(el){
-  el.value = el.value.replace(/\D/g,'').slice(0,10);
-  var v = el.value, hint = document.getElementById('gcNumHint');
-  el.classList.remove('valid','invalid');
-  hint.classList.remove('show','error');
-  if(v.length===0) return;
-  if(v.length===10){ el.classList.add('valid'); hint.textContent='\u2713 Valid ID number'; hint.className='num-hint show'; }
-  else{ el.classList.add('invalid'); hint.textContent='Exactly 10 digits required ('+v.length+'/10)'; hint.className='num-hint show error'; }
+async function onApptOfficeChange(){
+  var officeId = document.getElementById('apptOffice').value;
+  var sel = document.getElementById('apptService');
+  sel.innerHTML = '<option value="">General visit</option>';
+  if(!officeId) return;
+  try{
+    const res = await fetch(API_BASE + '/api/offices/' + encodeURIComponent(officeId) + '/services');
+    const data = await res.json();
+    if(data.success && data.services){
+      sel.innerHTML = '<option value="">General visit</option>' + data.services.map(function(s){
+        return '<option value="' + s.id + '">' + escapeHtml(s.service_name) + '</option>';
+      }).join('');
+    }
+  } catch(err){ /* keep default */ }
 }
 
 function showGcError(msg){
@@ -575,58 +590,56 @@ function showGcError(msg){
   bar.style.display = 'block';
 }
 
-async function submitGeneralComplaint(){
-  var category = document.getElementById('gcCategory').value;
-  var complaintText = document.getElementById('gcText').value.trim();
-  var email = document.getElementById('gcEmail').value.trim();
+async function submitAppointment(){
+  var officeId = document.getElementById('apptOffice').value;
+  var serviceId = document.getElementById('apptService').value || null;
+  var apptDate = document.getElementById('apptDate').value;
+  var fullName = document.getElementById('apptName').value.trim();
+  var email = document.getElementById('apptEmail').value.trim().toLowerCase();
+  var phoneRaw = document.getElementById('apptPhone').value.replace(/\D/g, '');
+  var reason = document.getElementById('apptReason').value.trim();
 
-  if(!category){ showGcError('Please select a category.'); return; }
-  if(!complaintText){ showGcError('Please describe your request.'); return; }
-  if(!email){ showGcError('Please enter your email address for follow-up.'); return; }
-
-  if(category === 'Student'){
-    var stdNum = document.getElementById('gcStudentNo').value.trim();
-    if(!stdNum){ showGcError('Please enter your student number.'); document.getElementById('gcStudentNo').focus(); return; }
-    if(stdNum.length !== 10){ showGcError('Student number must be exactly 10 digits.'); document.getElementById('gcStudentNo').focus(); return; }
-  }
+  if(!officeId){ showGcError('Please select an office.'); return; }
+  if(!apptDate){ showGcError('Please choose your preferred date.'); return; }
+  if(!fullName){ showGcError('Please enter your full name.'); return; }
+  if(!email){ showGcError('Please enter your email address.'); return; }
+  if(!reason){ showGcError('Please describe the reason for your visit.'); return; }
+  if(phoneRaw && phoneRaw.length !== 9){ showGcError('Phone must be 9 digits after +256 (or leave it empty).'); return; }
 
   var payload = {
-    category: category,
-    full_name: document.getElementById('gcName').value.trim() || null,
+    office_id: parseInt(officeId),
+    service_id: serviceId ? parseInt(serviceId) : null,
+    full_name: fullName,
     email: email,
-    complaint_text: complaintText
+    phone: phoneRaw ? '256' + phoneRaw : null,
+    preferred_date: apptDate,
+    reason: reason
   };
-
-  if(category === 'Student'){
-    payload.student_number = document.getElementById('gcStudentNo').value.trim() || null;
-  } else if(category === 'Staff'){
-    payload.employee_id = document.getElementById('gcEmpId').value.trim() || null;
-    payload.department = document.getElementById('gcDept').value.trim() || null;
-  } else if(category === 'Other'){
-    payload.contact = document.getElementById('gcContact').value.trim() || null;
-  }
 
   document.getElementById('gcErrorBar').style.display = 'none';
 
   var submitBtns = document.querySelectorAll('#step3 .btn');
-  submitBtns.forEach(function(b) { b.disabled = true; b.textContent = 'Submitting...'; });
+  submitBtns.forEach(function(b) { b.disabled = true; b.textContent = 'Booking...'; });
 
   try{
-    var res = await fetch(API_BASE + '/api/student/general-complaint', {
+    var res = await fetch(API_BASE + '/api/student/appointments', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(payload)
     });
     var data = await res.json();
     if(data.success){
+      document.getElementById('apptConfirmText').textContent =
+        'Reference: ' + data.reference + ' — ' + data.office_name + ' (' + data.service_name + ') on ' +
+        data.preferred_date + '. A confirmation has been emailed to ' + email + '. Please arrive with your reference on the day.';
       goToStep('step4', true);
     } else {
-      showGcError(data.message || 'Failed to submit request.');
+      showGcError(data.message || 'Failed to book appointment.');
     }
   } catch(err){
     showGcError('Network error. Please try again.');
   } finally {
-    submitBtns.forEach(function(b) { b.disabled = false; b.textContent = 'Submit Request'; });
+    submitBtns.forEach(function(b) { b.disabled = false; b.textContent = '📅 Book Appointment'; });
   }
 }
 </script>

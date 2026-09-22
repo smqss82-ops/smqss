@@ -1026,6 +1026,15 @@
             <span>General Complaints</span>
             <span class="nav-badge" id="sidebarGCBadge">0</span>
         </div>
+        <div class="nav-item" onclick="showPage('appointments', this)">
+            <div class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+            </div>
+            <span>Appointments</span>
+            <span class="nav-badge" id="sidebarApptBadge">0</span>
+        </div>
 
         <div class="nav-section-label">Queue</div>
         <div class="nav-item" onclick="showPage('queue', this)">
@@ -1620,6 +1629,56 @@
                         </thead>
                         <tbody id="gcTableBody">
                             <tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:40px 0">Loading complaints...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="page" id="page-appointments">
+                <div class="toolbar-row" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
+                    <span style="font-size:13px;color:var(--text-secondary)" id="apptCount">Loading...</span>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                        <select id="apptOfficeFilter" onchange="loadAppointmentsAdmin()" style="padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-family:inherit;background:var(--white)">
+                            <option value="">All offices</option>
+                        </select>
+                        <select id="apptStatusFilter" onchange="loadAppointmentsAdmin()" style="padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-family:inherit;background:var(--white)">
+                            <option value="">All statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="served">Served</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                        <button type="button" class="btn-sm" onclick="loadAppointmentsAdmin()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--white);cursor:pointer;font-size:12px;font-weight:600;color:var(--text-secondary);font-family:inherit">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:14px;height:14px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div id="apptEmpty" style="display:none;text-align:center;padding:60px 20px">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:48px;height:48px;color:var(--text-muted);margin-bottom:12px">
+                        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    <p style="font-size:15px;color:var(--text-muted);font-weight:600">No appointments yet</p>
+                </div>
+
+                <div class="table-wrap" id="apptTableWrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Reference</th>
+                                <th>Date</th>
+                                <th>Office</th>
+                                <th>Service</th>
+                                <th>Name</th>
+                                <th>Contact</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="apptTableBody">
+                            <tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:40px 0">Loading appointments...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -2220,6 +2279,7 @@
                 queue: { title: 'Live Queue', sub: 'Real-time queue monitoring' },
                 feedback: { title: 'Feedback & Complaints', sub: 'Citizen ratings and complaints from completed and non-completed tokens' },
                 'general-complaints': { title: 'General Complaints', sub: 'Non-token complaints from people, staff, and others' },
+                'appointments': { title: 'Appointments', sub: 'Office-routed visit bookings by office and status' },
                 'system-rating': { title: 'System Rating', sub: 'Enable officer system rating and view submitted ratings' },
                 'settings': { title: 'System Settings', sub: 'Configure display language and system preferences' },
                 changepin: { title: 'Change PIN', sub: 'Update your login PIN code' },
@@ -2254,6 +2314,9 @@
             } else if (id === 'general-complaints') {
                 document.getElementById('topbarActions').innerHTML = '';
                 loadGeneralComplaints();
+            } else if (id === 'appointments') {
+                document.getElementById('topbarActions').innerHTML = '';
+                loadAppointmentsAdmin();
             } else if (id === 'system-rating') {
                 document.getElementById('topbarActions').innerHTML = '';
                 loadSystemRating();
@@ -3579,6 +3642,123 @@
                     loadGeneralComplaints();
                 } else {
                     showToast(data.message || 'Failed to delete.', 'error');
+                }
+            } catch (e) {
+                showToast('Network error.', 'error');
+            } finally {
+                setLoading(btn, false);
+            }
+        }
+
+        // ── APPOINTMENTS ──
+        function fillApptOfficeFilter() {
+            var sel = document.getElementById('apptOfficeFilter');
+            if (!sel || sel.options.length > 1) return;
+            var list = (typeof officesData !== 'undefined' && officesData.length) ? officesData : [];
+            var addOpts = function(items) {
+                items.forEach(function(o) {
+                    var opt = document.createElement('option');
+                    opt.value = o.id;
+                    opt.textContent = o.office_name + (o.office_code ? ' (' + o.office_code + ')' : '');
+                    sel.appendChild(opt);
+                });
+            };
+            if (list.length) { addOpts(list); return; }
+            fetch(`${API_BASE_URL}/api/offices`).then(function(r){ return r.json(); }).then(function(d){
+                if (d.success && d.offices) addOpts(d.offices);
+            }).catch(function(){});
+        }
+
+        async function loadAppointmentsAdmin() {
+            fillApptOfficeFilter();
+            var officeId = document.getElementById('apptOfficeFilter').value;
+            var status = document.getElementById('apptStatusFilter').value;
+            var qs = [];
+            if (officeId) qs.push('office_id=' + encodeURIComponent(officeId));
+            if (status) qs.push('status=' + encodeURIComponent(status));
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/appointments` + (qs.length ? '?' + qs.join('&') : ''));
+                const data = await res.json();
+                if (data.success) {
+                    renderAppointmentsAdmin(data.appointments || []);
+                    var pend = (data.appointments || []).filter(function(a){ return a.status === 'pending'; }).length;
+                    document.getElementById('sidebarApptBadge').textContent = pend;
+                } else {
+                    document.getElementById('apptTableBody').innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--red);padding:40px 0">Failed to load appointments.</td></tr>';
+                }
+            } catch (e) {
+                document.getElementById('apptTableBody').innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--red);padding:40px 0">Network error.</td></tr>';
+            }
+        }
+
+        function apptStatusBadge(status) {
+            var styles = {
+                pending: 'background:var(--orange-light);color:var(--orange)',
+                confirmed: 'background:var(--success-light);color:var(--success)',
+                served: 'background:#f1f5f9;color:#475569',
+                cancelled: 'background:#fee2e2;color:#b91c1c'
+            };
+            var s = styles[status] || styles.pending;
+            return '<span style="display:inline-block;' + s + ';font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;text-transform:capitalize">' + status + '</span>';
+        }
+
+        function renderAppointmentsAdmin(list) {
+            const tbody = document.getElementById('apptTableBody');
+            const count = document.getElementById('apptCount');
+            const tableWrap = document.getElementById('apptTableWrap');
+            const empty = document.getElementById('apptEmpty');
+            if (!list.length) {
+                tableWrap.style.display = 'none';
+                empty.style.display = 'block';
+                count.textContent = '0 appointments';
+                return;
+            }
+            tableWrap.style.display = 'block';
+            empty.style.display = 'none';
+            count.textContent = list.length + ' appointment' + (list.length !== 1 ? 's' : '');
+            tbody.innerHTML = list.map(function(a){
+                var dateStr = (a.preferred_date || '').slice(0, 10);
+                var actionBtn;
+                if (a.status === 'pending') {
+                    actionBtn = '<div style="display:flex;gap:6px">' +
+                        '<button class="btn-sm" onclick="setApptStatusAdmin(' + a.id + ',\'confirmed\',this)" style="color:var(--success);border-color:var(--success);font-size:11px;min-height:36px">Confirm</button>' +
+                        '<button class="btn-sm" onclick="setApptStatusAdmin(' + a.id + ',\'cancelled\',this)" style="color:var(--red);border-color:var(--red);font-size:11px;min-height:36px">Cancel</button></div>';
+                } else if (a.status === 'confirmed') {
+                    actionBtn = '<div style="display:flex;gap:6px">' +
+                        '<button class="btn-sm" onclick="setApptStatusAdmin(' + a.id + ',\'served\',this)" style="color:var(--success);border-color:var(--success);font-size:11px;min-height:36px">Mark Served</button>' +
+                        '<button class="btn-sm" onclick="setApptStatusAdmin(' + a.id + ',\'cancelled\',this)" style="color:var(--red);border-color:var(--red);font-size:11px;min-height:36px">Cancel</button></div>';
+                } else {
+                    actionBtn = '<span style="font-size:11px;color:var(--text-muted)">—</span>';
+                }
+                return '<tr>' +
+                    '<td style="font-family:monospace;font-weight:700;font-size:13px">' + escapeHtml(a.reference || ('#' + a.id)) + '</td>' +
+                    '<td style="font-size:12px;color:var(--text-muted);white-space:nowrap">' + escapeHtml(dateStr) + '</td>' +
+                    '<td><strong>' + escapeHtml(a.office_name) + '</strong> <span style="font-size:11px;color:var(--text-muted)">(' + escapeHtml(a.office_code || '') + ')</span></td>' +
+                    '<td style="font-size:12px">' + escapeHtml(a.service_name || 'General visit') + '</td>' +
+                    '<td>' + escapeHtml(a.full_name || '—') + '</td>' +
+                    '<td style="font-size:12px;color:var(--text-secondary)">' + escapeHtml(a.email || '—') + (a.phone ? '<br>' + escapeHtml(a.phone) : '') + '</td>' +
+                    '<td style="max-width:240px;font-size:13px;color:var(--text-secondary)">' + escapeHtml(a.reason || '—') + '</td>' +
+                    '<td>' + apptStatusBadge(a.status) + '</td>' +
+                    '<td>' + actionBtn + '</td>' +
+                '</tr>';
+            }).join('');
+        }
+
+        async function setApptStatusAdmin(id, status, btn) {
+            if (status === 'cancelled' && !confirm('Cancel appointment? The client will need to book again.')) return;
+            setLoading(btn, true);
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/appointments/${id}/status`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ status })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Appointment ' + status + '.', 'success');
+                    loadAppointmentsAdmin();
+                } else {
+                    showToast(data.message || 'Failed to update.', 'error');
                 }
             } catch (e) {
                 showToast('Network error.', 'error');

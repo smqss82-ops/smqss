@@ -627,6 +627,14 @@
     </div>
   </div>
 
+  <div class="card" id="appointmentsCard" style="margin-top:16px;">
+      <div class="card-header">
+        <div class="card-title"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Appointments for My Office <span class="token-tag" id="apptPendingBadge" style="display:none;"></span></div>
+        <button class="btn-sm btn-blue" onclick="loadAppointments()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg> Refresh</button>
+      </div>
+      <div class="card-body"><div class="queue-scroll" id="apptContainer"><div class="empty"><div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="empty-text">Loading appointments…</div></div></div></div>
+    </div>
+
   <div class="card">
     <div class="card-header">
       <div class="card-title"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Activity Log</div>
@@ -748,6 +756,11 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       <span>Messages</span>
       <span class="drawer-badge" id="drawerMsgBadge" style="display:none;">0</span>
+    </button>
+    <button class="drawer-item" onclick="scrollToAppointments()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>Appointments</span>
+      <span class="drawer-badge" id="drawerApptBadge" style="display:none;">0</span>
     </button>
     <div class="drawer-divider"></div>
     <button class="drawer-item" onclick="openSearchModal()">
@@ -2010,6 +2023,95 @@
     } finally { setLoading(btn, false); }
   }
 
+  // ============================================
+  // APPOINTMENTS (office-routed bookings)
+  // ============================================
+  let apptPrevPending = 0;
+
+  function scrollToAppointments() {
+    closeDrawer();
+    document.getElementById('appointmentsCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function apptStatusPill(status) {
+    const map = {
+      pending: ['#b45309', '#fef3c7', 'WAITING FOR CONFIRMATION'],
+      confirmed: ['#15803d', '#dcfce7', 'CONFIRMED'],
+      served: ['#475569', '#f1f5f9', 'SERVED'],
+      cancelled: ['#b91c1c', '#fee2e2', 'CANCELLED']
+    };
+    const c = map[status] || map.pending;
+    return `<span style="font-size:10px;font-weight:800;letter-spacing:.5px;color:${c[0]};background:${c[1]};padding:3px 10px;border-radius:20px;">${c[2]}</span>`;
+  }
+
+  async function loadAppointments(silent) {
+    if (!currentOfficer) return;
+    try {
+      const data = await apiCall(`/api/officer/appointments?officer_id=${currentOfficer.id}`);
+      if (!data.success) return;
+      const list = data.appointments || [];
+      const box = document.getElementById('apptContainer');
+      const badge = document.getElementById('apptPendingBadge');
+      const dbadge = document.getElementById('drawerApptBadge');
+      const pending = data.pending_count || 0;
+      if (pending > 0) {
+        badge.style.display = '';
+        badge.textContent = pending + ' waiting';
+        dbadge.style.display = 'flex';
+        dbadge.textContent = pending;
+      } else {
+        badge.style.display = 'none';
+        dbadge.style.display = 'none';
+      }
+      if (!silent && pending > apptPrevPending && apptPrevPending >= 0 && document.hidden !== true) {
+        showToast(`New appointment booking for your office (${pending} waiting)`, 'info');
+      }
+      apptPrevPending = pending;
+      if (!list.length) {
+        box.innerHTML = `<div class="empty"><div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="empty-text">No appointments for your office</div></div>`;
+        return;
+      }
+      box.innerHTML = list.map(function(a) {
+        const when = (a.preferred_date || '').slice(0, 10);
+        let actions = '';
+        if (a.status === 'pending') {
+          actions = `<div class="action-grid" style="margin-top:10px;">` +
+            `<button class="action-btn btn-complete" style="min-height:48px;font-size:14px;" onclick="setAppointmentStatus(${a.id},'confirmed',this)">${ic.check} Confirm Appointment</button>` +
+            `<button class="action-btn btn-skip" style="min-height:48px;font-size:14px;" onclick="setAppointmentStatus(${a.id},'cancelled',this)">${ic.skip} Cancel Booking</button></div>`;
+        } else if (a.status === 'confirmed') {
+          actions = `<div class="action-grid" style="margin-top:10px;">` +
+            `<button class="action-btn btn-complete" style="min-height:48px;font-size:14px;" onclick="setAppointmentStatus(${a.id},'served',this)">${ic.check} Mark Served</button>` +
+            `<button class="action-btn btn-skip" style="min-height:48px;font-size:14px;" onclick="setAppointmentStatus(${a.id},'cancelled',this)">${ic.skip} Cancel Booking</button></div>`;
+        }
+        return `<div class="appt-card" style="border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px;background:#fff;">` +
+          `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;">` +
+            `<span style="font-weight:800;font-size:14px;">${escapeHtml(a.reference || ('#' + a.id))} · ${escapeHtml(when)}</span>${apptStatusPill(a.status)}</div>` +
+          `<div style="font-size:14px;font-weight:600;">${escapeHtml(a.full_name)} — ${escapeHtml(a.service_name || 'General visit')}</div>` +
+          `<div style="font-size:12.5px;color:var(--text-secondary);margin-top:2px;">${escapeHtml(a.reason || '')}</div>` +
+          `<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">${ic.user} ${escapeHtml(a.email || '')}${a.phone ? ' · ' + escapeHtml(a.phone) : ''}</div>` +
+          actions + `</div>`;
+      }).join('');
+    } catch(e) { /* silent: appointments are secondary to the queue */ }
+  }
+
+  async function setAppointmentStatus(id, status, btn) {
+    const verb = status === 'confirmed' ? 'confirm this appointment' : (status === 'served' ? 'mark this appointment served' : 'CANCEL this booking');
+    if (status === 'cancelled' && !confirm('Cancel this booking? The client will need to book again.')) return;
+    setLoading(btn, true);
+    try {
+      const data = await apiCall(`/api/officer/appointments/${id}/status`, 'POST', { officer_id: currentOfficer.id, status });
+      if (data.success) {
+        showToast(status === 'confirmed' ? 'Appointment confirmed' : (status === 'served' ? 'Appointment marked served' : 'Booking cancelled'), 'success');
+        addLog(`Appointment #${id} → ${status}`, 'success');
+        await loadAppointments(true);
+      } else {
+        showToast(data.message || `Could not ${verb}.`, 'error');
+      }
+    } catch(e) {
+      showToast('Network error. Try again.', 'error');
+    } finally { setLoading(btn, false); }
+  }
+
   async function init() {
     if (navigator.userAgent.toLowerCase().includes('electron')) {
         var containers = document.querySelectorAll('.queue-scroll, .log-list, .msg-modal-body, .drawer-body');
@@ -2023,11 +2125,13 @@
     startAudioKeepAlive();
     await Promise.all([
       loadOfficeStatus(),
-      loadQueue()
+      loadQueue(),
+      loadAppointments(true)
     ]);
     generateWelcomeVoice(currentOfficer.officer_name, currentOfficer.office_name);
     refreshInterval = setInterval(loadQueue, 2000);
     setInterval(loadOfficeStatus, 30000);
+    setInterval(function() { loadAppointments(true); }, 30000);
     document.getElementById('messageIconBtn').addEventListener('click', openMessageModal);
     checkSystemRating();
   }
@@ -2036,6 +2140,7 @@
   window.completeService = completeService; window.skipStudent = skipStudent; window.recallStudent = recallStudent;
   window.callBatch = callBatch; window.serveAllBatch = serveAllBatch; window.recallAllBatch = recallAllBatch; window.completeAllBatch = completeAllBatch;
   window.resetQueue = resetQueue; window.loadQueue = loadQueue; window.clearLog = clearLog;
+  window.loadAppointments = loadAppointments; window.setAppointmentStatus = setAppointmentStatus; window.scrollToAppointments = scrollToAppointments;
   window.closeModal = closeModal; window.confirmAction = confirmAction; window.closeResetModal = closeResetModal;
   window.toggleOfficeAvailability = toggleOfficeAvailability; window.loadOfficeStatus = loadOfficeStatus;
   window.confirmAvailabilityChange = confirmAvailabilityChange; window.closeAvailReasonModal = closeAvailReasonModal;
