@@ -4796,6 +4796,205 @@ def admin_appointment_status(appt_id):
         conn.close()
 
 
+# ============================================
+# SERVICE PROOF (claimed vs client-confirmed work)
+# ============================================
+PROOF_GHOST_MIN_CLAIMED = 5
+PROOF_GHOST_MAX_RATE = 0.40
+PROOF_BURST_MIN_PER_DAY = 8
+PROOF_BURST_MAX_MIN = 2.0
+PROOF_STALE_HOURS = 72
+
+
+def _proof_range(args):
+    """Parse from/to (YYYY-MM-DD), default last 7 days, cap 93 days."""
+    from datetime import timezone as _tz
+    eat_now = datetime.now(_tz.utc) + timedelta(hours=3)
+    default_to = eat_now.date()
+    default_from = default_to - timedelta(days=6)
+    try:
+        from_d = datetime.strptime(args.get('from', ''), '%Y-%m-%d').date()
+    except ValueError:
+        from_d = default_from
+    try:
+        to_d = datetime.strptime(args.get('to', ''), '%Y-%m-%d').date()
+    except ValueError:
+        to_d = default_to
+    if to_d < from_d:
+        from_d, to_d = to_d, from_d
+    if (to_d - from_d).days > 92:
+        from_d = to_d - timedelta(days=92)
+    return from_d.isoformat(), to_d.isoformat(), (to_d - from_d).days + 1
+
+
+@app.route('/api/admin/service-proof', methods=['GET'])
+def admin_service_proof():
+    from_d, to_d, days = _proof_range(request.args)
+    office_id = request.args.get('office_id')
+    params = [from_d, to_d]
+    office_join = ""
+    if office_id:
+        office_join = "AND o.office_id = %s"
+        params.append(office_id)
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(f"""
+            SELECT o.id AS officer_id, o.officer_number, o.officer_name,
+                   off.id AS office_id, off.office_code, off.office_name,
+                   COUNT(*) AS claimed,
+                   SUM(CASE WHEN t.feedback_submitted_at IS NOT NULL THEN 1 ELSE 0 END) AS confirmed,
+                   SUM(CASE WHEN t.feedback_submitted_at IS NULL AND t.student_email IS NULL THEN 1 ELSE 0 END) AS legacy,
+                   SUM(CASE WHEN t.feedback_submitted_at IS NULL
+                             AND t.completed_at < NOW() - INTERVAL {PROOF_STALE_HOURS} HOUR THEN 1 ELSE 0 END) AS stale,
+                   ROUND(AVG(CASE WHEN t.rating > 0 THEN t.rating END), 2) AS avg_rating,
+                   ROUND(AVG(TIMESTAMPDIFF(SECOND, t.serving_started_at, t.completed_at) / 60), 1) AS avg_service_min
+            FROM university_tokens t
+            JOIN officers o ON t.assigned_officer_id = o.id
+            JOIN offices off ON o.office_id = off.id
+            WHERE t.status = 'completed'
+              AND COALESCE(t.served_count_excluded, 0) = 0
+              AND t.completed_at >= %s AND t.completed_at < %s + INTERVAL 1 DAY
+              {office_join}
+            GROUP BY o.id, o.officer_number, o.officer_name, off.id, off.office_code, off.office_name
+            ORDER BY off.office_name, o.officer_number
+        """, tuple(params))
+        officers = []
+        for r in cursor.fetchall():
+            claimed = int(r['claimed'] or 0)
+            confirmed = int(r['confirmed'] or 0)
+            pending = claimed - confirmed
+            rate = (confirmed / claimed) if claimed else 0
+            ghost_min = max(PROOF_GHOST_MIN_CLAIMED, int(PROOF_GHOST_MIN_CLAIMED * days / 7) or 1)
+            flags = []
+            if claimed >= ghost_min and rate < PROOF_GHOST_MAX_RATE:
+                flags.append('GHOST-RISK')
+            per_day = claimed / days if days else claimed
+            avg_min = float(r['avg_service_min']) if r['avg_service_min'] is not None else None
+            if per_day >= PROOF_BURST_MIN_PER_DAY and avg_min is not None and avg_min < PROOF_BURST_MAX_MIN:
+                flags.append('BURST')
+            if int(r['stale'] or 0) > 0:
+                flags.append('STALE')
+            if int(r['legacy'] or 0) > 0:
+                flags.append('LEGACY')
+            officers.append({
+                'officer_id': r['officer_id'],
+                'officer_number': int(r['officer_number']) if r['officer_number'] is not None else None,
+                'officer_name': r['officer_name'],
+                'office_id': r['office_id'],
+                'office_code': r['office_code'],
+                'office_name': r['office_name'],
+                'claimed': claimed,
+                'confirmed': confirmed,
+                'pending': pending,
+                'stale': int(r['stale'] or 0),
+                'legacy': int(r['legacy'] or 0),
+                'confirm_rate': round(rate * 100, 1),
+                'avg_rating': float(r['avg_rating']) if r['avg_rating'] is not None else 0,
+                'avg_service_min': avg_min,
+                'flags': flags,
+            })
+
+        cursor.execute("""
+            SELECT COUNT(*) AS cnt
+            FROM university_tokens
+            WHERE status = 'completed' AND COALESCE(served_count_excluded, 0) = 0
+              AND assigned_officer_id IS NULL
+              AND completed_at >= %s AND completed_at < %s + INTERVAL 1 DAY
+        """, (from_d, to_d))
+        unassigned = int(cursor.fetchone()['cnt'] or 0)
+
+        cursor.execute("""
+            SELECT DATE(completed_at) AS day,
+                   COUNT(*) AS claimed,
+                   SUM(CASE WHEN feedback_submitted_at IS NOT NULL THEN 1 ELSE 0 END) AS confirmed
+            FROM university_tokens
+            WHERE status = 'completed' AND COALESCE(served_count_excluded, 0) = 0
+              AND completed_at >= %s AND completed_at < %s + INTERVAL 1 DAY
+            GROUP BY DATE(completed_at) ORDER BY day
+        """, (from_d, to_d))
+        trend = []
+        for r in cursor.fetchall():
+            d = r['day']
+            trend.append({
+                'day': d.isoformat() if isinstance(d, (datetime, date)) else str(d),
+                'claimed': int(r['claimed'] or 0),
+                'confirmed': int(r['confirmed'] or 0),
+            })
+
+        tot_claimed = sum(o['claimed'] for o in officers)
+        tot_confirmed = sum(o['confirmed'] for o in officers)
+        tot_pending = tot_claimed - tot_confirmed
+        return jsonify({'success': True, 'from': from_d, 'to': to_d, 'days': days,
+                        'overall': {
+                            'claimed': tot_claimed, 'confirmed': tot_confirmed,
+                            'pending': tot_pending,
+                            'confirm_rate': round(tot_confirmed / tot_claimed * 100, 1) if tot_claimed else 0,
+                            'stale': sum(o['stale'] for o in officers),
+                        },
+                        'unassigned_claims': unassigned,
+                        'officers': officers, 'trend': trend})
+    except Exception as e:
+        logger.error(f"Service proof error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route('/api/admin/service-proof/tokens', methods=['GET'])
+def admin_service_proof_tokens():
+    from_d, to_d, _days = _proof_range(request.args)
+    officer_id = request.args.get('officer_id')
+    unassigned = request.args.get('unassigned', '').strip().lower() in ('1', 'true', 'yes')
+    if not officer_id and not unassigned:
+        return jsonify({'success': False, 'message': 'officer_id or unassigned=1 is required'}), 400
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        if unassigned:
+            filt, params = "t.assigned_officer_id IS NULL", [from_d, to_d]
+        else:
+            filt, params = "t.assigned_officer_id = %s", [officer_id, from_d, to_d]
+        cursor.execute(f"""
+            SELECT t.token_number, t.student_name, t.student_email, t.status,
+                   t.rating, t.feedback_submitted_at, t.completed_at,
+                   t.serving_started_at, s.service_name, off.office_name,
+                   TIMESTAMPDIFF(MINUTE, t.completed_at, t.feedback_submitted_at) AS lag_min
+            FROM university_tokens t
+            JOIN offices off ON t.office_id = off.id
+            LEFT JOIN services s ON t.service_id = s.id
+            WHERE t.status = 'completed' AND COALESCE(t.served_count_excluded, 0) = 0
+              AND {filt}
+              AND t.completed_at >= %s AND t.completed_at < %s + INTERVAL 1 DAY
+            ORDER BY t.completed_at DESC LIMIT 200
+        """, tuple(params))
+        rows = []
+        for r in cursor.fetchall():
+            rated = r['feedback_submitted_at'] is not None
+            legacy = not rated and not r.get('student_email')
+            stale = (not rated and not legacy and isinstance(r.get('completed_at'), datetime)
+                     and (datetime.now() - r['completed_at']).total_seconds() > PROOF_STALE_HOURS * 3600)
+            for k in ('feedback_submitted_at', 'completed_at', 'serving_started_at'):
+                if isinstance(r.get(k), datetime):
+                    r[k] = r[k].isoformat()
+            rows.append({
+                'token_number': r['token_number'], 'student_name': r['student_name'],
+                'contact': _mask_email(r.get('student_email')), 'service_name': r['service_name'],
+                'office_name': r['office_name'], 'rating': r['rating'],
+                'claimed_at': r['completed_at'], 'rated_at': r['feedback_submitted_at'],
+                'lag_min': int(r['lag_min']) if r['lag_min'] is not None else None,
+                'state': 'CONFIRMED' if rated else ('UNVERIFIED' if legacy else ('STALE' if stale else 'PENDING')),
+            })
+        return jsonify({'success': True, 'tokens': rows})
+    except Exception as e:
+        logger.error(f"Service proof tokens error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
 @app.route('/api/admin/feedback', methods=['GET'])
 def admin_get_feedback():
     try:

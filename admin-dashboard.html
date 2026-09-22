@@ -1035,6 +1035,15 @@
             <span>Appointments</span>
             <span class="nav-badge" id="sidebarApptBadge">0</span>
         </div>
+        <div class="nav-item" onclick="showPage('service-proof', this)">
+            <div class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/>
+                </svg>
+            </div>
+            <span>Service Proof</span>
+            <span class="nav-badge" id="sidebarProofBadge">0</span>
+        </div>
 
         <div class="nav-section-label">Queue</div>
         <div class="nav-item" onclick="showPage('queue', this)">
@@ -1685,6 +1694,71 @@
                 </div>
             </div>
 
+            <div class="page" id="page-service-proof">
+                <div class="toolbar-row" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
+                    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap" id="proofPresets">
+                        <button type="button" class="btn-sm" data-range="today" onclick="setProofRange('today',this)">Today</button>
+                        <button type="button" class="btn-sm" data-range="yesterday" onclick="setProofRange('yesterday',this)">Yesterday</button>
+                        <button type="button" class="btn-sm" data-range="7" onclick="setProofRange('7',this)">Last 7 days</button>
+                        <button type="button" class="btn-sm" data-range="30" onclick="setProofRange('30',this)">Last 30 days</button>
+                        <button type="button" class="btn-sm" data-range="month" onclick="setProofRange('month',this)">This month</button>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                        <input type="date" id="proofFrom" onchange="loadServiceProof()" style="padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-family:inherit;background:var(--white)" title="From date">
+                        <span style="font-size:12px;color:var(--text-muted)">→</span>
+                        <input type="date" id="proofTo" onchange="loadServiceProof()" style="padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-family:inherit;background:var(--white)" title="To date">
+                        <select id="proofOfficeFilter" onchange="loadServiceProof()" style="padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-family:inherit;background:var(--white)">
+                            <option value="">All offices</option>
+                        </select>
+                        <button type="button" class="btn-sm" onclick="loadServiceProof()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--white);cursor:pointer;font-size:12px;font-weight:600;color:var(--text-secondary);font-family:inherit">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:14px;height:14px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                            Refresh
+                        </button>
+                        <button type="button" class="btn-sm" onclick="exportProofCSV(this)" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--white);cursor:pointer;font-size:12px;font-weight:600;color:var(--text-secondary);font-family:inherit">Export CSV</button>
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0">
+                    <div class="stat-card"><div class="stat-number" id="proofClaimed">0</div><div class="stat-label">Claimed</div></div>
+                    <div class="stat-card green"><div class="stat-number" id="proofConfirmed">0</div><div class="stat-label">Confirmed</div></div>
+                    <div class="stat-card orange"><div class="stat-number" id="proofPending">0</div><div class="stat-label">Pending</div></div>
+                    <div class="stat-card blue"><div class="stat-number" id="proofRate">—</div><div class="stat-label">Confirm %</div></div>
+                    <div class="stat-card" style="border-left:4px solid var(--red)"><div class="stat-number" id="proofStale">0</div><div class="stat-label">Stale &gt;72h</div></div>
+                </div>
+
+                <div class="section" style="margin-bottom:16px">
+                    <div class="section-title" style="font-size:13px;margin-bottom:8px">Daily trend — claimed vs confirmed</div>
+                    <div id="proofTrend" style="display:flex;align-items:flex-end;gap:4px;min-height:90px;padding:10px 4px 4px;"></div>
+                    <div id="proofTrendLegend" style="font-size:11px;color:var(--text-muted);"></div>
+                </div>
+
+                <div id="proofEmpty" style="display:none;text-align:center;padding:60px 20px">
+                    <p style="font-size:15px;color:var(--text-muted);font-weight:600">No completed work in this period</p>
+                </div>
+
+                <div class="table-wrap" id="proofTableWrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Office</th>
+                                <th>Officer</th>
+                                <th>Claimed</th>
+                                <th>Confirmed</th>
+                                <th>Pending</th>
+                                <th>Stale</th>
+                                <th>Confirm %</th>
+                                <th>Avg ★</th>
+                                <th>Flag</th>
+                            </tr>
+                        </thead>
+                        <tbody id="proofTableBody">
+                            <tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:40px 0">Loading proof...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="proofDrill" style="margin-top:16px;"></div>
+            </div>
+
             <!-- CHANGE PIN PAGE -->
             <div class="page" id="page-changepin">
                 <div class="pin-form-wrap">
@@ -2314,6 +2388,7 @@
                 feedback: { title: 'Feedback & Complaints', sub: 'Citizen ratings and complaints from completed and non-completed tokens' },
                 'general-complaints': { title: 'General Complaints', sub: 'Non-token complaints from people, staff, and others' },
                 'appointments': { title: 'Appointments', sub: 'Office-routed visit bookings by office and status' },
+                'service-proof': { title: 'Service Proof', sub: 'Claimed vs client-confirmed work per officer over any period' },
                 'system-rating': { title: 'System Rating', sub: 'Enable officer system rating and view submitted ratings' },
                 'settings': { title: 'System Settings', sub: 'Configure display language and system preferences' },
                 changepin: { title: 'Change PIN', sub: 'Update your login PIN code' },
@@ -2351,6 +2426,9 @@
             } else if (id === 'appointments') {
                 document.getElementById('topbarActions').innerHTML = '';
                 loadAppointmentsAdmin();
+            } else if (id === 'service-proof') {
+                document.getElementById('topbarActions').innerHTML = '';
+                loadServiceProof();
             } else if (id === 'system-rating') {
                 document.getElementById('topbarActions').innerHTML = '';
                 loadSystemRating();
@@ -3873,6 +3951,189 @@
             } catch (e) {
                 errEl.textContent = 'Network error.';
                 errEl.style.display = 'block';
+            } finally {
+                setLoading(btn, false);
+            }
+        }
+
+        // ── SERVICE PROOF ──
+        function proofISO(d) { return d.toISOString().slice(0, 10); }
+
+        function setProofRange(preset, btn) {
+            var now = new Date();
+            var to = proofISO(now), from = to;
+            if (preset === 'today') { from = to; }
+            else if (preset === 'yesterday') {
+                var y = new Date(now.getTime() - 86400000);
+                from = to = proofISO(y);
+            }
+            else if (preset === '7') { from = proofISO(new Date(now.getTime() - 6 * 86400000)); }
+            else if (preset === '30') { from = proofISO(new Date(now.getTime() - 29 * 86400000)); }
+            else if (preset === 'month') { from = to.slice(0, 8) + '01'; }
+            document.getElementById('proofFrom').value = from;
+            document.getElementById('proofTo').value = to;
+            document.querySelectorAll('#proofPresets .btn-sm').forEach(function(b){
+                b.style.borderColor = (b === btn) ? 'var(--green-dark)' : '';
+                b.style.color = (b === btn) ? 'var(--green-dark)' : '';
+            });
+            loadServiceProof();
+        }
+
+        function fillProofOfficeFilter() {
+            var sel = document.getElementById('proofOfficeFilter');
+            if (!sel || sel.options.length > 1) return;
+            var list = (typeof officesData !== 'undefined' && officesData.length) ? officesData : [];
+            var addOpts = function(items) {
+                items.forEach(function(o) {
+                    var opt = document.createElement('option');
+                    opt.value = o.id;
+                    opt.textContent = o.office_name + (o.office_code ? ' (' + o.office_code + ')' : '');
+                    sel.appendChild(opt);
+                });
+            };
+            if (list.length) { addOpts(list); return; }
+            fetch(`${API_BASE_URL}/api/offices`).then(function(r){ return r.json(); }).then(function(d){
+                if (d.success && d.offices) addOpts(d.offices);
+            }).catch(function(){});
+        }
+
+        async function loadServiceProof() {
+            fillProofOfficeFilter();
+            var from = document.getElementById('proofFrom').value;
+            var to = document.getElementById('proofTo').value;
+            if (!from || !to) { setProofRange('7', document.querySelector('#proofPresets [data-range="7"]')); return; }
+            var officeId = document.getElementById('proofOfficeFilter').value;
+            var qs = 'from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to);
+            if (officeId) qs += '&office_id=' + encodeURIComponent(officeId);
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/service-proof?` + qs);
+                const data = await res.json();
+                if (!data.success) throw new Error(data.message || 'Failed');
+                renderServiceProof(data);
+                document.getElementById('sidebarProofBadge').textContent = data.overall.stale || 0;
+            } catch (e) {
+                document.getElementById('proofTableBody').innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--red);padding:40px 0">Failed to load proof.</td></tr>';
+            }
+        }
+
+        function proofFlagBadge(f) {
+            var color = f === 'GHOST-RISK' ? 'background:#fee2e2;color:#b91c1c'
+                : f === 'BURST' ? 'background:#fef3c7;color:#b45309'
+                : f === 'STALE' ? 'background:#ffedd5;color:#c2410c'
+                : 'background:#f1f5f9;color:#475569';
+            return '<span style="display:inline-block;' + color + ';font-size:10px;font-weight:800;padding:2px 8px;border-radius:4px;margin:1px 2px 1px 0;">' + f + '</span>';
+        }
+
+        function renderServiceProof(data) {
+            var o = data.overall;
+            document.getElementById('proofClaimed').textContent = o.claimed;
+            document.getElementById('proofConfirmed').textContent = o.confirmed;
+            document.getElementById('proofPending').textContent = o.pending;
+            document.getElementById('proofRate').textContent = o.confirm_rate + '%';
+            document.getElementById('proofStale').textContent = o.stale;
+
+            var trend = data.trend || [];
+            var maxV = 1;
+            trend.forEach(function(t){ maxV = Math.max(maxV, t.claimed, t.confirmed); });
+            document.getElementById('proofTrend').innerHTML = trend.map(function(t){
+                var h1 = Math.max(4, Math.round(t.claimed / maxV * 80));
+                var h2 = Math.max(4, Math.round(t.confirmed / maxV * 80));
+                return '<div style="flex:1;display:flex;align-items:flex-end;gap:2px;min-width:8px;" title="' + t.day + ': claimed ' + t.claimed + ', confirmed ' + t.confirmed + '">' +
+                    '<div style="flex:1;height:' + h1 + 'px;background:var(--gold);border-radius:2px 2px 0 0;"></div>' +
+                    '<div style="flex:1;height:' + h2 + 'px;background:var(--green-dark);border-radius:2px 2px 0 0;"></div></div>';
+            }).join('') || '<span style="font-size:12px;color:var(--text-muted)">No trend data</span>';
+            document.getElementById('proofTrendLegend').textContent =
+                'Gold = claimed · Green = confirmed · ' + data.from + ' → ' + data.to +
+                (data.unassigned_claims ? ' · ' + data.unassigned_claims + ' completed token(s) with no owning officer' : '');
+
+            var list = data.officers || [];
+            const tbody = document.getElementById('proofTableBody');
+            if (!list.length) {
+                document.getElementById('proofTableWrap').style.display = 'none';
+                document.getElementById('proofEmpty').style.display = 'block';
+            } else {
+                document.getElementById('proofTableWrap').style.display = 'block';
+                document.getElementById('proofEmpty').style.display = 'none';
+                tbody.innerHTML = list.map(function(r){
+                    var pct = r.confirm_rate;
+                    var barW = Math.min(100, Math.max(0, pct));
+                    var flags = (r.flags || []).map(proofFlagBadge).join('') || '<span style="font-size:11px;color:var(--text-muted)">—</span>';
+                    var avg = r.avg_rating > 0 ? r.avg_rating.toFixed(1) : '—';
+                    return '<tr style="cursor:pointer" onclick="loadProofDrill(' + r.officer_id + ',\'' + escapeHtml(r.officer_name).replace(/'/g, "\\'") + '\')">' +
+                        '<td><strong>' + escapeHtml(r.office_name) + '</strong> <span style="font-size:11px;color:var(--text-muted)">(' + escapeHtml(r.office_code || '') + ')</span></td>' +
+                        '<td>' + escapeHtml(r.officer_name) + ' <span style="font-size:11px;color:var(--text-muted)">(#' + r.officer_number + ')</span></td>' +
+                        '<td><strong>' + r.claimed + '</strong></td>' +
+                        '<td style="color:var(--success);font-weight:700">' + r.confirmed + '</td>' +
+                        '<td' + (r.pending > 0 ? ' style="color:var(--orange);font-weight:700"' : '') + '>' + r.pending + '</td>' +
+                        '<td' + (r.stale > 0 ? ' style="color:var(--red);font-weight:700"' : '') + '>' + r.stale + '</td>' +
+                        '<td><div style="display:flex;align-items:center;gap:6px;"><div style="width:64px;height:10px;background:var(--border);border-radius:5px;overflow:hidden;"><div style="height:100%;width:' + barW + '%;background:' + (pct >= 70 ? 'var(--success)' : pct >= 40 ? 'var(--gold)' : 'var(--red)') + ';"></div></div><span style="font-size:12px;font-weight:700">' + pct + '%</span></div></td>' +
+                        '<td>' + avg + '</td>' +
+                        '<td>' + flags + '</td></tr>';
+                }).join('');
+            }
+            document.getElementById('proofDrill').innerHTML = '';
+        }
+
+        async function loadProofDrill(officerId, officerName) {
+            var box = document.getElementById('proofDrill');
+            var from = document.getElementById('proofFrom').value;
+            var to = document.getElementById('proofTo').value;
+            box.innerHTML = '<div style="font-size:13px;color:var(--text-muted);padding:12px 0">Loading tokens for ' + escapeHtml(officerName || ('#' + officerId)) + '...</div>';
+            box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/service-proof/tokens?officer_id=${officerId}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+                const data = await res.json();
+                if (!data.success) throw new Error();
+                var stateStyle = function(s) {
+                    if (s === 'CONFIRMED') return 'background:var(--success-light);color:var(--success)';
+                    if (s === 'PENDING') return 'background:var(--orange-light);color:var(--orange)';
+                    if (s === 'STALE') return 'background:#ffedd5;color:#c2410c';
+                    return 'background:#f1f5f9;color:#475569';
+                };
+                box.innerHTML = '<div class="table-wrap"><table class="data-table"><thead><tr>' +
+                    '<th>Token</th><th>Service</th><th>Contact</th><th>Claimed</th><th>Rated</th><th>Lag</th><th>★</th><th>State</th></tr></thead><tbody>' +
+                    (data.tokens.map(function(t){
+                        return '<tr><td style="font-family:monospace;font-weight:700">' + escapeHtml(t.token_number) + '</td>' +
+                            '<td>' + escapeHtml(t.service_name || '—') + '</td>' +
+                            '<td style="font-size:12px">' + escapeHtml(t.contact || '—') + '</td>' +
+                            '<td style="font-size:12px;white-space:nowrap">' + escapeHtml((t.claimed_at || '').slice(0, 16).replace('T', ' ')) + '</td>' +
+                            '<td style="font-size:12px;white-space:nowrap">' + escapeHtml(t.rated_at ? t.rated_at.slice(0, 16).replace('T', ' ') : '—') + '</td>' +
+                            '<td>' + (t.lag_min != null ? t.lag_min + 'm' : '—') + '</td>' +
+                            '<td>' + (t.rating || '—') + '</td>' +
+                            '<td><span style="display:inline-block;' + stateStyle(t.state) + ';font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;">' + t.state + '</span></td></tr>';
+                    }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px">No tokens</td></tr>') +
+                    '</tbody></table></div>';
+            } catch (e) {
+                box.innerHTML = '<div style="font-size:13px;color:var(--red)">Failed to load tokens.</div>';
+            }
+        }
+
+        async function exportProofCSV(btn) {
+            setLoading(btn, true);
+            try {
+                var from = document.getElementById('proofFrom').value;
+                var to = document.getElementById('proofTo').value;
+                var officeId = document.getElementById('proofOfficeFilter').value;
+                var qs = 'from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to);
+                if (officeId) qs += '&office_id=' + encodeURIComponent(officeId);
+                const res = await fetch(`${API_BASE_URL}/api/admin/service-proof?` + qs);
+                const data = await res.json();
+                if (!data.success) { showToast('Failed to export report', 'error'); return; }
+                const lines = [];
+                lines.push(csvEscape(`Service Proof ${data.from} to ${data.to}`));
+                lines.push(['Office Code', 'Office Name', 'Officer #', 'Officer Name', 'Claimed', 'Confirmed', 'Pending', 'Stale', 'Confirm %', 'Avg Rating', 'Flags'].map(csvEscape).join(','));
+                (data.officers || []).forEach(function(r){
+                    lines.push([r.office_code, r.office_name, r.officer_number, r.officer_name, r.claimed, r.confirmed, r.pending, r.stale, r.confirm_rate, r.avg_rating, (r.flags || []).join(';')].map(csvEscape).join(','));
+                });
+                const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `service-proof_${data.from}_to_${data.to}.csv`;
+                a.click();
+                URL.revokeObjectURL(a.href);
+                showToast('Service proof exported', 'success');
+            } catch (e) {
+                showToast('Export failed', 'error');
             } finally {
                 setLoading(btn, false);
             }
