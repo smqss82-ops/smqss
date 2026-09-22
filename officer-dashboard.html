@@ -291,6 +291,8 @@
     }
     @media (max-width: 520px) {
       .brand-name { font-size: 14px; }
+      #apptHeaderPill .appt-pill-label { display: none; }
+      #apptHeaderPill { margin-left: 6px; padding: 6px 10px; }
       .brand-icon { width: 30px; height: 30px; }
       .content { padding: 12px 10px 24px; }
       .card-title { font-size: 13px; }
@@ -459,9 +461,10 @@
     <div class="brand-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14532D" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.657 2.686 3 6 3s6-1.343 6-3v-5"/></svg></div>
     <div class="brand-name">SMQSS</div>
   </div>
-  <button id="apptHeaderPill" onclick="scrollToAppointments()" title="View appointments" style="display:flex;align-items:center;gap:6px;margin-left:10px;padding:6px 12px;min-height:36px;border:1px solid rgba(156,163,175,0.5);border-radius:20px;background:rgba(156,163,175,0.14);color:#d1d5db;font-size:13px;font-weight:800;font-family:var(--font);cursor:pointer;flex-shrink:0;opacity:.65;">
+  <button id="apptHeaderPill" onclick="scrollToAppointments()" title="View appointments" aria-label="View appointments" style="display:flex;align-items:center;gap:6px;margin-left:10px;padding:6px 12px;min-height:36px;border:1px solid rgba(156,163,175,0.5);border-radius:20px;background:rgba(156,163,175,0.14);color:#d1d5db;font-size:13px;font-weight:800;font-family:var(--font);cursor:pointer;flex-shrink:0;opacity:.65;">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
     <span id="apptHeaderCount">0</span>
+    <span class="appt-pill-label" style="font-size:11px;font-weight:600;opacity:.9;">Appointments</span>
   </button>
   <button class="hamburger" id="hamburgerBtn" onclick="toggleDrawer()" aria-label="Menu">
     <span></span><span></span><span></span>
@@ -828,6 +831,29 @@
   let allMessages = [];
   let isProcessingCall = false;
   let batchSize = 2;
+  const BATCH_CHOICES = [2, 3, 5, 10];
+  let batchInteracting = false;
+  let queuePrevSig = '';
+
+  function batchStoreKey() {
+    return 'officer_batch_' + (currentOfficer && currentOfficer.id ? currentOfficer.id : 'shared');
+  }
+
+  function loadBatchPreference() {
+    try {
+      const saved = parseInt(localStorage.getItem(batchStoreKey()), 10);
+      if (BATCH_CHOICES.includes(saved)) batchSize = saved;
+    } catch(e) {}
+  }
+
+  function setBatchSize(v) {
+    const n = parseInt(v, 10);
+    if (!BATCH_CHOICES.includes(n)) return;
+    batchSize = n;
+    try { localStorage.setItem(batchStoreKey(), String(n)); } catch(e) {}
+    const sel = document.getElementById('batchSizeSelect');
+    if (sel) sel.value = String(n);
+  }
   let currentBatch = [];
   let refreshInterval = null;
 
@@ -1227,6 +1253,17 @@
     if (completedEl) completedEl.textContent = result.completed_today || 0;
     checkAndNotifyNewTokens(waiting);
     checkWaitingReminder(waiting);
+    const sig = JSON.stringify([
+      waiting.map(t => t.token_number + ':' + t.status),
+      (result.current_tokens || []).map(t => t.token_number + ':' + t.status),
+      result.completed_today || 0
+    ]);
+    if (sig === queuePrevSig && !batchInteracting) {
+      const selSame = document.getElementById('batchSizeSelect');
+      if (selSame) selSame.value = String(batchSize);
+      return;
+    }
+    queuePrevSig = sig;
     const qEl = document.getElementById('queueContainer');
     if (!waiting.length) {
       qEl.innerHTML = `<div class="empty"><div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div class="empty-text">No people waiting</div></div>`;
@@ -1279,14 +1316,17 @@
       }
     } else {
       currentServing = null;
-      servEl.innerHTML = `<div class="empty" style="margin-bottom:14px;"><div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="empty-text">No person being served</div></div><div class="action-grid"><button class="action-btn btn-next" onclick="callNext()">${ic.callnext} Call Next Person</button><button class="action-btn btn-reset" onclick="resetQueue()">${ic.reset} Reset Queue</button></div><div style="display:flex;gap:8px;align-items:center;margin-top:10px;justify-content:center;"><select class="batch-select" id="batchSizeSelect" onchange="batchSize=parseInt(this.value)"><option value="2" selected>2</option><option value="3">3</option><option value="5">5</option><option value="10">10</option></select><button class="action-btn btn-next" style="grid-column:auto;flex:1;max-width:220px" onclick="callBatch()">${ic.callnext} Call Batch</button></div>`;
+      if (!batchInteracting) {
+        const opts = BATCH_CHOICES.map(n => `<option value="${n}"${n === batchSize ? ' selected' : ''}>${n}</option>`).join('');
+        servEl.innerHTML = `<div class="empty" style="margin-bottom:14px;"><div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="empty-text">No person being served</div></div><div class="action-grid"><button class="action-btn btn-next" onclick="callNext()">${ic.callnext} Call Next Person</button><button class="action-btn btn-reset" onclick="resetQueue()">${ic.reset} Reset Queue</button></div><div style="display:flex;gap:8px;align-items:center;margin-top:10px;justify-content:center;"><select class="batch-select" id="batchSizeSelect" style="min-height:44px;font-size:14px;" onchange="setBatchSize(this.value)" onfocus="batchInteracting=true" onblur="setTimeout(function(){batchInteracting=false;},500)">${opts}</select><button class="action-btn btn-next" style="grid-column:auto;flex:1;max-width:220px;min-height:44px;" onclick="callBatch()">${ic.callnext} Call Batch</button></div>`;
+      }
       statusDot.className = 'status-dot dot-green';
       statusText.textContent = 'Available';
       tokenBadge.style.display = 'none';
       document.getElementById('servingCount').textContent = 0;
     }
     const sel = document.getElementById('batchSizeSelect');
-    if (sel) sel.value = batchSize;
+    if (sel) sel.value = String(batchSize);
   }
 
   async function callNext() {
@@ -2085,6 +2125,7 @@
       if (hpill) {
         hpill.style.display = 'flex';
         document.getElementById('apptHeaderCount').textContent = active;
+        hpill.setAttribute('aria-label', active + ' pending appointments — view');
         if (active > 0) {
           hpill.style.border = '1px solid rgba(245,158,11,0.45)';
           hpill.style.background = 'rgba(245,158,11,0.14)';
@@ -2252,6 +2293,7 @@
     }
     addLog(`Logged in as ${currentOfficer.officer_name} — ${currentOfficer.office_name}`, 'success');
     loadSoundPreference();
+    loadBatchPreference();
     autoRequestNotificationPermission();
     document.getElementById('soundToggleBtn').addEventListener('click', toggleSound);
     loadDeskStatus();
@@ -2273,6 +2315,7 @@
   window.completeService = completeService; window.skipStudent = skipStudent; window.recallStudent = recallStudent;
   window.callBatch = callBatch; window.serveAllBatch = serveAllBatch; window.recallAllBatch = recallAllBatch; window.completeAllBatch = completeAllBatch;
   window.resetQueue = resetQueue; window.loadQueue = loadQueue; window.clearLog = clearLog;
+  window.setBatchSize = setBatchSize;
   window.loadAppointments = loadAppointments; window.setAppointmentStatus = setAppointmentStatus; window.scrollToAppointments = scrollToAppointments;
   window.toggleApptHistory = toggleApptHistory; window.openApptReply = openApptReply; window.closeApptReply = closeApptReply; window.sendApptReply = sendApptReply;
   window.closeModal = closeModal; window.confirmAction = confirmAction; window.closeResetModal = closeResetModal;
