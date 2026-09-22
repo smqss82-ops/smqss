@@ -2472,7 +2472,7 @@ def officer_appointments():
         return jsonify({'success': False, 'message': 'officer_id is required'}), 400
     history = request.args.get('history', '').strip().lower() in ('1', 'true', 'yes')
     status_filter = "a.status IN ('pending', 'confirmed')" if not history else "a.status IN ('served', 'cancelled')"
-    order = "a.created_at DESC"
+    order = "a.preferred_date ASC, a.created_at ASC" if not history else "a.preferred_date DESC, a.created_at DESC"
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     try:
