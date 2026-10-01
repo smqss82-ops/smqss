@@ -1332,7 +1332,7 @@ def admin_create_office():
         display_order = (max_order['max_order'] or 0) + 1
         
         availability_status = (data.get('availability_status') or 'available').strip().lower()
-        if availability_status not in ('available', 'unavailable'):
+        if availability_status not in ('available', 'unavailable', 'on_break'):
             availability_status = 'available'
         unavailability_notice = (data.get('unavailability_notice') or '').strip() or None
         if availability_status == 'available':
@@ -1374,7 +1374,7 @@ def admin_update_office(office_id):
     description = data.get('description')
     is_active = data.get('is_active', 1)
     availability_status = (data.get('availability_status') or 'available').strip().lower()
-    if availability_status not in ('available', 'unavailable'):
+    if availability_status not in ('available', 'unavailable', 'on_break'):
         availability_status = 'available'
     unavailability_notice_raw = data.get('unavailability_notice')
     if unavailability_notice_raw is None:
@@ -2047,7 +2047,7 @@ def generate_student_token():
         if not office:
             return jsonify({'success': False, 'message': 'Office not available'}), 400
 
-        if str(office.get('availability_status') or 'available').strip().lower() == 'unavailable':
+        if str(office.get('availability_status') or 'available').strip().lower() in ('unavailable', 'on_break'):
             hint = office.get('unavailability_notice') or 'This office is temporarily unavailable for new tickets.'
             return jsonify({'success': False, 'message': hint}), 400
 

@@ -88,6 +88,7 @@
     .avail-toggle:hover { filter: brightness(1.15); }
     .avail-toggle.available { background: rgba(34,197,94,0.25); border-color: var(--green-accent); }
     .avail-toggle.unavailable { background: rgba(239,68,68,0.25); border-color: var(--red); }
+    .avail-toggle.on-break { background: rgba(245,158,11,0.25); border-color: #f59e0b; }
     .logout-btn { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 500; font-family: var(--font); transition: background 0.2s; display: flex; align-items: center; gap: 6px; }
     .logout-btn:hover { background: rgba(239,68,68,0.5); border-color: var(--red); }
 
@@ -519,6 +520,10 @@
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       <span id="availToggleText">Office: Available</span>
     </button>
+    <button class="avail-toggle" id="breakToggleBtn" onclick="takeOfficeBreak()" title="Take a break — pause new tokens">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+      <span id="breakToggleText">Take a Break</span>
+    </button>
     <button class="icon-btn" onclick="openSearchModal()" title="Search tokens">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     </button>
@@ -883,6 +888,7 @@
   let isVoicePlaying = false;
   let lastReminderTime = 0;
   const REMINDER_INTERVAL = 120000;
+  let announcedEscalations = new Set();
 
   function updateNotificationStatus() {
     const dot = document.getElementById('notifDot');
@@ -1070,6 +1076,49 @@
       }
     }
     previousWaitingCount = currentCount;
+  }
+
+  async function playEscalationVoice(tokenNumber, fromOffice) {
+    if (!soundEnabled) return;
+    const spelled = tokenNumber.split('').join(' ');
+    const text = `Attention. Token ${spelled} escalated from ${fromOffice} is now first in your queue.`;
+    try {
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const audio = new Audio(URL.createObjectURL(blob));
+        voiceQueue.push(audio);
+        playNextVoice();
+      }
+    } catch (e) { console.error('Escalation voice error:', e); }
+  }
+
+  function checkAndNotifyEscalations(waitingList) {
+    if (!soundEnabled) return;
+    const currentKeys = new Set();
+    (waitingList || []).forEach(function(s) {
+      if (!s.escalated_from_office) return;
+      var m = String(s.escalated_from_office).match(/Escalated from \d+ \((.+?)\) to/);
+      if (!m) return;
+      var fromOffice = m[1];
+      var key = s.token_number + '|' + fromOffice;
+      currentKeys.add(key);
+      if (!announcedEscalations.has(key)) {
+        announcedEscalations.add(key);
+        playNotificationSound();
+        playEscalationVoice(s.token_number, fromOffice);
+        showToast(`⚡ ${s.token_number} escalated from ${fromOffice} — now top priority`, 'info');
+        addLog(`⚡ Escalated token arrived: ${s.token_number} (from ${fromOffice})`, 'info');
+      }
+    });
+    // Forget tokens that left the queue so a re-escalation re-alerts
+    announcedEscalations.forEach(function(key) {
+      if (!currentKeys.has(key)) announcedEscalations.delete(key);
+    });
   }
 
   async function playReminderVoice(waitingList) {
@@ -1268,6 +1317,7 @@
     const completedEl = document.getElementById('completedToday');
     if (completedEl) completedEl.textContent = result.completed_today || 0;
     checkAndNotifyNewTokens(waiting);
+    checkAndNotifyEscalations(waiting);
     checkWaitingReminder(waiting);
     const sig = JSON.stringify([
       waiting.map(t => t.token_number + ':' + t.status),
@@ -1653,10 +1703,25 @@
   function updateOfficeAvailabilityUI(status, notice) {
     const btn = document.getElementById('availToggleBtn');
     const text = document.getElementById('availToggleText');
-    const isAvail = status === 'available';
-    btn.className = `avail-toggle ${isAvail ? 'available' : 'unavailable'}`;
-    text.textContent = isAvail ? 'Office: Available' : 'Office: Unavailable';
-    btn.title = isAvail ? 'Office is open — click to mark unavailable' : (notice || 'Office is closed — click to mark available');
+    const breakBtn = document.getElementById('breakToggleBtn');
+    const breakText = document.getElementById('breakToggleText');
+    const norm = (status || 'available').toLowerCase();
+    const isAvail = norm === 'available';
+    const isBreak = norm === 'on_break';
+    btn.className = `avail-toggle ${isAvail ? 'available' : (isBreak ? 'on-break' : 'unavailable')}`;
+    text.textContent = isAvail ? 'Office: Available' : (isBreak ? 'Office: On Break' : 'Office: Unavailable');
+    btn.title = isAvail ? 'Office is open — click to mark unavailable' : (notice || (isBreak ? 'Office is on break — click to reopen' : 'Office is closed — click to mark available'));
+    if (breakBtn && breakText) {
+      if (isBreak) {
+        breakBtn.style.display = '';
+        breakBtn.className = 'avail-toggle on-break';
+        breakText.textContent = 'Return from Break';
+      } else {
+        breakBtn.style.display = '';
+        breakBtn.className = 'avail-toggle';
+        breakText.textContent = 'Take a Break';
+      }
+    }
   }
 
   let pendingAvailChange = null;
@@ -1681,6 +1746,18 @@
       confirmBtn.style.background = 'var(--green-accent, #22C55E)';
       confirmBtn.style.color = '#fff';
       input.style.display = 'none';
+    } else if (newStatus === 'on_break') {
+      icon.style.background = '#fef3c7';
+      icon.style.color = '#b45309';
+      icon.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>';
+      title.textContent = 'Take a Break?';
+      desc.innerHTML = 'New tokens will be paused and the office will show <strong>On Break</strong> on the public display. People already waiting stay in the queue. Add a note so people know when you will return (e.g. Lunch break — back at 14:00).';
+      confirmText.textContent = 'Start Break';
+      confirmBtn.style.background = '#f59e0b';
+      confirmBtn.style.color = '#fff';
+      input.style.display = '';
+      input.placeholder = 'e.g. Lunch break — back at 14:00';
+      input.focus();
     } else {
       icon.style.background = 'var(--red-soft)';
       icon.style.color = 'var(--red)';
@@ -1702,9 +1779,25 @@
     if (!result.success || !result.offices) return;
     const office = result.offices.find(o => o.id === (currentOfficer && currentOfficer.office_id));
     if (!office) return;
-    const currentStatus = office.availability_status || 'available';
+    const currentStatus = (office.availability_status || 'available').toLowerCase();
     const newStatus = currentStatus === 'available' ? 'unavailable' : 'available';
     openAvailReasonModal(office, newStatus);
+  }
+
+  async function takeOfficeBreak() {
+    cancelOfficeLogoutCountdown();
+    const result = await apiCall(`/api/offices`);
+    if (!result.success || !result.offices) return;
+    const office = result.offices.find(o => o.id === (currentOfficer && currentOfficer.office_id));
+    if (!office) return;
+    const currentStatus = (office.availability_status || 'available').toLowerCase();
+    if (currentStatus === 'on_break') {
+      openAvailReasonModal(office, 'available');
+    } else if (currentStatus === 'available') {
+      openAvailReasonModal(office, 'on_break');
+    } else {
+      showToast('Office is closed — reopen it first before taking a break', 'warning');
+    }
   }
 
   async function confirmAvailabilityChange() {
@@ -1714,13 +1807,13 @@
     const { office, newStatus } = pendingAvailChange;
     const input = document.getElementById('availReasonInput');
     const reason = newStatus === 'available' ? '' : input.value.trim();
-    if (newStatus === 'unavailable' && !reason) {
-      showToast('Please enter a reason for closing the office', 'warning');
+    if ((newStatus === 'unavailable' || newStatus === 'on_break') && !reason) {
+      showToast(newStatus === 'on_break' ? 'Please add a note (e.g. Lunch break — back at 14:00)' : 'Please enter a reason for closing the office', 'warning');
       input.focus();
       setLoading(btn, false);
       return;
     }
-    const notice = newStatus === 'unavailable' ? reason : '';
+    const notice = newStatus === 'available' ? '' : reason;
     const officeId = currentOfficer && currentOfficer.office_id;
     if (!officeId) {
       showToast('Office ID not found — please re-login', 'error');
