@@ -3418,7 +3418,10 @@ def get_officer_queue(officer_id):
 
         cursor.execute("""
             SELECT t.token_number, t.status, t.called_at, t.serving_started_at,
-                   t.service_code, s.service_name, t.student_name
+                   t.service_code, s.service_name, t.student_name,
+                   (SELECT action_details FROM queue_logs q
+                     WHERE q.token_number = t.token_number AND q.action = 'escalated'
+                     ORDER BY q.created_at DESC LIMIT 1) AS escalated_from_office
             FROM university_tokens t
             LEFT JOIN services s ON t.service_id = s.id
             WHERE t.office_id = %s AND t.status IN ('called','serving')
