@@ -159,8 +159,8 @@ body.keyboard-open .header,body.input-mode .header{display:none!important;}
 .section-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:10px;flex-shrink:0;}
 
 .launch-center{
-  display:flex;flex-direction:column;align-items:stretch;
-  text-align:left;gap:0;width:100%;max-width:560px;
+  display:flex;flex-direction:column;align-items:center;
+  text-align:center;gap:10px;width:100%;max-width:300px;
 }
 .closed-banner{display:none;flex-direction:column;align-items:center;gap:7px;padding:28px 20px;color:var(--muted);}
 
@@ -230,21 +230,18 @@ body.keyboard-open .header,body.input-mode .header{display:none!important;}
 .launch-title{font-size:20px;font-weight:800;color:var(--ink);}
 .launch-sub{font-size:12.5px;color:var(--muted);line-height:1.5;max-width:300px;}
 .btn-launch{
-  display:flex;align-items:center;justify-content:space-between;gap:0.5em;
-  width:100%;padding:1.125em 1.5em;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:14px 28px;
   background:var(--mak-green);color:white;
-  border:none;border-radius:0.5em;
-  font-size:1rem;font-weight:700;cursor:pointer;
+  border:none;border-radius:40px;
+  font-size:14px;font-weight:700;cursor:pointer;
   transition:all 0.25s cubic-bezier(.34,1.56,.64,1);
   box-shadow:0 6px 20px rgba(21,92,48,0.22);
-  min-height:3.5em;touch-action:manipulation;
 }
 .btn-launch:hover{transform:translateY(-1px);box-shadow:0 10px 28px rgba(21,92,48,0.3);}
-.btn-launch:active{transform:scale(0.98);}
-.btn-launch svg{width:1.25em;height:1.25em;fill:white;flex-shrink:0;}
-.btn-launch .btn-label{flex:1;text-align:left;}
-.btn-desc{font-size:0.8125em;color:var(--muted);line-height:1.5;margin:0.5em 0 0 0.125em;text-align:left;}
-.btn-divider{width:100%;height:1px;background:var(--border);margin:1.25em 0;}
+.btn-launch:active{transform:scale(0.97);}
+.btn-launch svg{width:16px;height:16px;fill:white;}
+.btn-desc{font-size:11px;color:var(--muted);line-height:1.4;margin-top:-4px;max-width:260px;}
 
 .select-grid{
   display:grid;grid-template-columns:1fr 1fr;gap:8px;
@@ -531,10 +528,9 @@ body.keyboard-open .header,body.input-mode .header{display:none!important;}
   .launch-center{max-width:380px;gap:14px;}
   .launch-icon{width:68px;height:68px;border-radius:20px;}
   .launch-icon svg{width:32px;height:32px;}
-  .launch-center{max-width:640px;}
   .launch-title{font-size:24px;}
-  .btn-launch{padding:1.25em 1.75em;font-size:1.0625rem;border-radius:0.5em;}
-  .btn-desc{font-size:0.8125rem;}
+  .btn-launch{padding:16px 30px;font-size:15px;border-radius:44px;}
+  .btn-desc{font-size:12px;}
 
   .select-grid{grid-template-columns:repeat(3,1fr);gap:14px;}
   .select-card{padding:18px 16px;border-radius:16px;}
@@ -653,21 +649,21 @@ body.keyboard-open .header,body.input-mode .header{display:none!important;}
           </div>
           <div class="closed-desc">Please come back during office hours.<br>You can only rate service for now.</div>
         </div>
-        <div class="section-title" style="margin-bottom:16px;font-size:20px;text-align:center;">What would you like to do?</div>
+        <div class="section-title" style="margin-bottom:4px;font-size:14px;">What would you like to do?</div>
         <button class="btn-launch" id="getStartedBtn" onclick="showWelcome()">
-          <span class="btn-label">Get my Token</span>
-          <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          Get my Token
         </button>
         <div class="btn-desc">Click to get access to your preferred office</div>
-        <div id="rateWelcomeWrap" style="width:100%;display:flex;flex-direction:column;align-items:stretch;">
-          <div class="btn-divider"></div>
-          <a href="javascript:void(0)" onclick="goToFeedback()" style="text-decoration:none;width:100%;">
-            <button class="btn-launch" style="background:#b8860b;box-shadow:0 6px 20px rgba(184,134,11,0.22);">
-              <span class="btn-label" style="color:#fff">Rate Your Service</span>
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+        <div id="rateWelcomeWrap" style="width:100%;display:flex;flex-direction:column;align-items:center;">
+          <div style="margin:8px 0;width:200px;height:1px;background:var(--border);"></div>
+          <a href="javascript:void(0)" onclick="goToFeedback()" style="text-decoration:none;width:100%;max-width:260px;">
+            <button class="btn-launch" style="justify-content:center;font-size:14px;padding:12px 30px;background:#b8860b;">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="#ffd700"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+              <span style="color:#ffd700">Rate Your Service</span>
             </button>
           </a>
-          <div class="btn-desc">Already visited an office? Share your experience</div>
+          <div class="btn-desc" style="margin-top:6px;">Already visited an office? Share your experience</div>
         </div>
 
         <div style="display:flex;gap:8px;">
@@ -875,11 +871,12 @@ function checkOfficeHours(){
  var h=now().getHours();
 
  // Operating window: 8:00 AM (h===8) up to, but not including, 5:00 PM (h===17).
-  // ── TESTING OVERRIDE ── real check commented out below so "Get my Token"
-  // stays visible for testing even though it's currently past office hours.
-  // Uncomment the line below and delete the `var open=true;` line to restore
-  // normal 8–5 gating.
+ // ── TESTING OVERRIDE ── real check commented out below so "Get my Token"
+ // stays visible for testing even though it's currently past office hours.
+ // Uncomment the line below and delete the `var open=true;` line to restore
+ // normal 8–5 gating.
   // var open=h>=8&&h<17;
+  // ── TESTING OVERRIDE ── forced open for testing; delete below to restore.
   var open=true;
 
  var banner=document.getElementById('closedBanner');   // "Offices are Closed" panel
