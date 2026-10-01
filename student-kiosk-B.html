@@ -230,21 +230,21 @@ body.keyboard-open .header,body.input-mode .header{display:none!important;}
 .launch-title{font-size:20px;font-weight:800;color:var(--ink);}
 .launch-sub{font-size:12.5px;color:var(--muted);line-height:1.5;max-width:300px;}
 .btn-launch{
-  display:flex;align-items:center;justify-content:space-between;gap:8px;
-  width:100%;padding:18px 24px;
+  display:flex;align-items:center;justify-content:space-between;gap:0.5em;
+  width:100%;padding:1.125em 1.5em;
   background:var(--mak-green);color:white;
-  border:none;border-radius:8px;
-  font-size:16px;font-weight:700;cursor:pointer;
+  border:none;border-radius:0.5em;
+  font-size:1rem;font-weight:700;cursor:pointer;
   transition:all 0.25s cubic-bezier(.34,1.56,.64,1);
   box-shadow:0 6px 20px rgba(21,92,48,0.22);
-  min-height:56px;touch-action:manipulation;
+  min-height:3.5em;touch-action:manipulation;
 }
 .btn-launch:hover{transform:translateY(-1px);box-shadow:0 10px 28px rgba(21,92,48,0.3);}
 .btn-launch:active{transform:scale(0.98);}
-.btn-launch svg{width:20px;height:20px;fill:white;flex-shrink:0;}
+.btn-launch svg{width:1.25em;height:1.25em;fill:white;flex-shrink:0;}
 .btn-launch .btn-label{flex:1;text-align:left;}
-.btn-desc{font-size:13px;color:var(--muted);line-height:1.5;margin:8px 0 0 2px;text-align:left;}
-.btn-divider{width:100%;height:1px;background:var(--border);margin:20px 0;}
+.btn-desc{font-size:0.8125em;color:var(--muted);line-height:1.5;margin:0.5em 0 0 0.125em;text-align:left;}
+.btn-divider{width:100%;height:1px;background:var(--border);margin:1.25em 0;}
 
 .select-grid{
   display:grid;grid-template-columns:1fr 1fr;gap:8px;
@@ -533,8 +533,8 @@ body.keyboard-open .header,body.input-mode .header{display:none!important;}
   .launch-icon svg{width:32px;height:32px;}
   .launch-center{max-width:640px;}
   .launch-title{font-size:24px;}
-  .btn-launch{padding:20px 28px;font-size:17px;border-radius:8px;}
-  .btn-desc{font-size:13px;}
+  .btn-launch{padding:1.25em 1.75em;font-size:1.0625rem;border-radius:0.5em;}
+  .btn-desc{font-size:0.8125rem;}
 
   .select-grid{grid-template-columns:repeat(3,1fr);gap:14px;}
   .select-card{padding:18px 16px;border-radius:16px;}
