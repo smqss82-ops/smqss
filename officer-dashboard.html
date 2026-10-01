@@ -132,7 +132,7 @@
     .q-service { font-size: 11px; font-weight: 600; color: var(--amber); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 2px; }
     .q-student { font-size: 12px; color: var(--text-secondary); }
     .q-wait    { font-size: 11px; color: var(--text-muted); margin-top: 2px; font-family: var(--mono); display: flex; align-items: center; gap: 4px; }
-    .q-escalated { font-size: 11px; font-weight: 700; color: #b45309; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 2px 8px; margin-top: 4px; display: inline-block; }
+    .q-escalated { font-size: 11px; font-weight: 700; color: #b45309; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 2px 8px; margin-top: 4px; display: inline-flex; align-items: center; gap: 4px; }
     .queue-item-escalated { border-color: #f59e0b; background: rgba(245,158,11,0.08); box-shadow: 0 0 0 3px rgba(245,158,11,0.15); }
     .queue-item-escalated .q-token { color: #b45309; }
     .queue-item-escalated .q-service { color: #b45309; }
@@ -1113,8 +1113,8 @@
         announcedEscalations.add(key);
         playNotificationSound();
         playEscalationVoice(s.token_number, fromOffice);
-        showToast(`⚡ ${s.token_number} escalated from ${fromOffice} — now top priority`, 'info');
-        addLog(`⚡ Escalated token arrived: ${s.token_number} (from ${fromOffice})`, 'info');
+        showToast(`${s.token_number} escalated from ${fromOffice} — now top priority`, 'info');
+        addLog(`Escalated token arrived: ${s.token_number} (from ${fromOffice})`, 'info');
       }
     });
     // Forget tokens that left the queue so a re-escalation re-alerts
@@ -1341,7 +1341,7 @@
           ? (s.parent_phone || 'No phone')
           : (s.student_id || 'No ID');
         var escMatch = s.escalated_from_office ? String(s.escalated_from_office).match(/Escalated from \d+ \((.+?)\) to/) : null;
-        var escBadge = escMatch ? `<div class="q-escalated">⚡ Escalated from ${escapeHtml(escMatch[1])}</div>` : '';
+        var escBadge = escMatch ? `<div class="q-escalated"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>Escalated from ${escapeHtml(escMatch[1])}</span></div>` : '';
         var escClass = escMatch ? ' queue-item-escalated' : '';
         return `<div class="queue-item${escClass}"><div class="q-token">${s.token_number}</div><div class="q-info"><div class="q-service">${ic.tag} ${s.service_name || s.service_code}</div><div class="q-student">${ic.user} ${s.student_name || 'Person'} · ${idOrPhone}</div><div class="q-wait">${ic.clock} ${s.waiting_minutes || 0} min waiting</div>${escBadge}</div><button class="call-btn" onclick="callStudent('${s.token_number}', this)">${ic.phone} Call</button></div>`;
       }).join('');
@@ -1364,7 +1364,7 @@
             ? `<button class="action-btn btn-complete" onclick="completeToken('${t.token_number}', this)">${ic.check} Complete</button>`
             : `<button class="action-btn btn-serve" onclick="serveToken('${t.token_number}', this)">${ic.play} Start Serving</button>`;
           var bMatch = t.escalated_from_office ? String(t.escalated_from_office).match(/Escalated from \d+ \((.+?)\) to/) : null;
-          var bBadge = bMatch ? `<div style="font-size:10px;font-weight:700;color:#fcd34d">⚡ from ${escapeHtml(bMatch[1])}</div>` : '';
+          var bBadge = bMatch ? `<div style="font-size:10px;font-weight:700;color:#fcd34d;display:flex;align-items:center;gap:4px"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>from ${escapeHtml(bMatch[1])}</span></div>` : '';
           return `<div class="batch-row">
             <div class="batch-row-token">${t.token_number}</div>
             <div class="batch-row-info"><div class="batch-row-name">${t.student_name || 'Person'}</div><div class="batch-row-service">${t.service_name || t.service_code || ''}</div>${bBadge}</div>
@@ -1381,7 +1381,7 @@
         const t = tokens[0];
         const isCalled = t.status === 'called';
         var sMatch = t.escalated_from_office ? String(t.escalated_from_office).match(/Escalated from \d+ \((.+?)\) to/) : null;
-        var sBadge = sMatch ? `<div style="font-size:11px;font-weight:700;color:#fcd34d;margin-top:4px">⚡ Escalated from ${escapeHtml(sMatch[1])}</div>` : '';
+        var sBadge = sMatch ? `<div style="font-size:11px;font-weight:700;color:#fcd34d;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>Escalated from ${escapeHtml(sMatch[1])}</span></div>` : '';
                   if (!batchInteracting) servEl.innerHTML = `<div class="serving-hero"><div class="serving-label">${isCalled ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.5 12.38a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.41 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.29 6.29l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg> Now Called' : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Now Serving'}</div><div class="serving-token-num">${t.token_number}</div><div class="serving-service-name"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> ${t.service_name || t.service_code}</div>${sBadge}<div class="serving-status-text"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> ${isCalled ? 'Called — please proceed to window' : 'Being served now'}</div></div><div class="action-grid">${isCalled ? '<button class="action-btn btn-serve" onclick="serveStudent()">' + ic.play + ' Start Serving</button>' : '<button class="action-btn btn-complete" onclick="completeService()">' + ic.check + ' Complete</button>'}<button class="action-btn btn-recall" onclick="recallStudent()">${ic.repeat} Recall</button><button class="action-btn btn-skip" onclick="skipStudent()">${ic.skip} Skip</button><button class="action-btn btn-reset" onclick="resetQueue()">${ic.reset} Reset Queue</button></div>`;
         statusDot.className = 'status-dot dot-amber';
         statusText.textContent = isCalled ? 'Called' : 'Serving';

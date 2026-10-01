@@ -1588,7 +1588,7 @@
                 .map(o => ({ office_name: o.office_name, office_code: o.office_code, message: '⚠️ ' + o.office_name + ' is currently closed: ' + o.unavailability_notice, is_unavailability: true }))
                 .concat((queues || [])
                     .filter(o => (o.availability_status || '').toLowerCase() === 'on_break')
-                    .map(o => ({ office_name: o.office_name, office_code: o.office_code, message: '☕ ' + o.office_name + ' is on break' + ((o.unavailability_notice || '').trim() ? ': ' + o.unavailability_notice : ''), is_unavailability: true })));
+                    .map(o => ({ office_name: o.office_name, office_code: o.office_code, message: o.office_name + ' is on break' + ((o.unavailability_notice || '').trim() ? ': ' + o.unavailability_notice : ''), is_unavailability: true })));
             
             const activeGrid = document.getElementById('activeGrid');
             const noActive = document.getElementById('noActive');
@@ -1781,7 +1781,7 @@
                                     <div class="on-duty-name">${escapeHtml(o.office_name)}</div>
                                     <div class="on-duty-location">${escapeHtml(o.location || _t('pd_main_office'))}</div>
                                     <div class="on-duty-waiting"><strong>${o.waiting_count || 0}</strong> ${_t('pd_waiting')}</div>
-                                    <div class="break-badge">☕ On Break${o.unavailability_notice ? ' — ' + escapeHtml(o.unavailability_notice) : ''}</div>
+                                    <div class="break-badge"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg><span>On Break${o.unavailability_notice ? ' — ' + escapeHtml(o.unavailability_notice) : ''}</span></div>
                                 </div>`;
                             } else {
                                 return `<div class="on-duty-card unavailable">
