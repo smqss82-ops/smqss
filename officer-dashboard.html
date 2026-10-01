@@ -1725,17 +1725,21 @@
 
   document.querySelectorAll('.overlay').forEach(el => { el.addEventListener('click', e => { if (e.target === el && el.id !== 'ratingOverlay') el.classList.remove('open'); }); });
 
-  async function loadOfficeStatus() {
+  async function loadOfficeStatus(silent) {
     if (!currentOfficer || !currentOfficer.office_id) return;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(function() { controller.abort(); }, 12000);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/offices`, { cache: 'no-store' });
+      const response = await fetch(`${API_BASE_URL}/api/offices`, { cache: 'no-store', signal: controller.signal });
+      clearTimeout(timeoutId);
       const result = await response.json();
-      if (!result.success || !result.offices) { showToast('Failed to load office status', 'error'); return; }
+      if (!result.success || !result.offices) { if (!silent) showToast('Failed to load office status', 'error'); return; }
       const office = result.offices.find(o => o.id === currentOfficer.office_id);
-      if (!office) { showToast('Office not found — please re-login', 'error'); return; }
+      if (!office) { if (!silent) showToast('Office not found — please re-login', 'error'); return; }
       updateOfficeAvailabilityUI(office.availability_status, office.unavailability_notice);
     } catch (e) {
-      showToast('Failed to load office status', 'error');
+      clearTimeout(timeoutId);
+      if (!silent) showToast('Failed to load office status', 'error');
     }
   }
 
@@ -1899,15 +1903,17 @@
       if (updateResult.success) {
         showToast(`Office marked as ${newStatus}`, newStatus === 'available' ? 'success' : 'warning');
         addLog(`Office availability changed to ${newStatus}${reason ? ': ' + reason : ''}`, newStatus === 'available' ? 'success' : 'warning');
-        // Optimistic repaint: toggle corrects instantly even if the re-fetch fails
+        // Paint locally like the desk toggle: no re-fetch, 30s poll confirms later
         try { updateOfficeAvailabilityUI(newStatus, notice); } catch (e) {}
-        try { await loadOfficeStatus(); } catch (e) {}
         syncDrawer();
         if (newStatus === 'unavailable') {
           startOfficeLogoutCountdown();
         } else {
           cancelOfficeLogoutCountdown();
         }
+        setLoading(btn, false);
+        closeAvailReasonModal();
+        return;
       } else {
         showToast(updateResult.message || 'Failed to update office status', 'error');
       }
