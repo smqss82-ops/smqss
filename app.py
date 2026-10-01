@@ -268,6 +268,7 @@ _CREATE_UNIVERSITY_TOKENS_SQL = """
         feedback_text TEXT DEFAULT NULL,
         feedback_submitted_at TIMESTAMP NULL DEFAULT NULL,
         served_count_excluded TINYINT(1) DEFAULT 0,
+        escalated_at TIMESTAMP NULL DEFAULT NULL,
         CONSTRAINT fk_token_office FOREIGN KEY (office_id) REFERENCES offices(id),
         CONSTRAINT fk_token_service FOREIGN KEY (service_id) REFERENCES services(id),
         CONSTRAINT fk_token_officer FOREIGN KEY (assigned_officer_id) REFERENCES officers(id) ON DELETE SET NULL,
@@ -392,6 +393,17 @@ _CREATE_OFFICER_SYSTEM_RATINGS_SQL = """
         UNIQUE KEY uk_officer_rating (officer_id),
         CONSTRAINT fk_rating_officer FOREIGN KEY (officer_id) REFERENCES officers(id) ON DELETE CASCADE
     )"""
+_CREATE_OFFICE_LINKS_SQL = """
+    CREATE TABLE IF NOT EXISTS office_links (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        source_office_id INT NOT NULL,
+        linked_office_id INT NOT NULL,
+        is_active TINYINT(1) DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_office_link (source_office_id, linked_office_id),
+        CONSTRAINT fk_link_source FOREIGN KEY (source_office_id) REFERENCES offices(id) ON DELETE CASCADE,
+        CONSTRAINT fk_link_target FOREIGN KEY (linked_office_id) REFERENCES offices(id) ON DELETE CASCADE
+    )"""
 
 _CREATE_BUS_TRIP_STATE_SQL = """
     CREATE TABLE IF NOT EXISTS bus_trip_state (
@@ -486,6 +498,7 @@ _ALL_TABLES = [
     ('appointment_messages', _CREATE_APPT_MESSAGES_SQL),
     ('system_settings', _CREATE_SYSTEM_SETTINGS_SQL),
     ('officer_system_ratings', _CREATE_OFFICER_SYSTEM_RATINGS_SQL),
+    ('office_links', _CREATE_OFFICE_LINKS_SQL),
     ('bus_companies', _CREATE_BUS_COMPANIES_SQL),
     ('bus_routes', _CREATE_BUS_ROUTES_SQL),
     ('bus_stops', _CREATE_BUS_STOPS_SQL),
@@ -649,6 +662,13 @@ try:
             cursor.execute("ALTER TABLE university_tokens ADD COLUMN student_email VARCHAR(120) DEFAULT NULL AFTER student_phone")
             connection.commit()
             print("[OK] student_email column added to university_tokens")
+
+        cursor.execute("SHOW COLUMNS FROM university_tokens LIKE 'escalated_at'")
+        if not cursor.fetchone():
+            print("[WARN] university_tokens table missing escalated_at column! Adding...")
+            cursor.execute("ALTER TABLE university_tokens ADD COLUMN escalated_at TIMESTAMP NULL DEFAULT NULL AFTER served_count_excluded")
+            connection.commit()
+            print("[OK] escalated_at column added to university_tokens")
 
         cursor.execute("SHOW INDEX FROM university_tokens WHERE Key_name = 'idx_tokens_email'")
         if not cursor.fetchone():
@@ -1104,6 +1124,121 @@ def auto_expire_sessions(conn=None):
         cursor.close()
     except Exception as e:
         logger.warning(f"[SESSION] Auto-expire error: {e}")
+    finally:
+        if own_conn:
+            try: conn.close()
+            except: pass
+
+
+def auto_escalate_overdue_tokens(conn=None, batch_limit=20):
+    """Move waiting tokens that stayed beyond their estimated wait to a linked
+    office with a matching service. Escalated tokens become priority (is_priority=1,
+    escalated_at=NOW()) so the linked office calls them first. Chains allowed
+    (A->B->C) but a token never returns to an office it was escalated from.
+    Only available + active linked offices qualify as targets."""
+    own_conn = False
+    try:
+        if conn is None:
+            conn = get_db_connection()
+            own_conn = True
+        cursor = conn.cursor(dictionary=True)
+        # Overdue waiting tokens with an estimate to compare against
+        cursor.execute("""
+            SELECT t.id, t.token_number, t.office_id, t.service_id, t.service_code,
+                   t.student_name, t.estimated_wait_minutes
+            FROM university_tokens t
+            WHERE t.status = 'waiting'
+              AND t.estimated_wait_minutes IS NOT NULL
+              AND t.estimated_wait_minutes >= 0
+              AND TIMESTAMPDIFF(MINUTE, t.requested_at, NOW()) > t.estimated_wait_minutes
+            ORDER BY t.requested_at ASC
+            LIMIT %s
+        """, (batch_limit,))
+        overdue = cursor.fetchall()
+        if not overdue:
+            cursor.close()
+            return 0
+        moved = 0
+        for tok in overdue:
+            # Active links for the token's current office
+            cursor.execute("""
+                SELECT linked_office_id FROM office_links
+                WHERE source_office_id = %s AND is_active = 1
+            """, (tok['office_id'],))
+            linked_ids = [r['linked_office_id'] for r in cursor.fetchall()]
+            if not linked_ids:
+                continue
+            # Offices this token already escalated from (chain guard: no ping-pong)
+            cursor.execute("""
+                SELECT DISTINCT action_details FROM queue_logs
+                WHERE token_number = %s AND action = 'escalated'
+            """, (tok['token_number'],))
+            seen = set()
+            for r in cursor.fetchall():
+                try:
+                    # action_details: 'Escalated from <office_id> (<name>) to <office_id> (<name>)'
+                    m = re.search(r'Escalated from (\d+)', r['action_details'] or '')
+                    if m:
+                        seen.add(int(m.group(1)))
+                except Exception:
+                    pass
+            seen.add(tok['office_id'])
+            candidates = [i for i in linked_ids if i not in seen]
+            if not candidates:
+                continue
+            # Qualify: active + available + matching service, pick shortest queue
+            best = None
+            for target_id in candidates:
+                cursor.execute("""
+                    SELECT id, office_name, availability_status FROM offices
+                    WHERE id = %s AND is_active = 1
+                """, (target_id,))
+                office = cursor.fetchone()
+                if not office:
+                    continue
+                if (office.get('availability_status') or 'available').lower() != 'available':
+                    continue
+                cursor.execute("""
+                    SELECT id FROM services
+                    WHERE office_id = %s AND service_code = %s AND is_active = 1
+                    LIMIT 1
+                """, (target_id, tok['service_code'],))
+                svc = cursor.fetchone()
+                if not svc:
+                    continue
+                cursor.execute("""
+                    SELECT COUNT(*) AS waiting_count FROM university_tokens
+                    WHERE office_id = %s AND status = 'waiting'
+                """, (target_id,))
+                waiting_count = (cursor.fetchone() or {}).get('waiting_count', 0)
+                if best is None or waiting_count < best['waiting_count']:
+                    best = {'office_id': target_id, 'office_name': office['office_name'],
+                            'service_id': svc['id'], 'waiting_count': waiting_count}
+            if best is None:
+                continue
+            cursor.execute("SELECT office_name FROM offices WHERE id = %s", (tok['office_id'],))
+            src_row = cursor.fetchone()
+            src_name = (src_row or {}).get('office_name', str(tok['office_id']))
+            cursor.execute("""
+                UPDATE university_tokens
+                SET office_id = %s, service_id = %s, is_priority = 1, escalated_at = NOW()
+                WHERE id = %s AND status = 'waiting'
+            """, (best['office_id'], best['service_id'], tok['id'],))
+            if cursor.rowcount:
+                cursor.execute("""
+                    INSERT INTO queue_logs (token_number, officer_id, action, action_details, created_at)
+                    VALUES (%s, NULL, 'escalated',
+                        CONCAT('Escalated from ', %s, ' (', %s, ') to ', %s, ' (', %s, ')'), NOW())
+                """, (tok['token_number'], tok['office_id'], src_name,
+                      best['office_id'], best['office_name'],))
+                moved += 1
+        if moved:
+            conn.commit()
+        cursor.close()
+        return moved
+    except Exception as e:
+        logger.warning(f"[ESCALATE] Auto-escalate error: {e}")
+        return 0
     finally:
         if own_conn:
             try: conn.close()
@@ -3260,15 +3395,24 @@ def get_officer_queue(officer_id):
         if not officer:
             return jsonify({'success': False, 'message': 'Officer not found'})
 
+        # Piggyback: sweep overdue tokens for escalation (cheap, self-throttling)
+        try:
+            auto_escalate_overdue_tokens(conn)
+        except Exception:
+            pass
+
         cursor.execute("""
             SELECT t.id, t.token_number, t.student_name, t.student_id, t.student_phone,
                    t.service_code, t.parent_phone, t.requested_at,
                    s.service_name,
-                   TIMESTAMPDIFF(MINUTE, t.requested_at, NOW()) as waiting_minutes
+                   TIMESTAMPDIFF(MINUTE, t.requested_at, NOW()) as waiting_minutes,
+                   (SELECT action_details FROM queue_logs q
+                     WHERE q.token_number = t.token_number AND q.action = 'escalated'
+                     ORDER BY q.created_at DESC LIMIT 1) AS escalated_from_office
             FROM university_tokens t
             LEFT JOIN services s ON t.service_id = s.id
             WHERE t.office_id = %s AND t.status = 'waiting'
-            ORDER BY t.is_priority DESC, t.requested_at ASC
+            ORDER BY t.is_priority DESC, t.escalated_at DESC, t.requested_at ASC
         """, (officer['office_id'],))
         waiting = cursor.fetchall()
 
@@ -3431,7 +3575,7 @@ def get_public_queues_next():
                     FROM university_tokens t
                     LEFT JOIN services s ON t.service_id = s.id
                     WHERE t.office_id = %s AND t.status = 'waiting'
-                    ORDER BY t.is_priority DESC, t.requested_at ASC
+                    ORDER BY t.is_priority DESC, t.escalated_at DESC, t.requested_at ASC
                     LIMIT %s
                 """, (office['id'], per_office_limit))
                 next_tokens = cursor.fetchall()
@@ -3492,7 +3636,7 @@ def officer_call_next():
             SELECT id, token_number, student_name, service_code 
             FROM university_tokens
             WHERE office_id=%s AND status='waiting'
-            ORDER BY is_priority DESC, requested_at ASC LIMIT 1
+            ORDER BY is_priority DESC, escalated_at DESC, requested_at ASC LIMIT 1
         """, (officer['office_id'],))
         
         token = cursor.fetchone()
@@ -3576,7 +3720,7 @@ def officer_call_batch():
             SELECT id, token_number, student_name, service_code, student_phone, parent_phone
             FROM university_tokens
             WHERE office_id=%s AND status='waiting'
-            ORDER BY is_priority DESC, requested_at ASC
+            ORDER BY is_priority DESC, escalated_at DESC, requested_at ASC
             LIMIT %s
         """, (officer['office_id'], batch_size))
 
@@ -4323,6 +4467,73 @@ def public_get_language():
         return jsonify({'success': True, 'language': lang})
     except Exception as e:
         return jsonify({'success': True, 'language': 'en'})
+
+# ============================================
+# OFFICE LINKS (similar-service escalation)
+# ============================================
+@app.route('/api/admin/office-links', methods=['GET'])
+def admin_get_office_links():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT l.id, l.source_office_id, l.linked_office_id, l.is_active,
+                   s.office_code AS source_code, s.office_name AS source_name,
+                   t.office_code AS linked_code, t.office_name AS linked_name
+            FROM office_links l
+            JOIN offices s ON s.id = l.source_office_id
+            JOIN offices t ON t.id = l.linked_office_id
+            ORDER BY s.office_name, t.office_name
+        """)
+        links = cursor.fetchall()
+        cursor.execute("SELECT id, office_code, office_name FROM offices ORDER BY office_name")
+        offices = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return jsonify({'success': True, 'links': links, 'offices': offices})
+    except Exception as e:
+        logger.error(f"Get office links error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/admin/office-links', methods=['POST'])
+def admin_create_office_link():
+    data = request.get_json()
+    source_id = data.get('source_office_id')
+    linked_id = data.get('linked_office_id')
+    if not source_id or not linked_id:
+        return jsonify({'success': False, 'message': 'Both offices are required'}), 400
+    if int(source_id) == int(linked_id):
+        return jsonify({'success': False, 'message': 'An office cannot link to itself'}), 400
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            INSERT INTO office_links (source_office_id, linked_office_id)
+            VALUES (%s, %s)
+            ON DUPLICATE KEY UPDATE is_active = 1
+        """, (source_id, linked_id))
+        conn.commit()
+        link_id = cursor.lastrowid
+        cursor.close()
+        conn.close()
+        return jsonify({'success': True, 'link_id': link_id, 'message': 'Offices linked'})
+    except Exception as e:
+        logger.error(f"Create office link error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/admin/office-links/<int:link_id>', methods=['DELETE'])
+def admin_delete_office_link(link_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM office_links WHERE id = %s", (link_id,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({'success': True, 'message': 'Link removed'})
+    except Exception as e:
+        logger.error(f"Delete office link error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 def officer_get_system_rating_status(officer_id):
     try:
         conn = get_db_connection()
