@@ -2023,6 +2023,44 @@ def get_office_services(office_id):
         return jsonify({'success': False, 'message': str(e)})
 
 
+@app.route('/api/officer/service/<int:service_id>/time', methods=['PUT'])
+def officer_set_service_time(service_id):
+    """Officer-scoped: update only the estimated minutes for a service
+    in the officer's own office."""
+    data = request.get_json() or {}
+    try:
+        minutes = int(data.get('estimated_time_minutes', 0))
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'message': 'Minutes must be a number'}), 400
+    if minutes < 1 or minutes > 480:
+        return jsonify({'success': False, 'message': 'Minutes must be between 1 and 480'}), 400
+    officer_id = data.get('officer_id')
+    if not officer_id:
+        return jsonify({'success': False, 'message': 'Officer ID required'}), 400
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT office_id FROM officers WHERE id = %s", (officer_id,))
+        officer = cursor.fetchone()
+        if not officer:
+            cursor.close()
+            conn.close()
+            return jsonify({'success': False, 'message': 'Officer not found'}), 404
+        cursor.execute("SELECT id FROM services WHERE id = %s AND office_id = %s", (service_id, officer['office_id'],))
+        if not cursor.fetchone():
+            cursor.close()
+            conn.close()
+            return jsonify({'success': False, 'message': 'Service not found in your office'}), 404
+        cursor.execute("UPDATE services SET estimated_time_minutes = %s WHERE id = %s", (minutes, service_id,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({'success': True, 'message': f'Service time set to {minutes} min'})
+    except Exception as e:
+        logger.error(f"Officer set service time error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 # ============================================
 # STUDENT TOKEN GENERATION
 # ============================================
