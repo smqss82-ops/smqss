@@ -612,6 +612,20 @@
     <div class="modal-body" id="availReasonBody">
       <p style="margin-bottom:12px;font-size:13px;color:var(--text-secondary);" id="availReasonDesc">Please provide a reason so people see it on the kiosk and public display.</p>
       <textarea id="availReasonInput" rows="3" placeholder="Enter reason for closing..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border-mid);border-radius:10px;font-size:13px;font-family:var(--font);outline:none;resize:vertical;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--green-accent)'" onblur="this.style.borderColor='var(--border-mid)'"></textarea>
+      <div id="breakFieldsWrap" style="display:none;flex-direction:column;gap:12px">
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:6px">Break type</label>
+          <select id="breakTypeSelect" style="width:100%;padding:10px 12px;border:1.5px solid var(--border-mid);border-radius:10px;font-size:13px;font-family:var(--font);outline:none;background:var(--white);cursor:pointer">
+            <option value="">Select break type...</option>
+            <option value="Breakfast">Breakfast</option>
+            <option value="Lunch">Lunch</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:6px">Back at</label>
+          <input type="time" id="breakBackTime" style="width:100%;padding:10px 12px;border:1.5px solid var(--border-mid);border-radius:10px;font-size:13px;font-family:var(--font);outline:none">
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="mbtn mbtn-confirm" id="availReasonConfirmBtn" onclick="confirmAvailabilityChange()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> <span id="availReasonConfirmText">Mark Unavailable</span></button>
@@ -1741,8 +1755,14 @@
     const input = document.getElementById('availReasonInput');
     const confirmBtn = document.getElementById('availReasonConfirmBtn');
     const confirmText = document.getElementById('availReasonConfirmText');
-    input.value = '';
-    if (newStatus === 'available') {
+  input.value = '';
+  const breakWrap = document.getElementById('breakFieldsWrap');
+  const breakType = document.getElementById('breakTypeSelect');
+  const breakTime = document.getElementById('breakBackTime');
+  breakType.value = '';
+  breakTime.value = '';
+  breakWrap.style.display = 'none';
+  if (newStatus === 'available') {
       icon.style.background = 'var(--green-soft)';
       icon.style.color = 'var(--green-accent)';
       icon.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
@@ -1757,13 +1777,12 @@
       icon.style.color = '#b45309';
       icon.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>';
       title.textContent = 'Take a Break?';
-      desc.innerHTML = 'New tokens will be paused and the office will show <strong>On Break</strong> on the public display. People already waiting stay in the queue. Add a note so people know when you will return (e.g. Lunch break — back at 14:00).';
+      desc.innerHTML = 'New tokens will be paused and the office will show <strong>On Break</strong> on the public display. People already waiting stay in the queue. Choose the break type and when you will return.';
       confirmText.textContent = 'Start Break';
       confirmBtn.style.background = '#f59e0b';
       confirmBtn.style.color = '#fff';
-      input.style.display = '';
-      input.placeholder = 'e.g. Lunch break — back at 14:00';
-      input.focus();
+      input.style.display = 'none';
+      breakWrap.style.display = 'flex';
     } else {
       icon.style.background = 'var(--red-soft)';
       icon.style.color = 'var(--red)';
@@ -1812,12 +1831,31 @@
     setLoading(btn, true);
     const { office, newStatus } = pendingAvailChange;
     const input = document.getElementById('availReasonInput');
-    const reason = newStatus === 'available' ? '' : input.value.trim();
-    if ((newStatus === 'unavailable' || newStatus === 'on_break') && !reason) {
-      showToast(newStatus === 'on_break' ? 'Please add a note (e.g. Lunch break — back at 14:00)' : 'Please enter a reason for closing the office', 'warning');
-      input.focus();
-      setLoading(btn, false);
-      return;
+    let reason = '';
+    if (newStatus === 'on_break') {
+      const bType = document.getElementById('breakTypeSelect').value;
+      const bTime = document.getElementById('breakBackTime').value;
+      if (!bType) {
+        showToast('Please select a break type (Breakfast or Lunch)', 'warning');
+        document.getElementById('breakTypeSelect').focus();
+        setLoading(btn, false);
+        return;
+      }
+      if (!bTime) {
+        showToast('Please select what time you will be back', 'warning');
+        document.getElementById('breakBackTime').focus();
+        setLoading(btn, false);
+        return;
+      }
+      reason = `${bType} break — back at ${bTime}`;
+    } else if (newStatus === 'unavailable') {
+      reason = input.value.trim();
+      if (!reason) {
+        showToast('Please enter a reason for closing the office', 'warning');
+        input.focus();
+        setLoading(btn, false);
+        return;
+      }
     }
     const notice = newStatus === 'available' ? '' : reason;
     const officeId = currentOfficer && currentOfficer.office_id;
