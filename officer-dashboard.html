@@ -1713,11 +1713,17 @@
   document.querySelectorAll('.overlay').forEach(el => { el.addEventListener('click', e => { if (e.target === el && el.id !== 'ratingOverlay') el.classList.remove('open'); }); });
 
   async function loadOfficeStatus() {
-    const result = await apiCall(`/api/offices`);
-    if (!result.success || !result.offices) { showToast('Failed to load office status', 'error'); return; }
-    const office = result.offices.find(o => o.id === currentOfficer.office_id);
-    if (!office) return;
-    updateOfficeAvailabilityUI(office.availability_status, office.unavailability_notice);
+    if (!currentOfficer || !currentOfficer.office_id) return;
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/offices`, { cache: 'no-store' });
+      const result = await response.json();
+      if (!result.success || !result.offices) { showToast('Failed to load office status', 'error'); return; }
+      const office = result.offices.find(o => o.id === currentOfficer.office_id);
+      if (!office) { showToast('Office not found — please re-login', 'error'); return; }
+      updateOfficeAvailabilityUI(office.availability_status, office.unavailability_notice);
+    } catch (e) {
+      showToast('Failed to load office status', 'error');
+    }
   }
 
   function updateOfficeAvailabilityUI(status, notice) {
@@ -1880,7 +1886,9 @@
       if (updateResult.success) {
         showToast(`Office marked as ${newStatus}`, newStatus === 'available' ? 'success' : 'warning');
         addLog(`Office availability changed to ${newStatus}${reason ? ': ' + reason : ''}`, newStatus === 'available' ? 'success' : 'warning');
-        await loadOfficeStatus();
+        // Optimistic repaint: toggle corrects instantly even if the re-fetch fails
+        try { updateOfficeAvailabilityUI(newStatus, notice); } catch (e) {}
+        try { await loadOfficeStatus(); } catch (e) {}
         syncDrawer();
         if (newStatus === 'unavailable') {
           startOfficeLogoutCountdown();
