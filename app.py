@@ -229,7 +229,7 @@ _CREATE_SERVICES_SQL = """
         service_name VARCHAR(100) NOT NULL,
         office_id INT NOT NULL,
         description TEXT,
-        estimated_time_minutes INT DEFAULT 5,
+        estimated_time_minutes INT DEFAULT 15,
         is_active TINYINT(1) DEFAULT 1,
         display_order INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -513,9 +513,9 @@ _SEED_OFFICES_SQL = """
     ON DUPLICATE KEY UPDATE id=id"""
 _SEED_SERVICES_SQL = """
     INSERT INTO services (service_code, service_name, office_id, description, estimated_time_minutes, display_order)
-    VALUES ('REG', 'Registry Services', 99, 'General registry inquiries', 5, 1),
+    VALUES ('REG', 'Registry Services', 99, 'General registry inquiries', 15, 1),
            ('TST', 'Testimonial Letters', 99, 'Request testimonials', 10, 2),
-           ('GEN', 'General Inquiry', 99, 'Other academic matters', 5, 3)
+           ('GEN', 'General Inquiry', 99, 'Other academic matters', 15, 3)
     ON DUPLICATE KEY UPDATE service_code=service_code"""
 _SEED_OFFICERS_SQL = """
     INSERT INTO officers (officer_number, officer_name, email, phone, pin_code, office_id, is_admin, status)
@@ -1158,8 +1158,21 @@ def auto_escalate_overdue_tokens(conn=None, batch_limit=20):
         if not overdue:
             cursor.close()
             return 0
+        # Progress guard: offices that called/served/completed anyone in the
+        # last 15 minutes are actively working — skip their tokens even if
+        # overdue, so a long-but-moving line is never drained.
+        cursor.execute("""
+            SELECT DISTINCT office_id FROM university_tokens
+            WHERE status IN ('called', 'serving', 'completed')
+              AND (called_at >= NOW() - INTERVAL 15 MINUTE
+                OR serving_started_at >= NOW() - INTERVAL 15 MINUTE
+                OR completed_at >= NOW() - INTERVAL 15 MINUTE)
+        """)
+        active_offices = set(r['office_id'] for r in cursor.fetchall())
         moved = 0
         for tok in overdue:
+            if tok['office_id'] in active_offices:
+                continue
             # Active links for the token's current office
             cursor.execute("""
                 SELECT linked_office_id FROM office_links
@@ -1496,7 +1509,7 @@ def admin_create_service():
     service_name = data.get('service_name')
     office_id = data.get('office_id')
     description = data.get('description')
-    estimated_time_minutes = data.get('estimated_time_minutes', 5)
+    estimated_time_minutes = data.get('estimated_time_minutes', 15)
     display_order = data.get('display_order', 0)
     
     if not service_code or not service_name:

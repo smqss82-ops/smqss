@@ -41,7 +41,7 @@ for office in offices:
         cursor.execute("""
             INSERT INTO services (service_code, service_name, office_id, description, estimated_time_minutes, display_order, is_active)
             VALUES (%s, %s, %s, %s, %s, %s, 1)
-        """, ('PS', 'Parent Interaction', oid, 'Priority service for parents and visitors', 5, next_order))
+        """, ('PS', 'Parent Interaction', oid, 'Priority service for parents and visitors', 15, next_order))
         added += 1
         print(f'[OK] Added PS service to {oname}')
     else:
