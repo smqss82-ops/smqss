@@ -873,6 +873,10 @@ def admin_customers_token():
 def admin_benchmarks_token():
     return jsonify({'success': True, 'url': '/admin/' + ADMIN_TOKEN + '/benchmarks'})
 
+@app.route('/api/admin/bottlenecks-token')
+def admin_bottlenecks_token():
+    return jsonify({'success': True, 'url': '/admin/' + ADMIN_TOKEN + '/bottlenecks'})
+
 @app.route('/api/admin/officer-token')
 def admin_officer_token():
     return jsonify({'success': True, 'token': OFFICER_TOKEN, 'url': '/officer/' + OFFICER_TOKEN})
@@ -982,6 +986,16 @@ def admin_benchmarks_page(token):
     if token != ADMIN_TOKEN:
         return redirect('/')
     resp = send_from_directory('.', 'benchmarks.html')
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
+
+@app.route('/admin/<token>/bottlenecks')
+def admin_bottlenecks_page(token):
+    if token != ADMIN_TOKEN:
+        return redirect('/')
+    resp = send_from_directory('.', 'bottlenecks.html')
     resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     resp.headers['Pragma'] = 'no-cache'
     resp.headers['Expires'] = '0'
@@ -6304,6 +6318,102 @@ def admin_attendance_summary():
     except Exception as e:
         logger.error(f"Error fetching attendance summary: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+# ============================================
+# BOTTLENECKS (wait x demand / staffing)
+# ============================================
+@app.route('/api/admin/bottlenecks', methods=['GET'])
+def admin_bottlenecks():
+    """Ranked bottleneck rows per office per day + peak flags. ?from=YYYY-MM-DD&to=YYYY-MM-DD"""
+    try:
+        to_dt = request.args.get('to')
+        from_dt = request.args.get('from')
+        today = datetime.now().date()
+        try:
+            to_d = datetime.strptime(to_dt, '%Y-%m-%d').date() if to_dt else today
+        except ValueError:
+            to_d = today
+        try:
+            from_d = datetime.strptime(from_dt, '%Y-%m-%d').date() if from_dt else to_d - timedelta(days=6)
+        except ValueError:
+            from_d = to_d - timedelta(days=6)
+        if (to_d - from_d).days > 93:
+            from_d = to_d - timedelta(days=93)
+        if from_d > to_d:
+            from_d, to_d = to_d, from_d
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT off.id AS office_id, off.office_code, off.office_name,
+                   DATE(t.requested_at) AS day,
+                   COUNT(t.id) AS demand,
+                   ROUND(AVG(CASE WHEN t.serving_started_at IS NOT NULL
+                                 THEN TIMESTAMPDIFF(MINUTE, t.requested_at, t.serving_started_at) END), 1) AS avg_wait,
+                   SUM(CASE WHEN TIMESTAMPDIFF(MINUTE, t.requested_at,
+                                           COALESCE(t.serving_started_at, NOW()))
+                                 > COALESCE(s.estimated_time_minutes, 15) THEN 1 ELSE 0 END) AS breaches
+            FROM offices off
+            LEFT JOIN university_tokens t ON t.office_id = off.id
+                AND DATE(t.requested_at) BETWEEN %s AND %s
+            LEFT JOIN services s ON s.id = t.service_id
+            WHERE off.is_active = 1
+            GROUP BY off.id, day
+            HAVING demand > 0
+            ORDER BY day DESC
+        """, (from_d.isoformat(), to_d.isoformat()))
+        rows = cursor.fetchall()
+
+        cursor.execute("""
+            SELECT office_id, session_date AS day,
+                   COUNT(DISTINCT officer_id) AS officers
+            FROM officer_sessions
+            WHERE session_date BETWEEN %s AND %s
+            GROUP BY office_id, day
+        """, (from_d.isoformat(), to_d.isoformat()))
+        staffing = {(r['office_id'], str(r['day'])): r['officers'] for r in cursor.fetchall()}
+
+        cursor.close()
+        conn.close()
+
+        out = []
+        for r in rows:
+            day = r['day']
+            if hasattr(day, 'isoformat'):
+                day = day.isoformat()
+            officers = staffing.get((r['office_id'], str(day)), 0)
+            demand = r['demand'] or 0
+            avg_wait = float(r['avg_wait']) if r['avg_wait'] is not None else 0
+            pressure = round(avg_wait * demand / max(officers, 1), 1)
+            out.append({
+                'office_id': r['office_id'],
+                'office_code': r['office_code'],
+                'office_name': r['office_name'],
+                'day': str(day),
+                'demand': demand,
+                'avg_wait': r['avg_wait'],
+                'breaches': int(r['breaches'] or 0),
+                'officers': officers,
+                'pressure': pressure
+            })
+        out.sort(key=lambda x: x['pressure'], reverse=True)
+
+        peaks = {}
+        if out:
+            peaks['worst_pressure'] = out[0]
+            by_demand = max(out, key=lambda x: x['demand'])
+            by_wait = max([x for x in out if x['avg_wait'] is not None] or out, key=lambda x: x['avg_wait'] or 0)
+            peaks['peak_demand'] = by_demand
+            peaks['peak_wait'] = by_wait
+
+        return jsonify({'success': True,
+                        'from': from_d.isoformat(), 'to': to_d.isoformat(),
+                        'bottlenecks': out, 'peaks': peaks})
+    except Exception as e:
+        logger.error(f"Error in admin_bottlenecks: {e}")
+        return jsonify({'success': False, 'message': str(e)})
 
 
 # ============================================
