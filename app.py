@@ -869,6 +869,10 @@ def admin_sla_token():
 def admin_customers_token():
     return jsonify({'success': True, 'url': '/admin/' + ADMIN_TOKEN + '/customers'})
 
+@app.route('/api/admin/benchmarks-token')
+def admin_benchmarks_token():
+    return jsonify({'success': True, 'url': '/admin/' + ADMIN_TOKEN + '/benchmarks'})
+
 @app.route('/api/admin/officer-token')
 def admin_officer_token():
     return jsonify({'success': True, 'token': OFFICER_TOKEN, 'url': '/officer/' + OFFICER_TOKEN})
@@ -968,6 +972,16 @@ def admin_customers_page(token):
     if token != ADMIN_TOKEN:
         return redirect('/')
     resp = send_from_directory('.', 'customers.html')
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
+
+@app.route('/admin/<token>/benchmarks')
+def admin_benchmarks_page(token):
+    if token != ADMIN_TOKEN:
+        return redirect('/')
+    resp = send_from_directory('.', 'benchmarks.html')
     resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     resp.headers['Pragma'] = 'no-cache'
     resp.headers['Expires'] = '0'
@@ -6423,6 +6437,154 @@ def admin_heatmap():
 # ============================================
 # ATTENDANCE TRENDS
 # ============================================
+@app.route('/api/admin/officer-activity-series', methods=['GET'])
+def admin_officer_activity_series():
+    """Per-officer tokens-served series for line graphs. ?officer_id=&from=YYYY-MM-DD&to=YYYY-MM-DD&bucket=day|hour"""
+    try:
+        officer_id = request.args.get('officer_id', type=int)
+        bucket = (request.args.get('bucket') or 'day').lower()
+        if bucket not in ('day', 'hour'):
+            bucket = 'day'
+        to_dt = request.args.get('to')
+        from_dt = request.args.get('from')
+        today = datetime.now().date()
+        try:
+            to_d = datetime.strptime(to_dt, '%Y-%m-%d').date() if to_dt else today
+        except ValueError:
+            to_d = today
+        try:
+            from_d = datetime.strptime(from_dt, '%Y-%m-%d').date() if from_dt else to_d - timedelta(days=6)
+        except ValueError:
+            from_d = to_d - timedelta(days=6)
+        max_span = 14 if bucket == 'hour' else 93
+        if (to_d - from_d).days > max_span:
+            from_d = to_d - timedelta(days=max_span)
+        if from_d > to_d:
+            from_d, to_d = to_d, from_d
+
+        start_ts = datetime(from_d.year, from_d.month, from_d.day)
+        end_ts = datetime(to_d.year, to_d.month, to_d.day) + timedelta(days=1)
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        off_filter = "AND t.assigned_officer_id = %s" if officer_id else ""
+        off_params = [officer_id] if officer_id else []
+        bucket_expr = "DATE(t.completed_at)" if bucket == 'day' else "DATE_FORMAT(t.completed_at, '%Y-%m-%d %H:00')"
+        cursor.execute(f"""
+            SELECT t.assigned_officer_id AS officer_id,
+                   {bucket_expr} AS bucket,
+                   COUNT(*) AS served,
+                   ROUND(AVG(TIMESTAMPDIFF(MINUTE, t.requested_at, t.serving_started_at)), 1) AS avg_wait,
+                   SUM(CASE WHEN TIMESTAMPDIFF(MINUTE, t.requested_at, t.serving_started_at)
+                                 > COALESCE(s.estimated_time_minutes, 15) THEN 1 ELSE 0 END) AS breaches
+            FROM university_tokens t
+            LEFT JOIN services s ON s.id = t.service_id
+            WHERE t.status = 'completed'
+              AND COALESCE(t.served_count_excluded, 0) = 0
+              AND t.assigned_officer_id IS NOT NULL
+              AND t.completed_at >= %s AND t.completed_at < %s
+              {off_filter}
+            GROUP BY t.assigned_officer_id, bucket
+            ORDER BY bucket
+        """, tuple(off_params + [start_ts, end_ts]))
+        rows = cursor.fetchall()
+
+        # On-duty minutes per bucket from sessions (Python-side overlap)
+        cursor.execute("""
+            SELECT officer_id, login_time, logout_time FROM officer_sessions
+            WHERE login_time < %s AND (logout_time IS NULL OR logout_time >= %s)
+        """, (end_ts, start_ts))
+        sessions = cursor.fetchall()
+
+        cursor.execute("""
+            SELECT o.id AS officer_id, o.officer_name, off.office_name
+            FROM officers o LEFT JOIN offices off ON off.id = o.office_id
+        """ + ("WHERE o.id = %s" if officer_id else ""), tuple(off_params))
+        officers = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        # Build bucket list
+        buckets = []
+        if bucket == 'day':
+            d = from_d
+            while d <= to_d:
+                buckets.append(d.isoformat())
+                d += timedelta(days=1)
+        else:
+            h = start_ts
+            while h < end_ts:
+                buckets.append(h.strftime('%Y-%m-%d %H:00'))
+                h += timedelta(hours=1)
+
+        def bucket_of(dt):
+            if isinstance(dt, str):
+                try: dt = datetime.fromisoformat(dt)
+                except ValueError: return None
+            if bucket == 'day':
+                return dt.date().isoformat()
+            return dt.strftime('%Y-%m-%d %H:00')
+
+        # Duty minutes per (officer, bucket)
+        now = datetime.now()
+        duty = {}
+        for s in sessions:
+            oid = s['officer_id']
+            login = s['login_time']
+            logout = s['logout_time'] or now
+            if isinstance(login, str):
+                login = datetime.fromisoformat(login)
+            if isinstance(logout, str):
+                logout = datetime.fromisoformat(logout)
+            for b in buckets:
+                if bucket == 'day':
+                    bs = datetime.fromisoformat(b)
+                    be = bs + timedelta(days=1)
+                else:
+                    bs = datetime.strptime(b, '%Y-%m-%d %H:00')
+                    be = bs + timedelta(hours=1)
+                overlap = (min(logout, be) - max(login, bs)).total_seconds() / 60
+                if overlap > 0:
+                    duty[(oid, b)] = duty.get((oid, b), 0) + overlap
+
+        by_off = {}
+        for r in rows:
+            b = r['bucket']
+            if hasattr(b, 'isoformat'):
+                b = b.isoformat() if bucket == 'day' else b.strftime('%Y-%m-%d %H:00')
+            by_off.setdefault(r['officer_id'], {})[str(b)] = r
+
+        series = []
+        for o in officers:
+            oid = o['officer_id']
+            pts = []
+            for b in buckets:
+                r = by_off.get(oid, {}).get(b)
+                pts.append({
+                    'bucket': b,
+                    'served': int(r['served']) if r else 0,
+                    'avg_wait': float(r['avg_wait']) if r and r['avg_wait'] is not None else None,
+                    'breaches': int(r['breaches']) if r else 0,
+                    'on_duty_min': round(duty.get((oid, b), 0))
+                })
+            series.append({'officer_id': oid,
+                           'officer_name': o['officer_name'],
+                           'office_name': o.get('office_name'),
+                           'points': pts,
+                           'total_served': sum(p['served'] for p in pts)})
+
+        series.sort(key=lambda s: s['total_served'], reverse=True)
+
+        return jsonify({'success': True,
+                        'from': from_d.isoformat(), 'to': to_d.isoformat(),
+                        'bucket': bucket, 'officers': officers, 'series': series})
+    except Exception as e:
+        logger.error(f"Error in officer_activity_series: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+
 @app.route('/api/admin/attendance-trends', methods=['GET'])
 def admin_attendance_trends():
     """Weekly trend data. ?weeks=8"""
