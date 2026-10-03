@@ -960,6 +960,15 @@
             </div>
                         <span>Working Status</span>
         </div>
+        <div class="nav-section-label">Accountability</div>
+        <div class="nav-item" onclick="goToSLADashboard()">
+            <div class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+            </div>
+            <span>SLA Dashboard</span>
+        </div>
         <div class="nav-item" onclick="showPage('attendance', this)">
             <div class="nav-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -2249,6 +2258,17 @@
         function logout() {
             sessionStorage.removeItem('loggedInUser');
             window.location.href = '/';
+        }
+
+        async function goToSLADashboard() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/sla-token`);
+                const data = await res.json();
+                if (data.success && data.url) window.location.href = data.url;
+                else showToast('Failed to open SLA dashboard', 'error');
+            } catch (e) {
+                showToast('Network error', 'error');
+            }
         }
 
         function toggleSidebar() {

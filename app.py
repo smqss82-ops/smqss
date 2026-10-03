@@ -861,6 +861,10 @@ def admin_workflow_token():
 def admin_admin_token():
     return jsonify({'success': True, 'token': ADMIN_TOKEN, 'url': '/admin/' + ADMIN_TOKEN})
 
+@app.route('/api/admin/sla-token')
+def admin_sla_token():
+    return jsonify({'success': True, 'url': '/admin/' + ADMIN_TOKEN + '/sla'})
+
 @app.route('/api/admin/officer-token')
 def admin_officer_token():
     return jsonify({'success': True, 'token': OFFICER_TOKEN, 'url': '/officer/' + OFFICER_TOKEN})
@@ -940,6 +944,16 @@ def admin_dashboard(token):
     if token != ADMIN_TOKEN:
         return redirect('/')
     resp = send_from_directory('.', 'admin-dashboard.html')
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
+
+@app.route('/admin/<token>/sla')
+def admin_sla_dashboard(token):
+    if token != ADMIN_TOKEN:
+        return redirect('/')
+    resp = send_from_directory('.', 'sla-dashboard.html')
     resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     resp.headers['Pragma'] = 'no-cache'
     resp.headers['Expires'] = '0'
@@ -4098,6 +4112,13 @@ def officer_complete():
         except Exception as se:
             logger.warning(f"[SESSION] Failed to increment tokens_served: {se}")
 
+        cursor.execute("SELECT student_name FROM university_tokens WHERE token_number = %s", (token_number,))
+        _trow = cursor.fetchone()
+        cursor.execute("""
+            INSERT INTO queue_logs (token_number, officer_id, action, action_details, created_at)
+            VALUES (%s, %s, 'completed', CONCAT('Completed - Person: ', IFNULL(%s, '')), NOW())
+        """, (token_number, officer_id, (_trow or {}).get('student_name')))
+
         conn.commit()
         return jsonify({'success': True})
     except Exception as e:
@@ -4126,6 +4147,12 @@ def officer_skip():
             UPDATE officers SET status='available', current_token=NULL, last_activity=NOW() 
             WHERE id=%s
         """, (officer_id,))
+        cursor.execute("SELECT student_name FROM university_tokens WHERE token_number = %s", (token_number,))
+        _trow = cursor.fetchone()
+        cursor.execute("""
+            INSERT INTO queue_logs (token_number, officer_id, action, action_details, created_at)
+            VALUES (%s, %s, 'skipped', CONCAT('Skipped - Person: ', IFNULL(%s, '')), NOW())
+        """, (token_number, officer_id, (_trow or {}).get('student_name')))
         conn.commit()
         return jsonify({'success': True})
     except Exception as e:
@@ -4773,6 +4800,196 @@ def admin_daily_stats():
 
     except Exception as e:
         logger.error(f"Error in admin_daily_stats: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@app.route('/api/admin/sla-overview', methods=['GET'])
+def admin_sla_overview():
+    """Per-office SLA snapshot: target = service estimated minutes,
+    breach = queue wait (requested -> serving_started) exceeded target."""
+    try:
+        target_date = request.args.get('date')
+        if not target_date:
+            target_date = datetime.now().strftime('%Y-%m-%d')
+        start = f"{target_date} 00:00:00"
+        end = f"{target_date} 23:59:59"
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT
+                off.id,
+                off.office_code,
+                off.office_name,
+                COUNT(CASE WHEN t.serving_started_at BETWEEN %s AND %s THEN 1 END) AS served,
+                COUNT(CASE WHEN t.serving_started_at BETWEEN %s AND %s
+                            AND TIMESTAMPDIFF(MINUTE, t.requested_at, t.serving_started_at)
+                                > COALESCE(s.estimated_time_minutes, 15) THEN 1 END) AS breached,
+                ROUND(AVG(CASE WHEN t.serving_started_at BETWEEN %s AND %s
+                               THEN TIMESTAMPDIFF(MINUTE, t.requested_at, t.serving_started_at) END), 1) AS avg_wait_minutes,
+                ROUND(AVG(CASE WHEN t.serving_started_at BETWEEN %s AND %s
+                               THEN COALESCE(s.estimated_time_minutes, 15) END), 1) AS avg_target_minutes,
+                COUNT(CASE WHEN t.status = 'waiting' THEN 1 END) AS current_waiting,
+                COUNT(CASE WHEN t.status = 'waiting'
+                            AND TIMESTAMPDIFF(MINUTE, t.requested_at, NOW())
+                                > COALESCE(s.estimated_time_minutes, 15) THEN 1 END) AS waiting_breached
+            FROM offices off
+            LEFT JOIN university_tokens t ON off.id = t.office_id
+            LEFT JOIN services s ON t.service_id = s.id
+            WHERE off.is_active = 1
+            GROUP BY off.id
+            ORDER BY off.display_order
+        """, (start, end, start, end, start, end, start, end))
+
+        offices = cursor.fetchall()
+        total_served = 0
+        total_breached = 0
+        for row in offices:
+            served = row.get('served') or 0
+            breached = row.get('breached') or 0
+            row['breach_rate'] = round((breached / served) * 100, 1) if served > 0 else 0
+            total_served += served
+            total_breached += breached
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'date': target_date,
+            'total_served': total_served,
+            'total_breached': total_breached,
+            'overall_breach_rate': round((total_breached / total_served) * 100, 1) if total_served > 0 else 0,
+            'offices': offices
+        })
+
+    except Exception as e:
+        logger.error(f"Error in admin_sla_overview: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@app.route('/api/admin/sla-breaches', methods=['GET'])
+def admin_sla_breaches():
+    """Token-level breach list: served breaches + currently-waiting breaches."""
+    try:
+        target_date = request.args.get('date')
+        if not target_date:
+            target_date = datetime.now().strftime('%Y-%m-%d')
+        start = f"{target_date} 00:00:00"
+        end = f"{target_date} 23:59:59"
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT t.token_number, t.student_name, t.service_code,
+                   s.service_name, off.office_name, off.office_code,
+                   t.requested_at, t.serving_started_at,
+                   TIMESTAMPDIFF(MINUTE, t.requested_at,
+                       COALESCE(t.serving_started_at, NOW())) AS waited_minutes,
+                   COALESCE(s.estimated_time_minutes, 15) AS target_minutes,
+                   (TIMESTAMPDIFF(MINUTE, t.requested_at,
+                       COALESCE(t.serving_started_at, NOW()))
+                       - COALESCE(s.estimated_time_minutes, 15)) AS over_by_minutes,
+                   CASE WHEN t.status = 'waiting' THEN 1 ELSE 0 END AS still_waiting,
+                   EXISTS (SELECT 1 FROM queue_logs q
+                           WHERE q.token_number = t.token_number AND q.action = 'escalated'
+                             AND DATE(q.created_at) = CURDATE()) AS was_escalated
+            FROM university_tokens t
+            JOIN offices off ON off.id = t.office_id
+            LEFT JOIN services s ON t.service_id = s.id
+            WHERE (t.serving_started_at BETWEEN %s AND %s
+                    OR (t.status = 'waiting' AND DATE(t.requested_at) = %s))
+              AND TIMESTAMPDIFF(MINUTE, t.requested_at,
+                      COALESCE(t.serving_started_at, NOW()))
+                  > COALESCE(s.estimated_time_minutes, 15)
+            ORDER BY over_by_minutes DESC
+            LIMIT 200
+        """, (start, end, target_date))
+
+        rows = cursor.fetchall()
+        for r in rows:
+            for col in ('requested_at', 'serving_started_at'):
+                if isinstance(r.get(col), datetime):
+                    r[col] = r[col].isoformat()
+            r['was_escalated'] = bool(r.get('was_escalated'))
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({'success': True, 'date': target_date, 'breaches': rows})
+
+    except Exception as e:
+        logger.error(f"Error in admin_sla_breaches: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@app.route('/api/admin/token-trace', methods=['GET'])
+def admin_token_trace():
+    """GitLab-style journey trace for one token: stage timestamps + log events.
+    Date-pinned to avoid cross-day token_number collisions."""
+    try:
+        token_number = (request.args.get('token_number') or '').strip()
+        if not token_number:
+            return jsonify({'success': False, 'message': 'token_number is required'}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT t.id, t.token_number, t.token_date, t.office_id, t.service_id,
+                   t.service_code, t.student_name, t.status,
+                   t.requested_at, t.called_at, t.serving_started_at,
+                   t.completed_at, t.skipped_at, t.estimated_wait_minutes,
+                   t.assigned_officer_number,
+                   s.service_name, off.office_name, off.office_code,
+                   o.officer_name
+            FROM university_tokens t
+            LEFT JOIN services s ON t.service_id = s.id
+            LEFT JOIN offices off ON off.id = t.office_id
+            LEFT JOIN officers o ON o.id = t.assigned_officer_id
+            WHERE t.token_number = %s
+            ORDER BY t.requested_at DESC
+            LIMIT 1
+        """, (token_number,))
+        token = cursor.fetchone()
+        if not token:
+            cursor.close()
+            conn.close()
+            return jsonify({'success': False, 'message': 'Token not found'}), 404
+
+        token_day = token['token_date']
+        if isinstance(token_day, datetime):
+            token_day = token_day.date()
+        cursor.execute("""
+            SELECT action, action_details, created_at
+            FROM queue_logs
+            WHERE token_number = %s
+              AND action NOT IN ('queue_reset', 'availability_change')
+              AND DATE(created_at) = %s
+            ORDER BY created_at ASC
+            LIMIT 100
+        """, (token_number, token_day))
+        events = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        for col in ('requested_at', 'called_at', 'serving_started_at',
+                    'completed_at', 'skipped_at'):
+            if isinstance(token.get(col), datetime):
+                token[col] = token[col].isoformat()
+        if isinstance(token.get('token_date'), (datetime, date)):
+            token['token_date'] = token['token_date'].isoformat()
+        for ev in events:
+            if isinstance(ev.get('created_at'), datetime):
+                ev['created_at'] = ev['created_at'].isoformat()
+
+        return jsonify({'success': True, 'token': token, 'events': events})
+
+    except Exception as e:
+        logger.error(f"Error in admin_token_trace: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 
