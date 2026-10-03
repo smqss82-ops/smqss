@@ -865,6 +865,10 @@ def admin_admin_token():
 def admin_sla_token():
     return jsonify({'success': True, 'url': '/admin/' + ADMIN_TOKEN + '/sla'})
 
+@app.route('/api/admin/customers-token')
+def admin_customers_token():
+    return jsonify({'success': True, 'url': '/admin/' + ADMIN_TOKEN + '/customers'})
+
 @app.route('/api/admin/officer-token')
 def admin_officer_token():
     return jsonify({'success': True, 'token': OFFICER_TOKEN, 'url': '/officer/' + OFFICER_TOKEN})
@@ -954,6 +958,16 @@ def admin_sla_dashboard(token):
     if token != ADMIN_TOKEN:
         return redirect('/')
     resp = send_from_directory('.', 'sla-dashboard.html')
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
+
+@app.route('/admin/<token>/customers')
+def admin_customers_page(token):
+    if token != ADMIN_TOKEN:
+        return redirect('/')
+    resp = send_from_directory('.', 'customers.html')
     resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     resp.headers['Pragma'] = 'no-cache'
     resp.headers['Expires'] = '0'
@@ -2320,6 +2334,99 @@ def get_tokens_by_email():
     finally:
         cursor.close()
         conn.close()
+
+
+@app.route('/api/admin/person-history', methods=['GET'])
+def admin_person_history():
+    """Customer 360: profile stats + visit history + linked complaints by email."""
+    email = _normalize_email(request.args.get('email'))
+    if not email or not _valid_email(email):
+        return jsonify({'success': False, 'message': 'A valid email address is required'}), 400
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT t.token_number, t.token_date, t.student_name, t.student_id,
+                   t.student_phone, t.status, t.rating, t.feedback_text,
+                   t.feedback_submitted_at, t.requested_at, t.called_at,
+                   t.serving_started_at, t.completed_at, t.skipped_at,
+                   t.service_code, t.estimated_wait_minutes,
+                   off.office_name, off.office_code,
+                   s.service_name
+            FROM university_tokens t
+            JOIN offices off ON off.id = t.office_id
+            LEFT JOIN services s ON s.id = t.service_id
+            WHERE t.student_email = %s
+            ORDER BY t.requested_at DESC
+            LIMIT 100
+        """, (email,))
+        visits = cursor.fetchall()
+
+        total = len(visits)
+        completed = sum(1 for v in visits if v.get('status') == 'completed')
+        ratings = [v['rating'] for v in visits if v.get('rating')]
+        avg_rating = round(sum(ratings) / len(ratings), 1) if ratings else None
+        names = sorted(set(v.get('student_name') for v in visits if v.get('student_name')))
+        phones = sorted(set(v.get('student_phone') for v in visits if v.get('student_phone')))
+        escalated = 0
+        for v in visits:
+            for col in ('requested_at', 'called_at', 'serving_started_at',
+                        'completed_at', 'skipped_at', 'feedback_submitted_at'):
+                if isinstance(v.get(col), datetime):
+                    v[col] = v[col].isoformat()
+            if isinstance(v.get('token_date'), (datetime, date)):
+                v['token_date'] = v['token_date'].isoformat()
+
+        if visits:
+            placeholders = ','.join(['%s'] * len(visits))
+            cursor.execute(f"""
+                SELECT COUNT(DISTINCT q.token_number) AS cnt FROM queue_logs q
+                WHERE q.action = 'escalated'
+                  AND q.token_number IN ({placeholders})
+            """, [v['token_number'] for v in visits])
+            erow = cursor.fetchone()
+            escalated = erow['cnt'] if erow else 0
+
+        cursor.execute("""
+            SELECT id, category, complaint_text, status, created_at
+            FROM general_complaints
+            WHERE email = %s
+            ORDER BY created_at DESC
+            LIMIT 50
+        """, (email,))
+        complaints = cursor.fetchall()
+        for c in complaints:
+            if isinstance(c.get('created_at'), datetime):
+                c['created_at'] = c['created_at'].isoformat()
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'email': _mask_email(email),
+            'profile': {
+                'names': names,
+                'phones': phones,
+                'total_visits': total,
+                'completed': completed,
+                'avg_rating': avg_rating,
+                'escalated_tokens': escalated,
+                'complaints': len(complaints)
+            },
+            'visits': visits,
+            'complaints': complaints
+        })
+    except Exception as e:
+        logger.error(f"Person history error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        try: cursor.close()
+        except: pass
+        try: conn.close()
+        except: pass
 
 
 # ============================================
