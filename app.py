@@ -877,6 +877,10 @@ def admin_benchmarks_token():
 def admin_bottlenecks_token():
     return jsonify({'success': True, 'url': '/admin/' + ADMIN_TOKEN + '/bottlenecks'})
 
+@app.route('/api/admin/reports-token')
+def admin_reports_token():
+    return jsonify({'success': True, 'url': '/admin/' + ADMIN_TOKEN + '/reports'})
+
 @app.route('/api/admin/officer-token')
 def admin_officer_token():
     return jsonify({'success': True, 'token': OFFICER_TOKEN, 'url': '/officer/' + OFFICER_TOKEN})
@@ -996,6 +1000,16 @@ def admin_bottlenecks_page(token):
     if token != ADMIN_TOKEN:
         return redirect('/')
     resp = send_from_directory('.', 'bottlenecks.html')
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
+
+@app.route('/admin/<token>/reports')
+def admin_reports_page(token):
+    if token != ADMIN_TOKEN:
+        return redirect('/')
+    resp = send_from_directory('.', 'reports.html')
     resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     resp.headers['Pragma'] = 'no-cache'
     resp.headers['Expires'] = '0'
@@ -6321,8 +6335,133 @@ def admin_attendance_summary():
 
 
 # ============================================
-# BOTTLENECKS (wait x demand / staffing)
+# REPORTS (served per office per day/week/month)
 # ============================================
+@app.route('/api/admin/reports-office-served', methods=['GET'])
+def admin_reports_office_served():
+    """Served tokens per office per bucket. ?from=YYYY-MM-DD&to=YYYY-MM-DD&bucket=day|week|month&office_id="""
+    try:
+        bucket = (request.args.get('bucket') or 'day').lower()
+        if bucket not in ('day', 'week', 'month'):
+            bucket = 'day'
+        office_id = request.args.get('office_id', type=int)
+        to_dt = request.args.get('to')
+        from_dt = request.args.get('from')
+        today = datetime.now().date()
+        try:
+            to_d = datetime.strptime(to_dt, '%Y-%m-%d').date() if to_dt else today
+        except ValueError:
+            to_d = today
+        try:
+            from_d = datetime.strptime(from_dt, '%Y-%m-%d').date() if from_dt else to_d - timedelta(days=29)
+        except ValueError:
+            from_d = to_d - timedelta(days=29)
+        max_span = 182 if bucket == 'week' else (365 if bucket == 'month' else 93)
+        if (to_d - from_d).days > max_span:
+            from_d = to_d - timedelta(days=max_span)
+        if from_d > to_d:
+            from_d, to_d = to_d, from_d
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        if bucket == 'day':
+            bucket_expr = "DATE(t.completed_at)"
+        elif bucket == 'week':
+            bucket_expr = "DATE(DATE_SUB(t.completed_at, INTERVAL WEEKDAY(t.completed_at) DAY))"
+        else:
+            bucket_expr = "DATE_FORMAT(t.completed_at, '%Y-%m-01')"
+
+        off_filter = "AND off.id = %s" if office_id else ""
+        off_params = [office_id] if office_id else []
+        cursor.execute(f"""
+            SELECT off.id AS office_id, off.office_code, off.office_name,
+                   {bucket_expr} AS bucket,
+                   COUNT(*) AS served
+            FROM offices off
+            LEFT JOIN university_tokens t ON t.office_id = off.id
+              AND t.status = 'completed'
+              AND COALESCE(t.served_count_excluded, 0) = 0
+              AND t.completed_at >= %s AND t.completed_at < %s
+            WHERE off.is_active = 1 {off_filter}
+            GROUP BY off.id, bucket
+            ORDER BY bucket
+        """, tuple(off_params + [
+            datetime(from_d.year, from_d.month, from_d.day),
+            datetime(to_d.year, to_d.month, to_d.day) + timedelta(days=1)]))
+        rows = cursor.fetchall()
+
+        cursor.execute("""
+            SELECT id AS office_id, office_code, office_name FROM offices
+            WHERE is_active = 1
+        """ + (" AND id = %s" if office_id else "") + " ORDER BY display_order",
+            tuple(off_params))
+        offices = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        # Build bucket list
+        buckets = []
+        if bucket == 'day':
+            d = from_d
+            while d <= to_d:
+                buckets.append(d.isoformat())
+                d += timedelta(days=1)
+        elif bucket == 'week':
+            start_mon = from_d - timedelta(days=from_d.weekday())
+            d = start_mon
+            while d <= to_d:
+                buckets.append(d.isoformat())
+                d += timedelta(days=7)
+        else:
+            y, m = from_d.year, from_d.month
+            while (y, m) <= (to_d.year, to_d.month):
+                buckets.append(f"{y:04d}-{m:02d}-01")
+                m += 1
+                if m > 12:
+                    m = 1
+                    y += 1
+
+        def norm_bucket(b):
+            if b is None:
+                return None
+            if hasattr(b, 'strftime'):
+                if bucket == 'day':
+                    return b.strftime('%Y-%m-%d')
+                if bucket == 'week':
+                    monday = b - timedelta(days=b.weekday()) if hasattr(b, 'weekday') else b
+                    return monday.strftime('%Y-%m-%d')
+                return b.strftime('%Y-%m-01')
+            return str(b)
+
+        by_off = {}
+        for r in rows:
+            b = norm_bucket(r['bucket'])
+            if b is None:
+                continue
+            by_off.setdefault(r['office_id'], {})[b] = int(r['served'] or 0)
+
+        series = []
+        for o in offices:
+            pts = [{'bucket': b, 'served': by_off.get(o['office_id'], {}).get(b, 0)} for b in buckets]
+            total = sum(p['served'] for p in pts)
+            peak = max(pts, key=lambda p: p['served']) if pts else None
+            series.append({'office_id': o['office_id'],
+                           'office_code': o['office_code'],
+                           'office_name': o['office_name'],
+                           'points': pts,
+                           'total_served': total,
+                           'peak': peak})
+        series.sort(key=lambda s: s['total_served'], reverse=True)
+
+        return jsonify({'success': True,
+                        'from': from_d.isoformat(), 'to': to_d.isoformat(),
+                        'bucket': bucket, 'buckets': buckets,
+                        'offices': offices, 'series': series})
+    except Exception as e:
+        logger.error(f"Error in reports_office_served: {e}")
+        return jsonify({'success': False, 'message': str(e)})
 @app.route('/api/admin/bottlenecks', methods=['GET'])
 def admin_bottlenecks():
     """Ranked bottleneck rows per office per day + peak flags. ?from=YYYY-MM-DD&to=YYYY-MM-DD"""
