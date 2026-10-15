@@ -369,6 +369,9 @@
         .stat-card.orange::before { background: var(--orange); }
         .stat-card.blue::before { background: var(--blue); }
         .stat-card.green::before { background: var(--success); }
+        .stat-card.kpi { cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; }
+        .stat-card.kpi:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+        .stat-card.kpi:active { transform: scale(0.98); }
         .stat-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; gap: 8px; }
         .stat-icon-wrap {
             width: 40px; height: 40px; border-radius: 10px;
@@ -1125,7 +1128,7 @@
             <!-- DASHBOARD PAGE -->
             <div class="page active" id="page-overview">
                 <div class="stats-grid">
-                    <div class="stat-card orange">
+                    <div class="stat-card orange kpi" onclick="goKpi('queue')" title="Click to open the live queue">
                         <div class="stat-header">
                             <div>
                                 <div class="stat-number" id="totalWaiting">0</div>
@@ -1138,7 +1141,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="stat-card blue">
+                    <div class="stat-card blue kpi" onclick="goKpi('queue')" title="Click to open the live queue">
                         <div class="stat-header">
                             <div>
                                 <div class="stat-number" id="totalServing">0</div>
@@ -1152,7 +1155,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="stat-card green">
+                    <div class="stat-card green kpi" onclick="goKpi('queue')" title="Click to open the live queue">
                         <div class="stat-header">
                             <div>
                                 <div class="stat-number" id="totalCompleted">0</div>
@@ -1165,7 +1168,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card kpi" onclick="goKpi('officers')" title="Click to open officers">
                         <div class="stat-header">
                             <div>
                                 <div class="stat-number" id="activeOfficers">0</div>
@@ -1447,7 +1450,7 @@
                 <!-- Analytics cards -->
                 <div id="feedbackAnalytics" class="feedback-analytics" style="display:none">
                     <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:0">
-                        <div class="stat-card green">
+                        <div class="stat-card green kpi" onclick="goKpi('feedback')" title="Click to open feedback">
                             <div class="stat-header">
                                 <div>
                                     <div class="stat-number" id="fbAvgRating">—</div>
@@ -1460,7 +1463,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="stat-card blue">
+                        <div class="stat-card blue kpi" onclick="goKpi('feedback')" title="Click to open feedback">
                             <div class="stat-header">
                                 <div>
                                     <div class="stat-number" id="fbTotalSubmissions">—</div>
@@ -1473,7 +1476,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="stat-card orange">
+                        <div class="stat-card orange kpi" onclick="goKpi('feedback')" title="Click to open feedback">
                             <div class="stat-header">
                                 <div>
                                     <div class="stat-number" id="fbComplaintRatio">—</div>
@@ -1486,7 +1489,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="stat-card" style="--card-accent:var(--green-dark)">
+                        <div class="stat-card kpi" style="--card-accent:var(--green-dark)" onclick="goKpi('feedback')" title="Click to open feedback">
                             <div class="stat-header">
                                 <div>
                                     <div class="stat-number" id="fbTotalRatings">—</div>
@@ -1713,11 +1716,11 @@
                 </div>
 
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0">
-                    <div class="stat-card"><div class="stat-number" id="proofClaimed">0</div><div class="stat-label">Claimed</div></div>
-                    <div class="stat-card green"><div class="stat-number" id="proofConfirmed">0</div><div class="stat-label">Confirmed</div></div>
-                    <div class="stat-card orange"><div class="stat-number" id="proofPending">0</div><div class="stat-label">Pending</div></div>
-                    <div class="stat-card blue"><div class="stat-number" id="proofRate">—</div><div class="stat-label">Confirm %</div></div>
-                    <div class="stat-card" style="border-left:4px solid var(--red)"><div class="stat-number" id="proofStale">0</div><div class="stat-label">Stale &gt;72h</div></div>
+                    <div class="stat-card kpi" onclick="goKpi('service-proof')" title="Click to open service proof"><div class="stat-number" id="proofClaimed">0</div><div class="stat-label">Claimed</div></div>
+                    <div class="stat-card green kpi" onclick="goKpi('service-proof')" title="Click to open service proof"><div class="stat-number" id="proofConfirmed">0</div><div class="stat-label">Confirmed</div></div>
+                    <div class="stat-card orange kpi" onclick="goKpi('service-proof')" title="Click to open service proof"><div class="stat-number" id="proofPending">0</div><div class="stat-label">Pending</div></div>
+                    <div class="stat-card blue kpi" onclick="goKpi('service-proof')" title="Click to open service proof"><div class="stat-number" id="proofRate">—</div><div class="stat-label">Confirm %</div></div>
+                    <div class="stat-card kpi" style="border-left:4px solid var(--red)" onclick="goKpi('service-proof')" title="Click to open service proof"><div class="stat-number" id="proofStale">0</div><div class="stat-label">Stale &gt;72h</div></div>
                 </div>
                 <div id="proofUnassigned" style="display:none;font-size:12px;color:var(--text-muted);margin:-8px 0 16px;"></div>
 
@@ -1823,7 +1826,7 @@
 
                 <div class="section" style="margin-bottom:24px">
                     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px">
-                        <div class="stat-card green">
+                        <div class="stat-card green kpi" onclick="goKpi('system-rating')" title="Click to open system ratings">
                             <div class="stat-header">
                                 <div class="stat-icon-wrap">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
@@ -1832,7 +1835,7 @@
                             <div class="stat-number" id="srTotal">0</div>
                             <div class="stat-label">Total Ratings</div>
                         </div>
-                        <div class="stat-card blue">
+                        <div class="stat-card blue kpi" onclick="goKpi('system-rating')" title="Click to open system ratings">
                             <div class="stat-header">
                                 <div class="stat-icon-wrap">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
@@ -1841,7 +1844,7 @@
                             <div class="stat-number" id="srFive">0</div>
                             <div class="stat-label">5-Star Ratings</div>
                         </div>
-                        <div class="stat-card orange">
+                        <div class="stat-card orange kpi" onclick="goKpi('system-rating')" title="Click to open system ratings">
                             <div class="stat-header">
                                 <div class="stat-icon-wrap">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
@@ -1913,6 +1916,23 @@
                         <button class="btn-save" onclick="saveLanguage()" id="langSaveBtn">Save</button>
                     </div>
                     <div id="langToast" style="margin-top:12px;font-size:13px;display:none"></div>
+                </div>
+            </div>
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;margin-right:8px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        Service Target
+                    </h2>
+                </div>
+                <div style="padding:24px;max-width:480px">
+                    <label style="display:block;font-size:14px;font-weight:600;color:#555;margin-bottom:8px">Target wait (minutes)</label>
+                    <p style="font-size:13px;color:#888;margin-bottom:16px">Maximum queue wait before a token counts as breached. Used everywhere unless a service sets its own target. Applies to SLA, benchmarks, bottlenecks and reports.</p>
+                    <div style="display:flex;gap:12px;align-items:center">
+                        <input id="slaTargetInput" type="number" min="1" max="480" step="1" value="15" style="flex:1;padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;background:#fff;min-height:44px">
+                        <button class="btn-save" onclick="saveSlaTarget()" id="slaTargetSaveBtn">Save</button>
+                    </div>
+                    <div id="slaTargetToast" style="margin-top:12px;font-size:13px;display:none"></div>
                 </div>
             </div>
             <div class="section">
@@ -2429,8 +2449,12 @@
             toast.style.display = 'none';
         }
 
-        function showPage(id, navEl) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        function goKpi(page) {
+            const nav = document.querySelector(`.nav-item[onclick*="'${page}'"]`);
+            showPage(page, nav);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        function showPage(id, navEl) {            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             const pg = document.getElementById('page-' + id);
             if (pg) pg.classList.add('active');
@@ -2495,6 +2519,7 @@
             } else if (id === 'settings') {
                 document.getElementById('topbarActions').innerHTML = '';
                 loadLanguageSettings();
+                loadSlaTarget();
                 loadOfficeLinks();
             } else if (id === 'performance') {
                 document.getElementById('topbarActions').innerHTML = '';
@@ -3578,6 +3603,57 @@
                     document.getElementById('languageSelect').value = data.language;
                 }
             } catch (e) {}
+        }
+
+        async function loadSlaTarget() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/sla-target`);
+                const data = await res.json();
+                if (data.success && data.target_minutes != null) {
+                    document.getElementById('slaTargetInput').value = data.target_minutes;
+                }
+            } catch (e) {}
+        }
+
+        async function saveSlaTarget() {
+            var input = document.getElementById('slaTargetInput');
+            var btn = document.getElementById('slaTargetSaveBtn');
+            var toast = document.getElementById('slaTargetToast');
+            var target = parseInt(input.value, 10);
+            if (!target || target < 1 || target > 480) {
+                toast.style.display = 'block';
+                toast.style.color = '#dc2626';
+                toast.textContent = 'Enter a target between 1 and 480 minutes';
+                setTimeout(function() { toast.style.display = 'none'; }, 3000);
+                return;
+            }
+            setLoading(btn, true);
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/sla-target`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_minutes: target })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    toast.style.display = 'block';
+                    toast.style.color = '#16a34a';
+                    toast.textContent = data.message || 'Service target updated';
+                    setTimeout(function() { toast.style.display = 'none'; }, 3000);
+                } else {
+                    toast.style.display = 'block';
+                    toast.style.color = '#dc2626';
+                    toast.textContent = data.message || 'Failed to update target';
+                    setTimeout(function() { toast.style.display = 'none'; }, 3000);
+                }
+            } catch (e) {
+                toast.style.display = 'block';
+                toast.style.color = '#dc2626';
+                toast.textContent = 'Network error';
+                setTimeout(function() { toast.style.display = 'none'; }, 3000);
+            } finally {
+                setLoading(btn, false);
+            }
         }
 
         async function saveLanguage() {

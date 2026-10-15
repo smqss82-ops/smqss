@@ -761,6 +761,8 @@ try:
                        ('officer_rating_enabled', '0'))
         cursor.execute("INSERT IGNORE INTO system_settings (setting_key, setting_value) VALUES (%s, %s)",
                        ('display_language', 'en'))
+        cursor.execute("INSERT IGNORE INTO system_settings (setting_key, setting_value) VALUES (%s, %s)",
+                       ('sla_target_minutes', '15'))
         connection.commit()
         print("[OK] Ensured system_settings seeded")
 
@@ -4711,6 +4713,21 @@ def _get_rating_enabled(cursor):
     return bool(row and row['setting_value'] in ('1', 'true', 'True', 'on'))
 
 
+SLA_TARGET_DEFAULT = 15
+SLA_TARGET_MIN = 1
+SLA_TARGET_MAX = 480
+
+def _get_sla_target(cursor):
+    """Global service-wait target in minutes (admin-configurable fallback when a service has no explicit target)."""
+    try:
+        cursor.execute("SELECT setting_value FROM system_settings WHERE setting_key = 'sla_target_minutes'")
+        row = cursor.fetchone()
+        target = int((row['setting_value'] if row else SLA_TARGET_DEFAULT))
+    except (TypeError, ValueError):
+        target = SLA_TARGET_DEFAULT
+    return max(SLA_TARGET_MIN, min(SLA_TARGET_MAX, target))
+
+
 @app.route('/api/admin/system-rating', methods=['GET'])
 def admin_get_system_rating():
     try:
@@ -4757,6 +4774,49 @@ def admin_set_system_rating_settings():
 
     except Exception as e:
         logger.error(f"Admin system-rating settings error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+# ============================================
+# GLOBAL SLA TARGET (admin-configurable fallback)
+# ============================================
+@app.route('/api/admin/sla-target', methods=['GET'])
+def admin_get_sla_target():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        target = _get_sla_target(cursor)
+        cursor.close()
+        conn.close()
+        return jsonify({'success': True, 'target_minutes': target})
+    except Exception as e:
+        logger.error(f"Get SLA target error: {e}")
+        return jsonify({'success': True, 'target_minutes': SLA_TARGET_DEFAULT})
+
+@app.route('/api/admin/sla-target', methods=['POST'])
+def admin_set_sla_target():
+    data = request.get_json(silent=True) or {}
+    try:
+        target = int(data.get('target_minutes', SLA_TARGET_DEFAULT))
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'message': 'Target must be a number of minutes'}), 400
+    if target < SLA_TARGET_MIN or target > SLA_TARGET_MAX:
+        return jsonify({'success': False, 'message': f'Target must be between {SLA_TARGET_MIN} and {SLA_TARGET_MAX} minutes'}), 400
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            INSERT INTO system_settings (setting_key, setting_value)
+            VALUES ('sla_target_minutes', %s)
+            ON DUPLICATE KEY UPDATE setting_value = %s
+        """, (str(target), str(target)))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({'success': True, 'target_minutes': target,
+                        'message': f'Service target updated to {target} minutes'})
+    except Exception as e:
+        logger.error(f"Set SLA target error: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
@@ -5075,6 +5135,7 @@ def admin_sla_overview():
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
+        sla_target = _get_sla_target(cursor)
 
         cursor.execute("""
             SELECT
@@ -5084,22 +5145,22 @@ def admin_sla_overview():
                 COUNT(CASE WHEN t.serving_started_at BETWEEN %s AND %s THEN 1 END) AS served,
                 COUNT(CASE WHEN t.serving_started_at BETWEEN %s AND %s
                             AND TIMESTAMPDIFF(MINUTE, t.requested_at, t.serving_started_at)
-                                > COALESCE(s.estimated_time_minutes, 15) THEN 1 END) AS breached,
+                                > COALESCE(s.estimated_time_minutes, %s) THEN 1 END) AS breached,
                 ROUND(AVG(CASE WHEN t.serving_started_at BETWEEN %s AND %s
                                THEN TIMESTAMPDIFF(MINUTE, t.requested_at, t.serving_started_at) END), 1) AS avg_wait_minutes,
                 ROUND(AVG(CASE WHEN t.serving_started_at BETWEEN %s AND %s
-                               THEN COALESCE(s.estimated_time_minutes, 15) END), 1) AS avg_target_minutes,
+                               THEN COALESCE(s.estimated_time_minutes, %s) END), 1) AS avg_target_minutes,
                 COUNT(CASE WHEN t.status = 'waiting' THEN 1 END) AS current_waiting,
                 COUNT(CASE WHEN t.status = 'waiting'
                             AND TIMESTAMPDIFF(MINUTE, t.requested_at, NOW())
-                                > COALESCE(s.estimated_time_minutes, 15) THEN 1 END) AS waiting_breached
+                                > COALESCE(s.estimated_time_minutes, %s) THEN 1 END) AS waiting_breached
             FROM offices off
             LEFT JOIN university_tokens t ON off.id = t.office_id
             LEFT JOIN services s ON t.service_id = s.id
             WHERE off.is_active = 1
             GROUP BY off.id
             ORDER BY off.display_order
-        """, (start, end, start, end, start, end, start, end))
+        """, (start, end, start, end, sla_target, start, end, start, end, sla_target, sla_target))
 
         offices = cursor.fetchall()
         total_served = 0
@@ -5140,6 +5201,7 @@ def admin_sla_breaches():
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
+        sla_target = _get_sla_target(cursor)
 
         cursor.execute("""
             SELECT t.token_number, t.student_name, t.service_code,
@@ -5147,10 +5209,10 @@ def admin_sla_breaches():
                    t.requested_at, t.serving_started_at,
                    TIMESTAMPDIFF(MINUTE, t.requested_at,
                        COALESCE(t.serving_started_at, NOW())) AS waited_minutes,
-                   COALESCE(s.estimated_time_minutes, 15) AS target_minutes,
+                   COALESCE(s.estimated_time_minutes, %s) AS target_minutes,
                    (TIMESTAMPDIFF(MINUTE, t.requested_at,
                        COALESCE(t.serving_started_at, NOW()))
-                       - COALESCE(s.estimated_time_minutes, 15)) AS over_by_minutes,
+                       - COALESCE(s.estimated_time_minutes, %s)) AS over_by_minutes,
                    CASE WHEN t.status = 'waiting' THEN 1 ELSE 0 END AS still_waiting,
                    EXISTS (SELECT 1 FROM queue_logs q
                            WHERE q.token_number = t.token_number AND q.action = 'escalated'
@@ -5162,10 +5224,10 @@ def admin_sla_breaches():
                     OR (t.status = 'waiting' AND DATE(t.requested_at) = %s))
               AND TIMESTAMPDIFF(MINUTE, t.requested_at,
                       COALESCE(t.serving_started_at, NOW()))
-                  > COALESCE(s.estimated_time_minutes, 15)
+                  > COALESCE(s.estimated_time_minutes, %s)
             ORDER BY over_by_minutes DESC
             LIMIT 200
-        """, (start, end, target_date))
+        """, (sla_target, sla_target, start, end, target_date, sla_target))
 
         rows = cursor.fetchall()
         for r in rows:
@@ -6594,6 +6656,7 @@ def admin_bottlenecks():
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
+        sla_target = _get_sla_target(cursor)
 
         cursor.execute("""
             SELECT off.id AS office_id, off.office_code, off.office_name,
@@ -6603,7 +6666,7 @@ def admin_bottlenecks():
                                  THEN TIMESTAMPDIFF(MINUTE, t.requested_at, t.serving_started_at) END), 1) AS avg_wait,
                    SUM(CASE WHEN TIMESTAMPDIFF(MINUTE, t.requested_at,
                                            COALESCE(t.serving_started_at, NOW()))
-                                 > COALESCE(s.estimated_time_minutes, 15) THEN 1 ELSE 0 END) AS breaches
+                                 > COALESCE(s.estimated_time_minutes, %s) THEN 1 ELSE 0 END) AS breaches
             FROM offices off
             LEFT JOIN university_tokens t ON t.office_id = off.id
                 AND DATE(t.requested_at) BETWEEN %s AND %s
@@ -6612,7 +6675,7 @@ def admin_bottlenecks():
             GROUP BY off.id, day
             HAVING demand > 0
             ORDER BY day DESC
-        """, (from_d.isoformat(), to_d.isoformat()))
+        """, (sla_target, from_d.isoformat(), to_d.isoformat()))
         rows = cursor.fetchall()
 
         cursor.execute("""
@@ -6826,6 +6889,7 @@ def admin_officer_activity_series():
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
+        sla_target = _get_sla_target(cursor)
 
         off_filter = "AND t.assigned_officer_id = %s" if officer_id else ""
         off_params = [officer_id] if officer_id else []
@@ -6837,7 +6901,7 @@ def admin_officer_activity_series():
                    ROUND(AVG(TIMESTAMPDIFF(MINUTE, t.requested_at, t.serving_started_at)), 1) AS avg_wait,
                    SUM(CASE WHEN t.serving_started_at IS NOT NULL THEN 1 ELSE 0 END) AS valid_waits,
                    SUM(CASE WHEN TIMESTAMPDIFF(MINUTE, t.requested_at, t.serving_started_at)
-                                 > COALESCE(s.estimated_time_minutes, 15) THEN 1 ELSE 0 END) AS breaches
+                                 > COALESCE(s.estimated_time_minutes, %s) THEN 1 ELSE 0 END) AS breaches
             FROM university_tokens t
             LEFT JOIN services s ON s.id = t.service_id
             WHERE t.status = 'completed'
@@ -6847,7 +6911,7 @@ def admin_officer_activity_series():
               {off_filter}
             GROUP BY t.assigned_officer_id, bucket
             ORDER BY bucket
-        """, tuple(off_params + [start_ts, end_ts]))
+        """, tuple([sla_target] + off_params + [start_ts, end_ts]))
         rows = cursor.fetchall()
 
         # On-duty minutes per bucket from sessions (Python-side overlap)
